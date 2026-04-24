@@ -110,7 +110,7 @@ namespace FLOBUK.StoreSimulator
             #endif
 
             #if UNITY_6000_0_OR_NEWER
-                playerInput.actions.FindActionMap("UI").Disable();
+                playerInput.actions.FindActionMap("UI")?.Disable();
             #endif
             playerInput.onActionTriggered += OnAction;
         }
