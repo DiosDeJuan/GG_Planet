@@ -52,11 +52,17 @@ namespace FLOBUK.StoreSimulator
         /// <summary>Fired when a new achievement is completed for the first time.</summary>
         public static event Action<AchievementId> onAchievementCompleted;
 
+        // ── Revenue thresholds (in cents: $1 = 100 cents) ─────────────────────────
+        private const long ThresholdRevenue1000Cents  =   100_000;  // $1,000
+        private const long ThresholdRevenue5000Cents  =   500_000;  // $5,000
+        private const long ThresholdRevenue10000Cents = 1_000_000;  // $10,000
+        private const long ThresholdGoldenEggCents    = 5_000_000;  // $50,000 in one day
+
         // Persisted set of completed achievement IDs.
         private HashSet<AchievementId> completedAchievements = new HashSet<AchievementId>();
 
         // Running counter for lifetime money earned (in cents) — used for revenue milestones.
-        private long lifetimeMoneyEarned = 0;
+        private long lifetimeMoneyEarnedCents = 0;
 
         // Running counter of in-game days survived.
         private int daysPlayed = 0;
@@ -114,13 +120,13 @@ namespace FLOBUK.StoreSimulator
             long change = StoreDatabase.FromStringToLongMoney(changeString);
             if (change <= 0) return;    // spending money, not earning
 
-            lifetimeMoneyEarned += change;
-            dailyRevenue        += change;
+            lifetimeMoneyEarnedCents += change;
+            dailyRevenue             += change;
 
-            if (lifetimeMoneyEarned >= 100_000)  Complete(AchievementId.Revenue1000);   // $1 000
-            if (lifetimeMoneyEarned >= 500_000)  Complete(AchievementId.Revenue5000);   // $5 000
-            if (lifetimeMoneyEarned >= 1_000_000) Complete(AchievementId.Revenue10000); // $10 000
-            if (dailyRevenue        >= 5_000_000) Complete(AchievementId.GoldenEgg);    // $50 000/day
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue1000Cents)  Complete(AchievementId.Revenue1000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue5000Cents)  Complete(AchievementId.Revenue5000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue10000Cents) Complete(AchievementId.Revenue10000);
+            if (dailyRevenue             >= ThresholdGoldenEggCents)    Complete(AchievementId.GoldenEgg);
         }
 
 
@@ -191,7 +197,7 @@ namespace FLOBUK.StoreSimulator
         public JSONNode SaveToJSON()
         {
             JSONNode data = new JSONObject();
-            data["lifetimeMoneyEarned"] = lifetimeMoneyEarned;
+            data["lifetimeMoneyEarned"] = lifetimeMoneyEarnedCents;
             data["daysPlayed"]          = daysPlayed;
 
             JSONArray arr = new JSONArray();
@@ -207,13 +213,13 @@ namespace FLOBUK.StoreSimulator
         public void LoadFromJSON(JSONNode data)
         {
             completedAchievements.Clear();
-            lifetimeMoneyEarned = 0;
+            lifetimeMoneyEarnedCents = 0;
             daysPlayed          = 0;
 
             if (data == null || data.Count == 0)
                 return;
 
-            lifetimeMoneyEarned = data["lifetimeMoneyEarned"].AsLong;
+            lifetimeMoneyEarnedCents = data["lifetimeMoneyEarned"].AsLong;
             daysPlayed          = data["daysPlayed"].AsInt;
 
             JSONArray arr = data["completed"].AsArray;

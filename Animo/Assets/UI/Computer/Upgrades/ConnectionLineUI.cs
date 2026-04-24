@@ -29,7 +29,8 @@ namespace FLOBUK.StoreSimulator
     [RequireComponent(typeof(Image))]
     public class ConnectionLineUI : MonoBehaviour
     {
-        private const float LineThickness = 3f;   // pixels
+        /// <summary>Thickness of the line in pixels. Adjust in the Inspector.</summary>
+        public float lineThickness = 3f;
 
         private static readonly Color ColorLocked   = new Color(0.40f, 0.40f, 0.40f, 0.55f);
         private static readonly Color ColorUnlocked = new Color(0.20f, 0.75f, 0.20f, 0.80f);
@@ -81,7 +82,7 @@ namespace FLOBUK.StoreSimulator
 
             // Stretch to cover the full distance.
             float length = Vector2.Distance(a, b);
-            lineRT.sizeDelta = new Vector2(length, LineThickness);
+            lineRT.sizeDelta = new Vector2(length, lineThickness);
 
             // Rotate toward the target node.
             Vector2 direction = b - a;

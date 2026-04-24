@@ -51,7 +51,10 @@ namespace FLOBUK.StoreSimulator
             string path  = Application.persistentDataPath + "/" + fileName + SaveGameSystem.fileExt;
 
             try { File.WriteAllBytes(path, bytes); }
-            catch (Exception) { }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[EntrepreneurTree] Failed to save progress data: " + e.Message);
+            }
         }
 
 
