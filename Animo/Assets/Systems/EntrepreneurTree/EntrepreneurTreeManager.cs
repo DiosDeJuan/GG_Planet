@@ -1,0 +1,217 @@
+// Árbol del Emprendedor — EntrepreneurTreeManager
+// Central manager: owns the progress-point pool, validates unlocks, broadcasts events.
+// Attach to the Systems game object in the main Game scene (same one that holds UpgradeSystem, etc.)
+
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using SimpleJSON;
+
+namespace FLOBUK.StoreSimulator
+{
+    /// <summary>
+    /// Singleton manager for the Entrepreneur Tree system.
+    ///
+    /// Responsibilities:
+    ///   • Track the player's current progress-point total.
+    ///   • Validate and execute node unlocks (prerequisite check + cost deduction).
+    ///   • Expose save/load helpers called by EntrepreneurTreeSaveIntegration.
+    ///
+    /// SCENE SETUP:
+    ///   1. Add this component to any persistent GameObject in the Game scene (e.g. "Systems").
+    ///   2. Assign your TreeData ScriptableObject to the "treeData" field in the Inspector.
+    /// </summary>
+    public class EntrepreneurTreeManager : MonoBehaviour
+    {
+        /// <summary>Returns the singleton instance of this manager.</summary>
+        public static EntrepreneurTreeManager Instance { get; private set; }
+
+        /// <summary>
+        /// Fired when a node is successfully unlocked.
+        /// Passes the NodeData of the newly unlocked node.
+        /// </summary>
+        public static event Action<NodeData> onNodeUnlocked;
+
+        /// <summary>
+        /// Fired whenever the progress-point total changes (gain or spend).
+        /// Parameters: (newTotal, change) — change is negative when spending points.
+        /// </summary>
+        public static event Action<int, int> onPointsChanged;
+
+        /// <summary>
+        /// The ScriptableObject that describes the full tree.
+        /// Assign in the Inspector.
+        /// </summary>
+        public TreeData treeData;
+
+        /// <summary>Current spendable progress-point balance.</summary>
+        public int currentPoints { get; private set; }
+
+        // Persisted set of unlocked node IDs.
+        private HashSet<string> unlockedNodeIds = new HashSet<string>();
+
+
+        void Awake()
+        {
+            Instance = this;
+        }
+
+
+        // ── Public API ────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Award progress points to the player (e.g. from completing an achievement).
+        /// Negative amounts are silently ignored.
+        /// </summary>
+        public static void AddPoints(int amount)
+        {
+            if (Instance == null || amount <= 0) return;
+
+            Instance.currentPoints += amount;
+            onPointsChanged?.Invoke(Instance.currentPoints, amount);
+        }
+
+
+        /// <summary>
+        /// Attempt to unlock the node with the given id.
+        /// Shows a UI message and returns false if prerequisites are not met or points are insufficient.
+        /// Returns true and fires onNodeUnlocked on success.
+        /// </summary>
+        public static bool TryUnlockNode(string nodeId)
+        {
+            if (Instance == null) return false;
+
+            NodeData node = Instance.treeData != null ? Instance.treeData.GetNodeById(nodeId) : null;
+            if (node == null)
+            {
+                UIGame.Instance?.ShowMessage("Unknown node: " + nodeId);
+                return false;
+            }
+
+            if (node.isUnlocked)
+            {
+                UIGame.Instance?.ShowMessage(node.title + " is already unlocked.");
+                return false;
+            }
+
+            // Collect any missing prerequisites.
+            List<string> missingNames = new List<string>();
+            foreach (string reqId in node.requiredNodeIds)
+            {
+                NodeData req = Instance.treeData.GetNodeById(reqId);
+                if (req == null || !req.isUnlocked)
+                    missingNames.Add(req != null ? req.title : reqId);
+            }
+
+            if (missingNames.Count > 0)
+            {
+                UIGame.Instance?.ShowMessage("Requires: " + string.Join(", ", missingNames));
+                return false;
+            }
+
+            // Check point balance.
+            if (Instance.currentPoints < node.cost)
+            {
+                UIGame.Instance?.ShowMessage(
+                    "Not enough points. Need " + node.cost + ", have " + Instance.currentPoints + ".");
+                return false;
+            }
+
+            // ── Perform unlock ────────────────────────────────────────────────────
+            Instance.currentPoints -= node.cost;
+            node.isUnlocked = true;
+            Instance.unlockedNodeIds.Add(nodeId);
+
+            onPointsChanged?.Invoke(Instance.currentPoints, -node.cost);
+            onNodeUnlocked?.Invoke(node);
+            UIGame.AddNotification("Unlocked: " + node.title, node.icon, Color.green);
+
+            return true;
+        }
+
+
+        /// <summary>
+        /// Returns true when the node is not yet unlocked, all prerequisites are met,
+        /// and the player has enough points to pay its cost.
+        /// </summary>
+        public static bool CanUnlockNode(string nodeId)
+        {
+            if (Instance == null || Instance.treeData == null) return false;
+
+            NodeData node = Instance.treeData.GetNodeById(nodeId);
+            if (node == null || node.isUnlocked) return false;
+            if (Instance.currentPoints < node.cost) return false;
+
+            foreach (string reqId in node.requiredNodeIds)
+            {
+                NodeData req = Instance.treeData.GetNodeById(reqId);
+                if (req == null || !req.isUnlocked) return false;
+            }
+
+            return true;
+        }
+
+
+        // ── Persistence ───────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Serialises the manager's runtime state to JSON.
+        /// Called by EntrepreneurTreeSaveIntegration.
+        /// </summary>
+        public JSONNode SaveToJSON()
+        {
+            JSONNode data = new JSONObject();
+            data["currentPoints"] = currentPoints;
+
+            JSONArray unlockedArray = new JSONArray();
+            foreach (string id in unlockedNodeIds)
+                unlockedArray.Add(id);
+            data["unlockedNodes"] = unlockedArray;
+
+            return data;
+        }
+
+
+        /// <summary>
+        /// Restores runtime state from a previously saved JSONNode.
+        /// Called by EntrepreneurTreeSaveIntegration.
+        /// </summary>
+        public void LoadFromJSON(JSONNode data)
+        {
+            // Reset all node unlock flags first.
+            if (treeData != null)
+                foreach (NodeData node in treeData.nodes)
+                    node.isUnlocked = false;
+
+            unlockedNodeIds.Clear();
+            currentPoints = 0;
+
+            if (data == null || data.Count == 0)
+                return;
+
+            currentPoints = data["currentPoints"].AsInt;
+
+            JSONArray unlockedArray = data["unlockedNodes"].AsArray;
+            for (int i = 0; i < unlockedArray.Count; i++)
+            {
+                string id = unlockedArray[i].Value;
+                unlockedNodeIds.Add(id);
+
+                NodeData node = treeData?.GetNodeById(id);
+                if (node != null) node.isUnlocked = true;
+            }
+        }
+
+
+        void OnDestroy()
+        {
+            // Reset ScriptableObject runtime flags when leaving play mode in the editor
+            // so stale data does not persist across edit sessions.
+#if UNITY_EDITOR
+            if (treeData != null)
+                foreach (NodeData node in treeData.nodes)
+                    node.isUnlocked = false;
+#endif
+        }
+    }
+}
