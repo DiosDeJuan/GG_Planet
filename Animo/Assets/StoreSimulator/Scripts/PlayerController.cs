@@ -69,6 +69,8 @@ namespace FLOBUK.StoreSimulator
 
         //reference to the underlying CharacterController component
         private CharacterController characterController;
+        //reference to the PlayerInput component on this GameObject
+        private PlayerInput playerInput;
         //currently allowed movement states
         private MovementState movementState = MovementState.All;
         //previous movement state before changing it
@@ -100,6 +102,7 @@ namespace FLOBUK.StoreSimulator
             Cursor.lockState = CursorLockMode.Locked;
 
             characterController = GetComponent<CharacterController>();
+            playerInput = GetComponent<PlayerInput>();
 
             #if UNITY_ANDROID || UNITY_IOS
                 for(int i = 0; i < joysticks.Length; i++)
@@ -107,9 +110,9 @@ namespace FLOBUK.StoreSimulator
             #endif
 
             #if UNITY_6000_0_OR_NEWER
-                PlayerInput.GetPlayerByIndex(0).actions.FindActionMap("UI").Disable();
+                playerInput.actions.FindActionMap("UI").Disable();
             #endif
-            PlayerInput.GetPlayerByIndex(0).onActionTriggered += OnAction;
+            playerInput.onActionTriggered += OnAction;
         }
 
 
