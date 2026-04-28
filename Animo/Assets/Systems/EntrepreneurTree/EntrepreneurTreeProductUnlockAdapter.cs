@@ -80,7 +80,8 @@ namespace FLOBUK.StoreSimulator
 
             BuildMappingIfNeeded();
 
-            if (!productIdToGroup.TryGetValue(product.id, out string groupId))
+            string groupId;
+            if (!productIdToGroup.TryGetValue(product.id, out groupId))
                 return true;
 
             return unlockedGroups.Contains(groupId);
@@ -93,7 +94,8 @@ namespace FLOBUK.StoreSimulator
                 return string.Empty;
 
             BuildMappingIfNeeded();
-            if (!productIdToGroup.TryGetValue(product.id, out string groupId))
+            string groupId;
+            if (!productIdToGroup.TryGetValue(product.id, out groupId))
                 return string.Empty;
 
             return unlockedGroups.Contains(groupId) ? string.Empty : groupId;
