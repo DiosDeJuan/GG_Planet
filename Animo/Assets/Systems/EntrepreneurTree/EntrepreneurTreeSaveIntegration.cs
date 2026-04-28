@@ -116,7 +116,7 @@ namespace FLOBUK.StoreSimulator
 
             EntrepreneurTreeManager.Instance?.LoadFromJSON(data["EntrepreneurTreeManager"]);
             AchievementSystem.Instance?.LoadFromJSON(data["AchievementSystem"]);
-            Debug.Log(LogPrefix + "TreeData loaded successfully.");
+            Debug.Log(LogPrefix + "Progress loaded successfully.");
         }
 
 
