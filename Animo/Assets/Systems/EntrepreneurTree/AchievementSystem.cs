@@ -126,6 +126,12 @@ namespace FLOBUK.StoreSimulator
             EntrepreneurTreeManager.AddPoints(1);
             Debug.Log(LogPrefix + "GrantPointForTesting called. +1 point.");
         }
+
+        [ContextMenu("Grant Point For Testing")]
+        private void GrantPointForTestingContextMenu()
+        {
+            GrantPointForTesting();
+        }
 #endif
 
 
