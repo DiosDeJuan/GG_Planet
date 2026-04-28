@@ -34,17 +34,17 @@ namespace FLOBUK.StoreSimulator
 
         private static readonly ProductGroupMapping[] DefaultMappings =
         {
-            NewGroup("product_basic_1", "Productos Básicos 1", keywords: new [] { "leche", "milk", "sal", "salt", "agua", "water", "pasta", "azucar", "sugar" }),
+            NewGroup("product_basic_1", "Productos Básicos 1", keywords: new [] { "leche", "milk", "sal", "salt", "agua", "water", "pasta", "azúcar", "azucar", "sugar" }),
             NewGroup("product_basic_2", "Productos Básicos 2", keywords: new [] { "harina", "flour", "arroz", "rice", "frijol", "bean", "pan", "bread", "aceite", "oil" }),
             NewGroup("product_basic_3", "Productos Básicos 3", keywords: new [] { "cafe", "coffee", "huevo", "egg" }),
             NewGroup("product_dairy_1", "Lácteos 1", keywords: new [] { "cheddar", "yogurt", "mantequilla", "butter" }),
             NewGroup("product_dairy_2", "Lácteos 2", keywords: new [] { "americano", "american", "cream cheese", "queso crema" }),
             NewGroup("product_spices_1", "Especias 1", keywords: new [] { "pimienta", "pepper", "canela", "cinnamon" }),
-            NewGroup("product_fresh_1", "Productos Frescos 1", keywords: new [] { "manzana", "apple", "banana", "plátano", "platano", "jitomate", "tomato", "cebolla", "onion" }),
+            NewGroup("product_fresh_1", "Productos Frescos 1", keywords: new [] { "manzana", "apple", "banana", "plátano", "jitomate", "tomato", "cebolla", "onion" }),
             NewGroup("product_fresh_2", "Productos Frescos 2", keywords: new [] { "uva", "grape", "zanahoria", "carrot", "ajo", "garlic" }),
-            NewGroup("product_hygiene", "Productos de Higiene", keywords: new [] { "jabon", "soap", "papel", "toilet", "detergente", "toothpaste", "pasta de dientes" }),
+            NewGroup("product_hygiene", "Productos de Higiene", keywords: new [] { "jabón", "jabon", "soap", "papel", "toilet", "detergente", "toothpaste", "pasta de dientes" }),
             NewGroup("product_protein_1", "Proteína 1", keywords: new [] { "res", "beef", "pollo", "chicken", "cerdo", "pork", "pescado", "fish" }),
-            NewGroup("product_sodas", "Sodas", keywords: new [] { "cola", "lemon", "limon", "soda" }),
+            NewGroup("product_sodas", "Sodas", keywords: new [] { "cola", "lemon", "limón", "limon", "soda" }),
             NewGroup("product_luxury_1", "Productos de Lujo 1", keywords: new [] { "trufa", "truffle", "chocolate", "caviar" }),
             NewGroup("product_appliances_1", "Electrodomésticos 1", keywords: new [] { "refrigerador", "fridge", "microondas", "microwave", "horno", "oven", "licuadora", "blender" }),
         };
@@ -252,7 +252,7 @@ namespace FLOBUK.StoreSimulator
 
         private static void RefreshVisibleProductItems()
         {
-            UIShopItemProduct[] items = FindObjectsByType<UIShopItemProduct>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            UIShopItemProduct[] items = Object.FindObjectsOfType<UIShopItemProduct>(true);
             for (int i = 0; i < items.Length; i++)
             {
                 UIShopItemProduct item = items[i];

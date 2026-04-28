@@ -55,7 +55,7 @@ namespace FLOBUK.StoreSimulator
             try { File.WriteAllBytes(path, bytes); }
             catch (Exception e)
             {
-                Debug.LogWarning(LogPrefix + "Failed to save progress data: " + e.Message);
+                Debug.LogWarning(LogPrefix + "Failed to save progress data at path '" + path + "': " + e.Message);
                 return;
             }
 

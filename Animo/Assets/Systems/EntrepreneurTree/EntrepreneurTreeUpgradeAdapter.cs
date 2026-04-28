@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace FLOBUK.StoreSimulator
@@ -105,13 +106,19 @@ namespace FLOBUK.StoreSimulator
             if (income <= 0)
                 return;
 
-            long bonus = Mathf.FloorToInt(income * (CharismaticMultiplier - BaseMultiplier));
+            long bonus = (long)Math.Floor(income * (CharismaticMultiplier - BaseMultiplier));
             if (bonus <= 0)
                 return;
 
             applyingSalesBonus = true;
-            StoreDatabase.AddRemoveMoney(bonus);
-            applyingSalesBonus = false;
+            try
+            {
+                StoreDatabase.AddRemoveMoney(bonus);
+            }
+            finally
+            {
+                applyingSalesBonus = false;
+            }
         }
 
 

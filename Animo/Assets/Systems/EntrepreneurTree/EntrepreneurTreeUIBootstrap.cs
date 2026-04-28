@@ -179,12 +179,18 @@ namespace FLOBUK.StoreSimulator
 
             TreeData[] loaded = Resources.FindObjectsOfTypeAll<TreeData>();
             if (loaded != null && loaded.Length > 0)
+            {
+                Debug.Log(LogPrefix + "TreeData loaded from loaded objects fallback: " + loaded[0].name);
                 return loaded[0];
+            }
 
 #if UNITY_EDITOR
             TreeData fromEditorPath = UnityEditor.AssetDatabase.LoadAssetAtPath<TreeData>(EditorTreePath);
             if (fromEditorPath != null)
+            {
+                Debug.Log(LogPrefix + "TreeData loaded from editor path fallback: " + EditorTreePath);
                 return fromEditorPath;
+            }
 #endif
 
             return null;
