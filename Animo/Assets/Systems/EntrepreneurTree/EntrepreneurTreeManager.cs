@@ -24,6 +24,9 @@ namespace FLOBUK.StoreSimulator
     public class EntrepreneurTreeManager : MonoBehaviour
     {
         private const string LogPrefix = "[EntrepreneurTree] ";
+        private const int SecurityLevel1Coverage = 33;
+        private const int SecurityLevel2Coverage = 66;
+        private const int SecurityLevel3Coverage = 99;
         /// <summary>Returns the singleton instance of this manager.</summary>
         public static EntrepreneurTreeManager Instance { get; private set; }
 
@@ -179,11 +182,11 @@ namespace FLOBUK.StoreSimulator
                 return 0;
 
             if (Instance.IsNodeUnlocked("security_3"))
-                return 99;
+                return SecurityLevel3Coverage;
             if (Instance.IsNodeUnlocked("security_2"))
-                return 66;
+                return SecurityLevel2Coverage;
             if (Instance.IsNodeUnlocked("security_1"))
-                return 33;
+                return SecurityLevel1Coverage;
             return 0;
         }
 
