@@ -41,6 +41,7 @@ namespace FLOBUK.StoreSimulator
 
         private bool treeBuilt;
         private bool listenersBound;
+        private bool autoConfigured;
 
 
         void Awake()
@@ -74,8 +75,13 @@ namespace FLOBUK.StoreSimulator
 
         public void TryAutoConfigureFromHierarchy()
         {
+            if (autoConfigured && treeScrollContent != null && linesContainer != null && nodesContainer != null)
+                return;
+
             EnsureTreeRootHierarchy();
             EnsureContainers();
+
+            autoConfigured = treeScrollContent != null && linesContainer != null && nodesContainer != null;
 
             if (legacyUpgradesContent == null)
             {
@@ -265,7 +271,6 @@ namespace FLOBUK.StoreSimulator
 
             if (infoUnlockButton)
             {
-                infoUnlockButton.onClick.RemoveListener(OnUnlockButtonClicked);
                 infoUnlockButton.onClick.AddListener(OnUnlockButtonClicked);
             }
 
@@ -511,7 +516,12 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             for (int i = parent.childCount - 1; i >= 0; i--)
-                Destroy(parent.GetChild(i).gameObject);
+            {
+                if (Application.isPlaying)
+                    Destroy(parent.GetChild(i).gameObject);
+                else
+                    DestroyImmediate(parent.GetChild(i).gameObject);
+            }
         }
 
 

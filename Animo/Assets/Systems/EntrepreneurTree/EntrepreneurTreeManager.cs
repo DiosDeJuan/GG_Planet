@@ -57,7 +57,7 @@ namespace FLOBUK.StoreSimulator
             if (Instance != null && Instance != this)
             {
                 Debug.LogWarning(LogPrefix + "Duplicate EntrepreneurTreeManager detected. Destroying duplicate instance.");
-                Destroy(this);
+                Destroy(gameObject);
                 return;
             }
 

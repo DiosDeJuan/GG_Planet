@@ -14,6 +14,8 @@ namespace FLOBUK.StoreSimulator
 
         private static bool initialized;
         private static TreeData runtimeFallbackTree;
+        private static EntrepreneurTreeManager cachedManager;
+        private static bool sceneHandlerRegistered;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()
@@ -22,7 +24,11 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             initialized = true;
-            SceneManager.sceneLoaded += OnSceneLoaded;
+            if (!sceneHandlerRegistered)
+            {
+                SceneManager.sceneLoaded += OnSceneLoaded;
+                sceneHandlerRegistered = true;
+            }
             IntegrateScene(SceneManager.GetActiveScene());
         }
 
@@ -82,6 +88,7 @@ namespace FLOBUK.StoreSimulator
                 Object.DontDestroyOnLoad(systems);
 
                 manager = systems.AddComponent<EntrepreneurTreeManager>();
+                cachedManager = manager;
                 systems.AddComponent<AchievementSystem>();
                 systems.AddComponent<EntrepreneurTreeSaveIntegration>();
 
@@ -98,9 +105,15 @@ namespace FLOBUK.StoreSimulator
 
         private static EntrepreneurTreeManager FindExistingTreeManager()
         {
+            if (cachedManager != null)
+                return cachedManager;
+
             EntrepreneurTreeManager[] managers = Object.FindObjectsOfType<EntrepreneurTreeManager>(true);
             if (managers != null && managers.Length > 0)
-                return managers[0];
+            {
+                cachedManager = managers[0];
+                return cachedManager;
+            }
 
             return null;
         }
