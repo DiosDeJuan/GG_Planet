@@ -23,6 +23,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class EntrepreneurTreeManager : MonoBehaviour
     {
+        private const string LogPrefix = "[EntrepreneurTree] ";
         /// <summary>Returns the singleton instance of this manager.</summary>
         public static EntrepreneurTreeManager Instance { get; private set; }
 
@@ -53,7 +54,15 @@ namespace FLOBUK.StoreSimulator
 
         void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning(LogPrefix + "Duplicate EntrepreneurTreeManager detected. Destroying duplicate instance.");
+                Destroy(this);
+                return;
+            }
+
             Instance = this;
+            EnsureDefaultUnlockedNodes();
         }
 
 
@@ -84,6 +93,7 @@ namespace FLOBUK.StoreSimulator
             NodeData node = Instance.treeData != null ? Instance.treeData.GetNodeById(nodeId) : null;
             if (node == null)
             {
+                Debug.LogWarning(LogPrefix + "Unknown node unlock request: " + nodeId);
                 UIGame.Instance?.ShowMessage("Unknown node: " + nodeId);
                 return false;
             }
@@ -187,7 +197,10 @@ namespace FLOBUK.StoreSimulator
             currentPoints = 0;
 
             if (data == null || data.Count == 0)
+            {
+                EnsureDefaultUnlockedNodes();
                 return;
+            }
 
             currentPoints = data["currentPoints"].AsInt;
 
@@ -203,6 +216,36 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+
+
+        private void EnsureDefaultUnlockedNodes()
+        {
+            if (treeData == null || treeData.nodes == null || treeData.nodes.Count == 0)
+                return;
+
+            if (unlockedNodeIds.Count > 0)
+                return;
+
+            bool unlockedAnyRoot = false;
+            for (int i = 0; i < treeData.nodes.Count; i++)
+            {
+                NodeData node = treeData.nodes[i];
+                if (node == null || string.IsNullOrEmpty(node.id))
+                    continue;
+
+                bool isRoot = node.requiredNodeIds == null || node.requiredNodeIds.Count == 0;
+                if (!isRoot)
+                    continue;
+
+                node.isUnlocked = true;
+                unlockedNodeIds.Add(node.id);
+                unlockedAnyRoot = true;
+            }
+
+            if (unlockedAnyRoot)
+                Debug.Log(LogPrefix + "Default root nodes unlocked for initial tree state.");
+        }
+
         void OnDestroy()
         {
             // Reset ScriptableObject runtime flags when leaving play mode in the editor
@@ -212,6 +255,9 @@ namespace FLOBUK.StoreSimulator
                 foreach (NodeData node in treeData.nodes)
                     node.isUnlocked = false;
 #endif
+
+            if (Instance == this)
+                Instance = null;
         }
     }
 }
