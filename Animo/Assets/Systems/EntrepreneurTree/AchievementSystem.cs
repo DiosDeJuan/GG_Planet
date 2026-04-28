@@ -54,10 +54,10 @@ namespace FLOBUK.StoreSimulator
         public static event Action<AchievementId> onAchievementCompleted;
 
         // ── Revenue thresholds (in cents: $1 = 100 cents) ─────────────────────────
-        private const long ThresholdRevenue1000Cents  =   100_000;  // $1,000
-        private const long ThresholdRevenue5000Cents  =   500_000;  // $5,000
-        private const long ThresholdRevenue10000Cents = 1_000_000;  // $10,000
-        private const long ThresholdGoldenEggCents    = 5_000_000;  // $50,000 in one day
+        private const long ThresholdRevenue1000Cents  =   100000;  // $1,000
+        private const long ThresholdRevenue5000Cents  =   500000;  // $5,000
+        private const long ThresholdRevenue10000Cents = 1000000;   // $10,000
+        private const long ThresholdGoldenEggCents    = 5000000;   // $50,000 in one day
 
         // Persisted set of completed achievement IDs.
         private HashSet<AchievementId> completedAchievements = new HashSet<AchievementId>();
@@ -248,7 +248,8 @@ namespace FLOBUK.StoreSimulator
             JSONArray arr = data["completed"].AsArray;
             for (int i = 0; i < arr.Count; i++)
             {
-                if (Enum.TryParse(arr[i].Value, out AchievementId id))
+                AchievementId id;
+                if (Enum.TryParse(arr[i].Value, out id))
                     completedAchievements.Add(id);
             }
         }

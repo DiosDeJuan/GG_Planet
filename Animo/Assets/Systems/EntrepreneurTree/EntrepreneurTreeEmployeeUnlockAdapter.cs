@@ -90,7 +90,8 @@ namespace FLOBUK.StoreSimulator
                 return 0;
 
             string suffix = nodeId.Substring("employee_".Length);
-            return int.TryParse(suffix, out int value) ? value : 0;
+            int value;
+            return int.TryParse(suffix, out value) ? value : 0;
         }
 
 

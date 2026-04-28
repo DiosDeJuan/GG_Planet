@@ -73,7 +73,7 @@ namespace FLOBUK.StoreSimulator
         };
 
 
-        private readonly struct NodeDefinition
+        private struct NodeDefinition
         {
             public readonly string id;
             public readonly TreeNodeType type;

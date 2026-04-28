@@ -54,13 +54,17 @@ namespace FLOBUK.StoreSimulator
 
         public bool IsSecurityUnlocked(int level)
         {
-            return level switch
+            switch (level)
             {
-                1 => securityLevel >= 1,
-                2 => securityLevel >= 2,
-                3 => securityLevel >= 3,
-                _ => false
-            };
+                case 1:
+                    return securityLevel >= 1;
+                case 2:
+                    return securityLevel >= 2;
+                case 3:
+                    return securityLevel >= 3;
+                default:
+                    return false;
+            }
         }
 
 

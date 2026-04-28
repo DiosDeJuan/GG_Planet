@@ -61,12 +61,15 @@ namespace FLOBUK.StoreSimulator
 
         public bool HasUpgrade(string upgradeId)
         {
-            return upgradeId switch
+            switch (upgradeId)
             {
-                CaffeineId => hasCaffeine,
-                CharismaticId => hasCharismatic,
-                _ => false
-            };
+                case CaffeineId:
+                    return hasCaffeine;
+                case CharismaticId:
+                    return hasCharismatic;
+                default:
+                    return false;
+            }
         }
 
 
