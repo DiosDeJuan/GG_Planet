@@ -50,6 +50,15 @@ namespace FLOBUK.StoreSimulator
                     lockedMessage.text = "Requires License " + requiredLicense.title;
                 }
             }
+
+            if (EntrepreneurTreeGameplayBridge.Instance != null &&
+                !EntrepreneurTreeGameplayBridge.Instance.IsProductUnlocked(product))
+            {
+                if (lockedOverlay != null)
+                    lockedOverlay.SetActive(true);
+                if (lockedMessage != null)
+                    lockedMessage.text = "Desbloquéalo en el Árbol del Emprendedor";
+            }
         }
 
 
@@ -58,6 +67,15 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public override void Purchase()
         {
+            ProductScriptableObject product = purchasable as ProductScriptableObject;
+            if (EntrepreneurTreeGameplayBridge.Instance != null &&
+                product != null &&
+                !EntrepreneurTreeGameplayBridge.Instance.IsProductUnlocked(product))
+            {
+                UIGame.Instance?.ShowMessage("Este producto está bloqueado en el Árbol del Emprendedor.");
+                return;
+            }
+
             DeliverySystem.Purchase(purchasable);
         }
     }

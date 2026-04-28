@@ -150,6 +150,11 @@ namespace FLOBUK.StoreSimulator
         {
             List<ProductScriptableObject> filtered = new List<ProductScriptableObject>(Instance.availableProducts);
             filtered.RemoveAll(product => !string.IsNullOrEmpty(product.requiredLicense) && !(GetById(typeof(LicenseScriptableObject), product.requiredLicense) as LicenseScriptableObject).isPurchased);
+            if (EntrepreneurTreeGameplayBridge.Instance != null)
+                filtered.RemoveAll(product => !EntrepreneurTreeGameplayBridge.Instance.IsProductUnlocked(product));
+
+            if (filtered.Count == 0)
+                return new List<ProductScriptableObject>();
 
             if (count == 1)
                 return new List<ProductScriptableObject>() { filtered[UnityEngine.Random.Range(0, filtered.Count)] };

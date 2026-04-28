@@ -23,6 +23,10 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class EntrepreneurTreeManager : MonoBehaviour
     {
+        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const int SecurityLevel1Coverage = 33;
+        private const int SecurityLevel2Coverage = 66;
+        private const int SecurityLevel3Coverage = 99;
         /// <summary>Returns the singleton instance of this manager.</summary>
         public static EntrepreneurTreeManager Instance { get; private set; }
 
@@ -31,6 +35,10 @@ namespace FLOBUK.StoreSimulator
         /// Passes the NodeData of the newly unlocked node.
         /// </summary>
         public static event Action<NodeData> onNodeUnlocked;
+        public static event Action<NodeData> onProductNodeUnlocked;
+        public static event Action<NodeData> onEmployeeNodeUnlocked;
+        public static event Action<NodeData> onSecurityNodeUnlocked;
+        public static event Action<NodeData> onUpgradeNodeUnlocked;
 
         /// <summary>
         /// Fired whenever the progress-point total changes (gain or spend).
@@ -53,7 +61,15 @@ namespace FLOBUK.StoreSimulator
 
         void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning(LogPrefix + "Duplicate EntrepreneurTreeManager detected. Destroying duplicate instance.");
+                Destroy(gameObject);
+                return;
+            }
+
             Instance = this;
+            EnsureDefaultUnlockedNodes();
         }
 
 
@@ -84,6 +100,7 @@ namespace FLOBUK.StoreSimulator
             NodeData node = Instance.treeData != null ? Instance.treeData.GetNodeById(nodeId) : null;
             if (node == null)
             {
+                Debug.LogWarning(LogPrefix + "Unknown node unlock request: " + nodeId);
                 UIGame.Instance?.ShowMessage("Unknown node: " + nodeId);
                 return false;
             }
@@ -94,18 +111,11 @@ namespace FLOBUK.StoreSimulator
                 return false;
             }
 
-            // Collect any missing prerequisites.
-            List<string> missingNames = new List<string>();
-            foreach (string reqId in node.requiredNodeIds)
-            {
-                NodeData req = Instance.treeData.GetNodeById(reqId);
-                if (req == null || !req.isUnlocked)
-                    missingNames.Add(req != null ? req.title : reqId);
-            }
+            List<string> missingNames = Instance.GetMissingRequirementNames(node);
 
             if (missingNames.Count > 0)
             {
-                UIGame.Instance?.ShowMessage("Requires: " + string.Join(", ", missingNames));
+                UIGame.Instance?.ShowMessage("Faltan requisitos: " + string.Join(", ", missingNames));
                 return false;
             }
 
@@ -113,7 +123,7 @@ namespace FLOBUK.StoreSimulator
             if (Instance.currentPoints < node.cost)
             {
                 UIGame.Instance?.ShowMessage(
-                    "Not enough points. Need " + node.cost + ", have " + Instance.currentPoints + ".");
+                    "No tienes suficientes puntos. Necesitas " + node.cost + ", tienes " + Instance.currentPoints + ".");
                 return false;
             }
 
@@ -124,6 +134,7 @@ namespace FLOBUK.StoreSimulator
 
             onPointsChanged?.Invoke(Instance.currentPoints, -node.cost);
             onNodeUnlocked?.Invoke(node);
+            Instance.DispatchTypedNodeUnlocked(node);
             UIGame.AddNotification("Unlocked: " + node.title, node.icon, Color.green);
 
             return true;
@@ -149,6 +160,34 @@ namespace FLOBUK.StoreSimulator
             }
 
             return true;
+        }
+
+
+        public static List<string> GetMissingRequirementNames(string nodeId)
+        {
+            if (Instance == null || Instance.treeData == null || string.IsNullOrEmpty(nodeId))
+                return new List<string>();
+
+            NodeData node = Instance.treeData.GetNodeById(nodeId);
+            if (node == null)
+                return new List<string>();
+
+            return Instance.GetMissingRequirementNames(node);
+        }
+
+
+        public static int GetSecurityCoveragePercent()
+        {
+            if (Instance == null || Instance.treeData == null)
+                return 0;
+
+            if (Instance.IsNodeUnlocked("security_3"))
+                return SecurityLevel3Coverage;
+            if (Instance.IsNodeUnlocked("security_2"))
+                return SecurityLevel2Coverage;
+            if (Instance.IsNodeUnlocked("security_1"))
+                return SecurityLevel1Coverage;
+            return 0;
         }
 
 
@@ -187,7 +226,10 @@ namespace FLOBUK.StoreSimulator
             currentPoints = 0;
 
             if (data == null || data.Count == 0)
+            {
+                EnsureDefaultUnlockedNodes();
                 return;
+            }
 
             currentPoints = data["currentPoints"].AsInt;
 
@@ -200,8 +242,89 @@ namespace FLOBUK.StoreSimulator
                 NodeData node = treeData?.GetNodeById(id);
                 if (node != null) node.isUnlocked = true;
             }
+
+            if (unlockedNodeIds.Count == 0)
+                EnsureDefaultUnlockedNodes();
         }
 
+
+
+
+        private void EnsureDefaultUnlockedNodes()
+        {
+            if (treeData == null || treeData.nodes == null || treeData.nodes.Count == 0)
+                return;
+
+            if (unlockedNodeIds.Count > 0)
+                return;
+
+            for (int i = 0; i < treeData.nodes.Count; i++)
+            {
+                NodeData node = treeData.nodes[i];
+                if (node == null || string.IsNullOrEmpty(node.id))
+                    continue;
+
+                if (node.id != EntrepreneurTreeDefinition.DefaultUnlockedNodeId)
+                    continue;
+
+                node.isUnlocked = true;
+                unlockedNodeIds.Add(node.id);
+                Debug.Log(LogPrefix + "Default node unlocked: " + node.id);
+                return;
+            }
+        }
+
+
+        private List<string> GetMissingRequirementNames(NodeData node)
+        {
+            List<string> missingNames = new List<string>();
+            if (node == null || treeData == null || node.requiredNodeIds == null)
+                return missingNames;
+
+            for (int i = 0; i < node.requiredNodeIds.Count; i++)
+            {
+                string reqId = node.requiredNodeIds[i];
+                NodeData req = treeData.GetNodeById(reqId);
+                if (req == null || !req.isUnlocked)
+                    missingNames.Add(req != null ? req.title : reqId);
+            }
+
+            return missingNames;
+        }
+
+
+        private bool IsNodeUnlocked(string nodeId)
+        {
+            NodeData node = treeData.GetNodeById(nodeId);
+            return node != null && node.isUnlocked;
+        }
+
+
+        private void DispatchTypedNodeUnlocked(NodeData node)
+        {
+            if (node == null)
+                return;
+
+            switch (node.nodeType)
+            {
+                case TreeNodeType.Product:
+                    onProductNodeUnlocked?.Invoke(node);
+                    Debug.Log(LogPrefix + "Product node unlocked hook fired: " + node.id);
+                    break;
+                case TreeNodeType.Employee:
+                    onEmployeeNodeUnlocked?.Invoke(node);
+                    Debug.Log(LogPrefix + "Employee node unlocked hook fired: " + node.id);
+                    break;
+                case TreeNodeType.Security:
+                    onSecurityNodeUnlocked?.Invoke(node);
+                    Debug.Log(LogPrefix + "Security node unlocked hook fired: " + node.id + " (" + GetSecurityCoveragePercent() + "%)");
+                    break;
+                case TreeNodeType.Improvement:
+                    onUpgradeNodeUnlocked?.Invoke(node);
+                    Debug.Log(LogPrefix + "Upgrade node unlocked hook fired: " + node.id);
+                    break;
+            }
+        }
 
         void OnDestroy()
         {
@@ -212,6 +335,9 @@ namespace FLOBUK.StoreSimulator
                 foreach (NodeData node in treeData.nodes)
                     node.isUnlocked = false;
 #endif
+
+            if (Instance == this)
+                Instance = null;
         }
     }
 }

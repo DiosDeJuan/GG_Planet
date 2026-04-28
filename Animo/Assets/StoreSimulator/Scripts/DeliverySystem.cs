@@ -70,7 +70,17 @@ namespace FLOBUK.StoreSimulator
             //get amount of products in the package
             int amount = 1;
             if (purchasable is ProductScriptableObject)
+            {
+                ProductScriptableObject product = purchasable as ProductScriptableObject;
+                if (EntrepreneurTreeGameplayBridge.Instance != null &&
+                    !EntrepreneurTreeGameplayBridge.Instance.IsProductUnlocked(product))
+                {
+                    UIGame.Instance?.ShowMessage("Este producto está bloqueado en el Árbol del Emprendedor.");
+                    return;
+                }
+
                 amount = (purchasable as ProductScriptableObject).packageCount;
+            }
 
             if (!StoreDatabase.CanPurchase(purchasable.buyPrice * amount))
             {

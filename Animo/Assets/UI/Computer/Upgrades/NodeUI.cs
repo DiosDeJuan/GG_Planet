@@ -37,7 +37,7 @@ namespace FLOBUK.StoreSimulator
                           IPointerClickHandler
     {
         // ── Visual state colours ──────────────────────────────────────────────────
-        private static readonly Color ColorLocked    = new Color(0.35f, 0.35f, 0.35f, 1f); // grey
+        private static readonly Color ColorLocked    = new Color(0.35f, 0.35f, 0.35f, 0.70f); // grey
         private static readonly Color ColorAvailable = new Color(0.95f, 0.80f, 0.10f, 1f); // yellow
         private static readonly Color ColorUnlocked  = new Color(0.20f, 0.75f, 0.20f, 1f); // green
 
@@ -140,6 +140,7 @@ namespace FLOBUK.StoreSimulator
         private void ApplyState(Color color)
         {
             if (background) background.color = color;
+            if (titleLabel) titleLabel.color = color == ColorLocked ? new Color(0.85f, 0.85f, 0.85f, 0.85f) : Color.white;
 
             // Hide the icon when the node is locked so it stays mysterious.
             if (iconImage) iconImage.gameObject.SetActive(color != ColorLocked);
