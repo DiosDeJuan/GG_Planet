@@ -95,8 +95,17 @@ namespace FLOBUK.StoreSimulator
                 cachedManager = manager;
                 systems.AddComponent<AchievementSystem>();
                 systems.AddComponent<EntrepreneurTreeSaveIntegration>();
+                systems.AddComponent<EntrepreneurTreeProductUnlockAdapter>();
+                systems.AddComponent<EntrepreneurTreeEmployeeUnlockAdapter>();
+                systems.AddComponent<EntrepreneurTreeSecurityAdapter>();
+                systems.AddComponent<EntrepreneurTreeUpgradeAdapter>();
+                systems.AddComponent<EntrepreneurTreeGameplayBridge>();
 
                 Debug.Log(LogPrefix + "Created runtime EntrepreneurTree systems GameObject.");
+            }
+            else
+            {
+                EnsureGameplayAdapters(manager.gameObject);
             }
 
             if (manager.treeData == null)
@@ -112,6 +121,25 @@ namespace FLOBUK.StoreSimulator
                     Debug.LogWarning(LogPrefix + "TreeData not assigned in Inspector. Using runtime fallback tree data.");
                 }
             }
+        }
+
+
+        private static void EnsureGameplayAdapters(GameObject systems)
+        {
+            if (systems.GetComponent<AchievementSystem>() == null)
+                systems.AddComponent<AchievementSystem>();
+            if (systems.GetComponent<EntrepreneurTreeSaveIntegration>() == null)
+                systems.AddComponent<EntrepreneurTreeSaveIntegration>();
+            if (systems.GetComponent<EntrepreneurTreeProductUnlockAdapter>() == null)
+                systems.AddComponent<EntrepreneurTreeProductUnlockAdapter>();
+            if (systems.GetComponent<EntrepreneurTreeEmployeeUnlockAdapter>() == null)
+                systems.AddComponent<EntrepreneurTreeEmployeeUnlockAdapter>();
+            if (systems.GetComponent<EntrepreneurTreeSecurityAdapter>() == null)
+                systems.AddComponent<EntrepreneurTreeSecurityAdapter>();
+            if (systems.GetComponent<EntrepreneurTreeUpgradeAdapter>() == null)
+                systems.AddComponent<EntrepreneurTreeUpgradeAdapter>();
+            if (systems.GetComponent<EntrepreneurTreeGameplayBridge>() == null)
+                systems.AddComponent<EntrepreneurTreeGameplayBridge>();
         }
 
 
