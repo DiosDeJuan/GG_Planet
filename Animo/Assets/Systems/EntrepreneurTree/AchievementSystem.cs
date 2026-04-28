@@ -46,6 +46,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class AchievementSystem : MonoBehaviour
     {
+        private const string LogPrefix = "[EntrepreneurTree] ";
         /// <summary>Singleton instance.</summary>
         public static AchievementSystem Instance { get; private set; }
 
@@ -73,6 +74,13 @@ namespace FLOBUK.StoreSimulator
 
         void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning(LogPrefix + "Duplicate AchievementSystem detected. Destroying duplicate instance.");
+                Destroy(gameObject);
+                return;
+            }
+
             Instance = this;
 
             // Hook into existing game-event bus.
@@ -110,6 +118,15 @@ namespace FLOBUK.StoreSimulator
         {
             return Instance != null && Instance.completedAchievements.Contains(achievement);
         }
+
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public static void GrantPointForTesting()
+        {
+            EntrepreneurTreeManager.AddPoints(1);
+            Debug.Log(LogPrefix + "GrantPointForTesting called. +1 point.");
+        }
+#endif
 
 
         // ── Event handlers — auto-detection ──────────────────────────────────────
@@ -255,6 +272,9 @@ namespace FLOBUK.StoreSimulator
             DayCycleSystem.onDayLoaded           -= OnDayLoaded;
             DayCycleSystem.onDayFinished         -= OnDayFinished;
             EntrepreneurTreeManager.onNodeUnlocked -= OnNodeUnlocked;
+
+            if (Instance == this)
+                Instance = null;
         }
     }
 }

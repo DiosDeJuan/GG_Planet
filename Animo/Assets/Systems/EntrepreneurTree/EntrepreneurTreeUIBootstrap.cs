@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,6 +10,10 @@ namespace FLOBUK.StoreSimulator
     public static class EntrepreneurTreeUIBootstrap
     {
         private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string ResourcesTreePath = "EntrepreneurTree/EntrepreneurTreeData";
+#if UNITY_EDITOR
+        private const string EditorTreePath = "Assets/Data/EntrepreneurTree/EntrepreneurTreeData.asset";
+#endif
 
         private static bool initialized;
         private static TreeData runtimeFallbackTree;
@@ -60,6 +63,7 @@ namespace FLOBUK.StoreSimulator
                     Transform upgradesPanel = contentArea.Find("Expansions");
                     if (upgradesPanel == null)
                         continue;
+                    Debug.Log(LogPrefix + "Bootstrap found Expansions panel.");
 
                     UpgradesUIController controller = upgradesPanel.GetComponent<UpgradesUIController>();
                     if (controller == null)
@@ -97,8 +101,16 @@ namespace FLOBUK.StoreSimulator
 
             if (manager.treeData == null)
             {
-                manager.treeData = CreateFallbackTreeData();
-                Debug.LogWarning(LogPrefix + "TreeData not assigned in Inspector. Using runtime fallback tree data.");
+                manager.treeData = TryLoadProjectTreeData();
+                if (manager.treeData != null)
+                {
+                    Debug.Log(LogPrefix + "TreeData loaded successfully.");
+                }
+                else
+                {
+                    manager.treeData = CreateFallbackTreeData();
+                    Debug.LogWarning(LogPrefix + "TreeData not assigned in Inspector. Using runtime fallback tree data.");
+                }
             }
         }
 
@@ -126,86 +138,28 @@ namespace FLOBUK.StoreSimulator
 
             runtimeFallbackTree = ScriptableObject.CreateInstance<TreeData>();
             runtimeFallbackTree.name = "EntrepreneurTreeData_Runtime";
-
-            List<NodeData> nodes = new List<NodeData>();
-            nodes.Add(CreateNode(
-                "productos_basicos_1",
-                "Productos Básicos 1",
-                "Desbloquea la primera capa de productos esenciales para tu supermercado.",
-                TreeNodeType.Product,
-                0,
-                new string[0],
-                new Vector2(-920f, 0f)));
-
-            nodes.Add(CreateNode(
-                "productos_basicos_2",
-                "Productos Básicos 2",
-                "Amplía el surtido básico para mejorar ventas iniciales.",
-                TreeNodeType.Product,
-                1,
-                new[] { "productos_basicos_1" },
-                new Vector2(-560f, 0f)));
-
-            nodes.Add(CreateNode(
-                "productos_frescos_1",
-                "Frescos 1",
-                "Añade productos frescos para atraer más clientes.",
-                TreeNodeType.Product,
-                2,
-                new[] { "productos_basicos_2" },
-                new Vector2(-220f, 0f)));
-
-            nodes.Add(CreateNode(
-                "empleado_cajero_1",
-                "Cajero 1",
-                "Permite contratar un primer cajero para acelerar cobros.",
-                TreeNodeType.Employee,
-                2,
-                new[] { "productos_basicos_2" },
-                new Vector2(-560f, -260f)));
-
-            nodes.Add(CreateNode(
-                "seguridad_camaras_1",
-                "Cámaras 1",
-                "Instala cámaras para reducir pérdidas y mejorar control.",
-                TreeNodeType.Security,
-                2,
-                new[] { "productos_basicos_2" },
-                new Vector2(-560f, 260f)));
-
-            nodes.Add(CreateNode(
-                "mejora_checkout_1",
-                "Checkout Ágil",
-                "Optimiza el flujo de caja para atender más clientes por hora.",
-                TreeNodeType.Improvement,
-                3,
-                new[] { "empleado_cajero_1", "productos_frescos_1" },
-                new Vector2(180f, -120f)));
-
-            runtimeFallbackTree.nodes = nodes;
+            runtimeFallbackTree.nodes = EntrepreneurTreeDefinition.CreateRuntimeNodes();
             return runtimeFallbackTree;
         }
 
 
-        private static NodeData CreateNode(
-            string id,
-            string title,
-            string description,
-            TreeNodeType type,
-            int cost,
-            string[] requiredIds,
-            Vector2 position)
+        private static TreeData TryLoadProjectTreeData()
         {
-            NodeData node = ScriptableObject.CreateInstance<NodeData>();
-            node.name = id;
-            node.id = id;
-            node.title = title;
-            node.description = description;
-            node.nodeType = type;
-            node.cost = cost;
-            node.uiPosition = position;
-            node.requiredNodeIds = new List<string>(requiredIds);
-            return node;
+            TreeData fromResources = Resources.Load<TreeData>(ResourcesTreePath);
+            if (fromResources != null)
+                return fromResources;
+
+            TreeData[] loaded = Resources.FindObjectsOfTypeAll<TreeData>();
+            if (loaded != null && loaded.Length > 0)
+                return loaded[0];
+
+#if UNITY_EDITOR
+            TreeData fromEditorPath = UnityEditor.AssetDatabase.LoadAssetAtPath<TreeData>(EditorTreePath);
+            if (fromEditorPath != null)
+                return fromEditorPath;
+#endif
+
+            return null;
         }
     }
 }

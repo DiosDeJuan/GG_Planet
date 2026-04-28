@@ -94,6 +94,14 @@ namespace FLOBUK.StoreSimulator
 
         public void BuildTree()
         {
+            if (treeBuilt && nodeUIMap.Count > 0)
+            {
+                ToggleLegacyContent(false);
+                RefreshNodeStates();
+                Debug.Log(LogPrefix + "BuildTree skipped. Existing tree reused.");
+                return;
+            }
+
             if (!ValidateTreePrerequisites())
             {
                 ToggleLegacyContent(true);
@@ -201,7 +209,12 @@ namespace FLOBUK.StoreSimulator
             if (infoUnlockButton)
             {
                 infoUnlockButton.gameObject.SetActive(!node.isUnlocked);
-                infoUnlockButton.interactable = EntrepreneurTreeManager.CanUnlockNode(node.id);
+                bool canUnlock = EntrepreneurTreeManager.CanUnlockNode(node.id);
+                infoUnlockButton.interactable = canUnlock;
+
+                Image buttonImage = infoUnlockButton.targetGraphic as Image;
+                if (buttonImage != null)
+                    buttonImage.color = canUnlock ? new Color(0.15f, 0.45f, 0.2f, 1f) : new Color(0.25f, 0.25f, 0.25f, 1f);
             }
 
             infoPanel.SetActive(true);
@@ -306,7 +319,14 @@ namespace FLOBUK.StoreSimulator
         {
             Transform rootTransform = transform.Find("EntrepreneurTreeRoot");
             if (rootTransform == null)
+            {
                 rootTransform = CreateTreeRoot();
+                Debug.Log(LogPrefix + "EntrepreneurTreeRoot created.");
+            }
+            else
+            {
+                Debug.Log(LogPrefix + "Existing EntrepreneurTreeRoot reused.");
+            }
 
             if (rootTransform == null)
                 return;
@@ -532,7 +552,10 @@ namespace FLOBUK.StoreSimulator
 
             bool shouldShowLegacy = showLegacy;
             if (legacyUpgradesContent.activeSelf != shouldShowLegacy)
+            {
                 legacyUpgradesContent.SetActive(shouldShowLegacy);
+                Debug.Log(LogPrefix + (shouldShowLegacy ? "Legacy Scroll View shown." : "Legacy Scroll View hidden."));
+            }
 
             if (treeScrollContent != null && treeScrollContent.transform.parent != null)
             {

@@ -24,6 +24,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class EntrepreneurTreeSaveIntegration : MonoBehaviour
     {
+        private const string LogPrefix = "[EntrepreneurTree] ";
         // File written next to the main "save.dat" file.
         private const string fileName = "entrepreneurTree";
 
@@ -32,6 +33,7 @@ namespace FLOBUK.StoreSimulator
         {
             SaveGameSystem.dataSaveEvent += OnSave;
             SaveGameSystem.dataLoadEvent += OnLoad;
+            Debug.Log(LogPrefix + "Save integration subscribed to SaveGameSystem events.");
         }
 
 
@@ -53,8 +55,11 @@ namespace FLOBUK.StoreSimulator
             try { File.WriteAllBytes(path, bytes); }
             catch (Exception e)
             {
-                Debug.LogWarning("[EntrepreneurTree] Failed to save progress data: " + e.Message);
+                Debug.LogWarning(LogPrefix + "Failed to save progress data: " + e.Message);
+                return;
             }
+
+            Debug.Log(LogPrefix + "Progress saved: " + path);
         }
 
 
@@ -69,19 +74,49 @@ namespace FLOBUK.StoreSimulator
                 // New game or first run – reset managers to defaults.
                 EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
                 AchievementSystem.Instance?.LoadFromJSON(null);
+                Debug.Log(LogPrefix + "No EntrepreneurTree save file found. Loaded defaults.");
                 return;
             }
 
-            byte[] bytes = File.ReadAllBytes(path);
-            string json  = Encoding.ASCII.GetString(bytes);
+            byte[] bytes;
+            string json;
+            try
+            {
+                bytes = File.ReadAllBytes(path);
+                json = Encoding.ASCII.GetString(bytes);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(LogPrefix + "Failed to read progress file. Loading defaults. " + e.Message);
+                EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
+                AchievementSystem.Instance?.LoadFromJSON(null);
+                return;
+            }
 
             if (string.IsNullOrEmpty(json))
+            {
+                EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
+                AchievementSystem.Instance?.LoadFromJSON(null);
+                Debug.LogWarning(LogPrefix + "Progress file was empty. Loaded defaults.");
                 return;
+            }
 
-            JSONNode data = JSON.Parse(json);
+            JSONNode data;
+            try
+            {
+                data = JSON.Parse(json);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(LogPrefix + "Progress file JSON parse failed. Loading defaults. " + e.Message);
+                EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
+                AchievementSystem.Instance?.LoadFromJSON(null);
+                return;
+            }
 
             EntrepreneurTreeManager.Instance?.LoadFromJSON(data["EntrepreneurTreeManager"]);
             AchievementSystem.Instance?.LoadFromJSON(data["AchievementSystem"]);
+            Debug.Log(LogPrefix + "TreeData loaded successfully.");
         }
 
 

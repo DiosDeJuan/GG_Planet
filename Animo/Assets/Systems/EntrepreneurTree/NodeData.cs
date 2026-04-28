@@ -15,7 +15,8 @@ namespace FLOBUK.StoreSimulator
         Product,
         Employee,
         Security,
-        Improvement
+        Improvement,
+        Upgrade = Improvement
     }
 
     /// <summary>

@@ -30,9 +30,9 @@ namespace FLOBUK.StoreSimulator
     public class ConnectionLineUI : MonoBehaviour
     {
         /// <summary>Thickness of the line in pixels. Adjust in the Inspector.</summary>
-        public float lineThickness = 3f;
+        public float lineThickness = 4f;
 
-        private static readonly Color ColorLocked   = new Color(0.40f, 0.40f, 0.40f, 0.55f);
+        private static readonly Color ColorLocked   = new Color(0.46f, 0.46f, 0.46f, 0.78f);
         private static readonly Color ColorUnlocked = new Color(0.20f, 0.75f, 0.20f, 0.80f);
 
         private Image       lineImage;
