@@ -64,6 +64,13 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        public bool IsSecurityUnlocked(int level)
+        {
+            return EntrepreneurTreeSecurityAdapter.Instance != null &&
+                   EntrepreneurTreeSecurityAdapter.Instance.IsSecurityUnlocked(level);
+        }
+
+
         public float GetEmployeeSpeedMultiplier()
         {
             return EntrepreneurTreeUpgradeAdapter.Instance != null

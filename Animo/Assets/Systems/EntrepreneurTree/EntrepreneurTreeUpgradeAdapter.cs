@@ -18,6 +18,10 @@ namespace FLOBUK.StoreSimulator
 
         public static EntrepreneurTreeUpgradeAdapter Instance { get; private set; }
 
+        [Header("Optional runtime bonus application")]
+        [Tooltip("Disabled by default for economy safety. When enabled, charismatic applies +5% only on positive money deltas.")]
+        public bool applyCharismaticBonusOnMoneyEvents = false;
+
         private bool hasCaffeine;
         private bool hasCharismatic;
         private bool applyingSalesBonus;
@@ -99,7 +103,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnMoneyUpdate(string current, string changeString)
         {
-            if (!hasCharismatic || applyingSalesBonus)
+            if (!applyCharismaticBonusOnMoneyEvents || !hasCharismatic || applyingSalesBonus)
                 return;
 
             long income = StoreDatabase.FromStringToLongMoney(changeString);

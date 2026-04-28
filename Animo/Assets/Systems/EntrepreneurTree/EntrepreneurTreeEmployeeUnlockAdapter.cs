@@ -5,9 +5,11 @@ namespace FLOBUK.StoreSimulator
 {
     /// <summary>
     /// Tracks unlocked employee nodes and exposes a query API for employee-related systems.
+    /// This adapter exposes unlocked employee state so it can be connected to a future real employee app/system.
     /// </summary>
     public class EntrepreneurTreeEmployeeUnlockAdapter : MonoBehaviour
     {
+        // Este adapter expone el estado de empleados desbloqueados para conectarse con la futura app/sistema real de empleados.
         private const string LogPrefix = "[EntrepreneurTree] ";
         public static EntrepreneurTreeEmployeeUnlockAdapter Instance { get; private set; }
 

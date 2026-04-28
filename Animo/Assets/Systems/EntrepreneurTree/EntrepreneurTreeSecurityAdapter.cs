@@ -4,9 +4,11 @@ namespace FLOBUK.StoreSimulator
 {
     /// <summary>
     /// Applies entrepreneur tree security progression to runtime gameplay values and optional visuals.
+    /// This adapter exposes security level and arrest probability for connection with a future real shoplifter system.
     /// </summary>
     public class EntrepreneurTreeSecurityAdapter : MonoBehaviour
     {
+        // Este adapter expone nivel de seguridad y probabilidad de arresto para conectarse con el futuro sistema real de ladrones.
         private const string LogPrefix = "[EntrepreneurTree] ";
         public static EntrepreneurTreeSecurityAdapter Instance { get; private set; }
 
@@ -47,6 +49,18 @@ namespace FLOBUK.StoreSimulator
         public float GetArrestChance()
         {
             return arrestChance;
+        }
+
+
+        public bool IsSecurityUnlocked(int level)
+        {
+            return level switch
+            {
+                1 => securityLevel >= 1,
+                2 => securityLevel >= 2,
+                3 => securityLevel >= 3,
+                _ => false
+            };
         }
 
 

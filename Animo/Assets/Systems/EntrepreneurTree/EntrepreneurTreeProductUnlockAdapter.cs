@@ -19,6 +19,7 @@ namespace FLOBUK.StoreSimulator
             public string displayName;
             public string[] productIds;
             public ProductScriptableObject[] products;
+            public string[] aliases;
             public string[] titleKeywords;
         }
 
@@ -34,19 +35,20 @@ namespace FLOBUK.StoreSimulator
 
         private static readonly ProductGroupMapping[] DefaultMappings =
         {
-            NewGroup("product_basic_1", "Productos Básicos 1", keywords: new [] { "leche", "milk", "sal", "salt", "agua", "water", "pasta", "azúcar", "azucar", "sugar" }),
-            NewGroup("product_basic_2", "Productos Básicos 2", keywords: new [] { "harina", "flour", "arroz", "rice", "frijol", "bean", "pan", "bread", "aceite", "oil" }),
-            NewGroup("product_basic_3", "Productos Básicos 3", keywords: new [] { "cafe", "coffee", "huevo", "egg" }),
-            NewGroup("product_dairy_1", "Lácteos 1", keywords: new [] { "cheddar", "yogurt", "mantequilla", "butter" }),
-            NewGroup("product_dairy_2", "Lácteos 2", keywords: new [] { "americano", "american", "cream cheese", "queso crema" }),
-            NewGroup("product_spices_1", "Especias 1", keywords: new [] { "pimienta", "pepper", "canela", "cinnamon" }),
-            NewGroup("product_fresh_1", "Productos Frescos 1", keywords: new [] { "manzana", "apple", "banana", "plátano", "jitomate", "tomato", "cebolla", "onion" }),
-            NewGroup("product_fresh_2", "Productos Frescos 2", keywords: new [] { "uva", "grape", "zanahoria", "carrot", "ajo", "garlic" }),
-            NewGroup("product_hygiene", "Productos de Higiene", keywords: new [] { "jabón", "jabon", "soap", "papel", "toilet", "detergente", "toothpaste", "pasta de dientes" }),
-            NewGroup("product_protein_1", "Proteína 1", keywords: new [] { "res", "beef", "pollo", "chicken", "cerdo", "pork", "pescado", "fish" }),
-            NewGroup("product_sodas", "Sodas", keywords: new [] { "cola", "lemon", "limón", "limon", "soda" }),
-            NewGroup("product_luxury_1", "Productos de Lujo 1", keywords: new [] { "trufa", "truffle", "chocolate", "caviar" }),
-            NewGroup("product_appliances_1", "Electrodomésticos 1", keywords: new [] { "refrigerador", "fridge", "microondas", "microwave", "horno", "oven", "licuadora", "blender" }),
+            // This project only ships Product_A..E assets; IDs 0..4 are mapped explicitly to avoid weak-only keyword matching.
+            NewGroup("product_basic_1", "Productos Básicos 1", ids: new[] { "0", "1", "2", "3" }, aliases: new[] { "leche", "sal", "agua", "pasta", "azúcar" }, keywords: new [] { "milk", "salt", "water", "pasta", "sugar" }),
+            NewGroup("product_basic_2", "Productos Básicos 2", ids: new[] { "4" }, aliases: new[] { "harina", "arroz", "frijoles", "pan", "aceite" }, keywords: new [] { "flour", "rice", "bean", "bread", "oil" }),
+            NewGroup("product_basic_3", "Productos Básicos 3", aliases: new[] { "café", "huevo" }, keywords: new [] { "coffee", "egg" }),
+            NewGroup("product_dairy_1", "Lácteos 1", aliases: new[] { "cheddar", "yogurt natural", "mantequilla" }, keywords: new [] { "cheddar", "yogurt", "butter" }),
+            NewGroup("product_dairy_2", "Lácteos 2", aliases: new[] { "queso americano", "queso crema" }, keywords: new [] { "american cheese", "cream cheese" }),
+            NewGroup("product_spices_1", "Especias 1", aliases: new[] { "pimienta negra", "canela" }, keywords: new [] { "pepper", "cinnamon" }),
+            NewGroup("product_fresh_1", "Productos Frescos 1", aliases: new[] { "manzana", "plátano", "jitomate", "cebolla" }, keywords: new [] { "apple", "banana", "tomato", "onion" }),
+            NewGroup("product_fresh_2", "Productos Frescos 2", aliases: new[] { "uvas", "zanahorias", "ajo" }, keywords: new [] { "grape", "carrot", "garlic" }),
+            NewGroup("product_hygiene", "Productos de Higiene", aliases: new[] { "jabón", "papel higiénico", "detergente", "pasta de dientes" }, keywords: new [] { "soap", "toilet paper", "detergent", "toothpaste" }),
+            NewGroup("product_protein_1", "Proteína 1", aliases: new[] { "res", "pollo", "cerdo", "pescado" }, keywords: new [] { "beef", "chicken", "pork", "fish" }),
+            NewGroup("product_sodas", "Sodas", aliases: new[] { "cola", "cola sin azúcar", "refresco de limón" }, keywords: new [] { "cola", "soda", "lemon soda" }),
+            NewGroup("product_luxury_1", "Productos de Lujo 1", aliases: new[] { "trufa", "chocolate importado", "caviar" }, keywords: new [] { "truffle", "imported chocolate", "caviar" }),
+            NewGroup("product_appliances_1", "Electrodomésticos 1", aliases: new[] { "refrigerador", "microondas", "horno", "licuadora" }, keywords: new [] { "fridge", "microwave", "oven", "blender" }),
         };
 
         void Awake()
@@ -104,14 +106,15 @@ namespace FLOBUK.StoreSimulator
         }
 
 
-        private static ProductGroupMapping NewGroup(string nodeId, string displayName, string[] keywords = null)
+        private static ProductGroupMapping NewGroup(string nodeId, string displayName, string[] ids = null, string[] aliases = null, string[] keywords = null)
         {
             return new ProductGroupMapping
             {
                 nodeId = nodeId,
                 displayName = displayName,
+                productIds = ids ?? Array.Empty<string>(),
+                aliases = aliases ?? Array.Empty<string>(),
                 titleKeywords = keywords ?? Array.Empty<string>(),
-                productIds = Array.Empty<string>(),
                 products = Array.Empty<ProductScriptableObject>()
             };
         }
@@ -150,14 +153,16 @@ namespace FLOBUK.StoreSimulator
                 HashSet<string> ids = groupToProductIds[mapping.nodeId];
 
                 AddExplicitProducts(mapping, ids);
+                AddAliasProducts(mapping, allProducts, ids);
                 AddKeywordProducts(mapping, allProducts, ids);
 
                 foreach (string productId in ids)
                     productIdToGroup[productId] = mapping.nodeId;
 
-                if (ids.Count > 0)
-                    Debug.Log(LogPrefix + "Mapped product node " + mapping.nodeId + " to " + ids.Count + " products.");
+                Debug.Log(LogPrefix + "Product mapping: " + mapping.nodeId + " -> " + ids.Count + " products found.");
             }
+
+            LogUnmappedProducts(allProducts);
         }
 
 
@@ -184,6 +189,48 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        private void AddAliasProducts(ProductGroupMapping mapping, List<ProductScriptableObject> allProducts, HashSet<string> ids)
+        {
+            if (mapping.aliases == null || mapping.aliases.Length == 0)
+                return;
+
+            for (int i = 0; i < mapping.aliases.Length; i++)
+            {
+                string alias = mapping.aliases[i];
+                if (string.IsNullOrEmpty(alias))
+                    continue;
+
+                ProductScriptableObject resolved = FindByAlias(alias, allProducts);
+                if (resolved == null)
+                {
+                    Debug.LogWarning(LogPrefix + "Product mapping warning: " + mapping.nodeId + " -> " + alias + " not found.");
+                    continue;
+                }
+
+                ids.Add(resolved.id);
+            }
+        }
+
+
+        private static ProductScriptableObject FindByAlias(string alias, List<ProductScriptableObject> allProducts)
+        {
+            string normalizedAlias = Normalize(alias);
+            for (int i = 0; i < allProducts.Count; i++)
+            {
+                ProductScriptableObject product = allProducts[i];
+                if (product == null)
+                    continue;
+
+                if (Normalize(product.title) == normalizedAlias ||
+                    Normalize(product.name) == normalizedAlias ||
+                    Normalize(product.id) == normalizedAlias)
+                    return product;
+            }
+
+            return null;
+        }
+
+
         private static void AddKeywordProducts(ProductGroupMapping mapping, List<ProductScriptableObject> allProducts, HashSet<string> ids)
         {
             if (mapping.titleKeywords == null || mapping.titleKeywords.Length == 0)
@@ -195,19 +242,41 @@ namespace FLOBUK.StoreSimulator
                 if (product == null || string.IsNullOrEmpty(product.title))
                     continue;
 
-                string normalizedTitle = product.title.ToLowerInvariant();
+                string normalizedTitle = Normalize(product.title);
                 for (int k = 0; k < mapping.titleKeywords.Length; k++)
                 {
                     string keyword = mapping.titleKeywords[k];
                     if (string.IsNullOrEmpty(keyword))
                         continue;
 
-                    if (normalizedTitle.Contains(keyword.ToLowerInvariant()))
+                    if (normalizedTitle.Contains(Normalize(keyword)))
                     {
                         ids.Add(product.id);
                         break;
                     }
                 }
+            }
+        }
+
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrEmpty(value)
+                ? string.Empty
+                : value.Trim().ToLowerInvariant();
+        }
+
+
+        private void LogUnmappedProducts(List<ProductScriptableObject> allProducts)
+        {
+            for (int i = 0; i < allProducts.Count; i++)
+            {
+                ProductScriptableObject product = allProducts[i];
+                if (product == null || string.IsNullOrEmpty(product.id))
+                    continue;
+
+                if (!productIdToGroup.ContainsKey(product.id))
+                    Debug.LogWarning(LogPrefix + "Product mapping warning: unmapped product id " + product.id + " (" + product.title + ").");
             }
         }
 
