@@ -168,17 +168,22 @@ namespace FLOBUK.StoreSimulator
                 return false;
             }
 
+            List<string> missingNames = null;
             foreach (string reqId in node.requiredNodeIds)
             {
                 NodeData req = Instance.treeData.GetNodeById(reqId);
-                if (req == null || !req.isUnlocked)
-                {
-                    List<string> missingNames = Instance.GetMissingRequirementNames(node);
-                    reason = missingNames.Count > 0
-                        ? "Faltan requisitos: " + string.Join(", ", missingNames)
-                        : "Faltan requisitos para desbloquear este nodo.";
-                    return false;
-                }
+                if (req != null && req.isUnlocked)
+                    continue;
+
+                if (missingNames == null)
+                    missingNames = new List<string>();
+                missingNames.Add(req != null ? req.title : reqId);
+            }
+
+            if (missingNames != null && missingNames.Count > 0)
+            {
+                reason = "Faltan requisitos: " + string.Join(", ", missingNames);
+                return false;
             }
 
             return true;

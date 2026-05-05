@@ -173,6 +173,7 @@ namespace FLOBUK.StoreSimulator
         {
             float speedMultiplier = GetEmployeeSpeedMultiplier();
             CheckoutObject[] checkoutObjects = FindObjectsOfType<CheckoutObject>(true);
+            HashSet<int> liveIds = new HashSet<int>();
             for (int i = 0; i < checkoutObjects.Length; i++)
             {
                 CheckoutObject checkout = checkoutObjects[i];
@@ -180,6 +181,7 @@ namespace FLOBUK.StoreSimulator
                     continue;
 
                 int id = checkout.GetInstanceID();
+                liveIds.Add(id);
                 if (!baseCheckoutSpeeds.ContainsKey(id))
                     baseCheckoutSpeeds[id] = checkout.lerpSpeed;
 
@@ -193,6 +195,25 @@ namespace FLOBUK.StoreSimulator
                     selfCheckout.scanDelay = Mathf.Max(0.2f, baseSelfCheckoutScanDelays[id] / speedMultiplier);
                 }
             }
+
+            PruneStaleRuntimeCaches(baseCheckoutSpeeds, liveIds);
+            PruneStaleRuntimeCaches(baseSelfCheckoutScanDelays, liveIds);
+        }
+
+        private static void PruneStaleRuntimeCaches(Dictionary<int, float> cache, HashSet<int> liveIds)
+        {
+            if (cache == null || cache.Count == 0)
+                return;
+
+            List<int> stale = new List<int>();
+            foreach (int key in cache.Keys)
+            {
+                if (!liveIds.Contains(key))
+                    stale.Add(key);
+            }
+
+            for (int i = 0; i < stale.Count; i++)
+                cache.Remove(stale[i]);
         }
 
 
