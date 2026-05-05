@@ -32,7 +32,8 @@ namespace FLOBUK.StoreSimulator
         /// <summary>Thickness of the line in pixels. Adjust in the Inspector.</summary>
         public float lineThickness = 4f;
 
-        private static readonly Color ColorLocked   = new Color(0.46f, 0.46f, 0.46f, 0.78f);
+        private static readonly Color ColorLocked   = new Color(0.36f, 0.36f, 0.36f, 0.72f);
+        private static readonly Color ColorAvailable = new Color(0.85f, 0.82f, 0.25f, 0.88f);
         private static readonly Color ColorUnlocked = new Color(0.20f, 0.75f, 0.20f, 0.80f);
 
         private Image       lineImage;
@@ -97,10 +98,16 @@ namespace FLOBUK.StoreSimulator
         {
             if (lineImage == null) return;
 
-            bool lit = fromNode != null && fromNode.data != null && fromNode.data.isUnlocked
-                    && toNode   != null && toNode.data   != null && toNode.data.isUnlocked;
+            bool fromUnlocked = fromNode != null && fromNode.data != null && fromNode.data.isUnlocked;
+            bool toUnlocked = toNode != null && toNode.data != null && toNode.data.isUnlocked;
+            bool toAvailable = toNode != null && toNode.data != null && EntrepreneurTreeManager.CanUnlockNode(toNode.data.id);
 
-            lineImage.color = lit ? ColorUnlocked : ColorLocked;
+            if (fromUnlocked && toUnlocked)
+                lineImage.color = ColorUnlocked;
+            else if (fromUnlocked && toAvailable)
+                lineImage.color = ColorAvailable;
+            else
+                lineImage.color = ColorLocked;
         }
 
 

@@ -38,6 +38,9 @@ namespace FLOBUK.StoreSimulator
         private NodeData currentInfoNode;
         private RectTransform linesContainer;
         private RectTransform nodesContainer;
+        private GameObject treeRootObject;
+        private Button openTreeButton;
+        private Button backToLegacyButton;
 
         private bool treeBuilt;
         private bool listenersBound;
@@ -96,7 +99,7 @@ namespace FLOBUK.StoreSimulator
         {
             if (treeBuilt && nodeUIMap.Count > 0)
             {
-                ToggleLegacyContent(false);
+                ShowTreeView();
                 RefreshNodeStates();
                 Debug.Log(LogPrefix + "BuildTree skipped. Existing tree reused.");
                 return;
@@ -164,7 +167,10 @@ namespace FLOBUK.StoreSimulator
             }
 
             treeBuilt = true;
-            ToggleLegacyContent(false);
+            if (legacyUpgradesContent != null)
+                ShowLegacyView();
+            else
+                ShowTreeView();
             Debug.Log(LogPrefix + "Tree built: " + createdNodes + " nodes, " + createdLines + " lines.");
         }
 
@@ -177,8 +183,10 @@ namespace FLOBUK.StoreSimulator
             currentInfoNode = node;
 
             if (infoTitle) infoTitle.text = node.title;
-            if (infoDescription) infoDescription.text = node.description;
-            if (infoCost) infoCost.text = "Costo: " + node.cost + " punto" + (node.cost != 1 ? "s" : "");
+            if (infoDescription) infoDescription.text = "Tipo: " + GetNodeTypeLabel(node.nodeType) + "\n" + node.description;
+            if (infoCost) infoCost.text = node.isUnlocked
+                ? "Estado: Desbloqueado"
+                : "Costo: " + node.cost + " punto" + (node.cost != 1 ? "s" : "");
 
             if (infoRequirements)
             {
@@ -241,7 +249,7 @@ namespace FLOBUK.StoreSimulator
         private void OnPointsChanged(int total, int change)
         {
             if (pointsLabel)
-                pointsLabel.text = "Puntos: " + total;
+                pointsLabel.text = "Puntos disponibles: " + total;
 
             if (infoPanel && infoPanel.activeSelf && currentInfoNode != null && infoUnlockButton)
                 infoUnlockButton.interactable = EntrepreneurTreeManager.CanUnlockNode(currentInfoNode.id);
@@ -260,7 +268,7 @@ namespace FLOBUK.StoreSimulator
         private void RefreshPointsLabel()
         {
             if (pointsLabel && EntrepreneurTreeManager.Instance != null)
-                pointsLabel.text = "Puntos: " + EntrepreneurTreeManager.Instance.currentPoints;
+                pointsLabel.text = "Puntos disponibles: " + EntrepreneurTreeManager.Instance.currentPoints;
         }
 
 
@@ -286,6 +294,11 @@ namespace FLOBUK.StoreSimulator
             {
                 infoUnlockButton.onClick.AddListener(OnUnlockButtonClicked);
             }
+
+            if (openTreeButton != null)
+                openTreeButton.onClick.AddListener(ShowTreeView);
+            if (backToLegacyButton != null)
+                backToLegacyButton.onClick.AddListener(ShowLegacyView);
 
             listenersBound = true;
         }
@@ -356,6 +369,9 @@ namespace FLOBUK.StoreSimulator
                 if (content != null)
                     treeScrollContent = content as RectTransform;
             }
+
+            treeRootObject = rootTransform.gameObject;
+            EnsureTreeOpenButton();
         }
 
 
@@ -402,8 +418,16 @@ namespace FLOBUK.StoreSimulator
             CreateTextObject("Title", header.transform, "Árbol del Emprendedor", 30, TextAlignmentOptions.Left,
                 new Vector2(0f, 0f), new Vector2(0.7f, 1f), new Vector2(0f, 0.5f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
 
-            pointsLabel = CreateTextObject("PointsText", header.transform, "Puntos: 0", 26, TextAlignmentOptions.Right,
+            pointsLabel = CreateTextObject("PointsText", header.transform, "Puntos disponibles: 0", 26, TextAlignmentOptions.Right,
                 new Vector2(0.7f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-20f, 0f), new Vector2(-20f, 0f));
+
+            GameObject backButton = CreateUIObject("BackToExpansionsButton", header.transform, new Vector2(0.7f, 0f), new Vector2(0.85f, 1f), new Vector2(0.5f, 0.5f));
+            Image backImage = backButton.AddComponent<Image>();
+            backImage.color = new Color(0.2f, 0.28f, 0.38f, 1f);
+            backToLegacyButton = backButton.AddComponent<Button>();
+            backToLegacyButton.targetGraphic = backImage;
+            CreateTextObject("Text", backButton.transform, "Volver", 18, TextAlignmentOptions.Center,
+                Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
 
             GameObject info = CreateUIObject("InfoPanel", rootObj.transform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f));
             RectTransform infoRT = info.GetComponent<RectTransform>();
@@ -547,22 +571,48 @@ namespace FLOBUK.StoreSimulator
 
         private void ToggleLegacyContent(bool showLegacy)
         {
-            if (legacyUpgradesContent == null)
+            if (legacyUpgradesContent != null && legacyUpgradesContent.activeSelf != showLegacy)
+            {
+                legacyUpgradesContent.SetActive(showLegacy);
+                Debug.Log(LogPrefix + (showLegacy ? "Legacy Scroll View shown." : "Legacy Scroll View hidden."));
+            }
+
+            if (treeRootObject != null)
+                treeRootObject.SetActive(!showLegacy);
+
+            if (openTreeButton != null)
+                openTreeButton.gameObject.SetActive(showLegacy);
+        }
+
+        private void ShowTreeView()
+        {
+            ToggleLegacyContent(false);
+        }
+
+        private void ShowLegacyView()
+        {
+            ToggleLegacyContent(true);
+        }
+
+        private void EnsureTreeOpenButton()
+        {
+            Transform existing = transform.Find("OpenEntrepreneurTreeButton");
+            if (existing != null)
+            {
+                openTreeButton = existing.GetComponent<Button>();
                 return;
-
-            bool shouldShowLegacy = showLegacy;
-            if (legacyUpgradesContent.activeSelf != shouldShowLegacy)
-            {
-                legacyUpgradesContent.SetActive(shouldShowLegacy);
-                Debug.Log(LogPrefix + (shouldShowLegacy ? "Legacy Scroll View shown." : "Legacy Scroll View hidden."));
             }
 
-            if (treeScrollContent != null && treeScrollContent.transform.parent != null)
-            {
-                Transform treeRoot = treeScrollContent.transform.parent.parent;
-                if (treeRoot != null && treeRoot.gameObject.activeSelf == shouldShowLegacy)
-                    treeRoot.gameObject.SetActive(!shouldShowLegacy);
-            }
+            GameObject buttonObject = CreateUIObject("OpenEntrepreneurTreeButton", transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f));
+            RectTransform buttonRT = buttonObject.GetComponent<RectTransform>();
+            buttonRT.sizeDelta = new Vector2(280f, 46f);
+            buttonRT.anchoredPosition = new Vector2(-20f, -16f);
+            Image image = buttonObject.AddComponent<Image>();
+            image.color = new Color(0.15f, 0.32f, 0.24f, 0.95f);
+            openTreeButton = buttonObject.AddComponent<Button>();
+            openTreeButton.targetGraphic = image;
+            CreateTextObject("Text", buttonObject.transform, "Abrir Árbol del Emprendedor", 18, TextAlignmentOptions.Center,
+                Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         }
 
 
@@ -624,6 +674,23 @@ namespace FLOBUK.StoreSimulator
             return t.GetComponent<TMP_Text>();
         }
 
+        private static string GetNodeTypeLabel(TreeNodeType type)
+        {
+            switch (type)
+            {
+                case TreeNodeType.Product:
+                    return "Producto";
+                case TreeNodeType.Employee:
+                    return "Empleado";
+                case TreeNodeType.Security:
+                    return "Seguridad";
+                case TreeNodeType.Improvement:
+                    return "Mejora";
+                default:
+                    return type.ToString();
+            }
+        }
+
 
         void OnDestroy()
         {
@@ -635,6 +702,10 @@ namespace FLOBUK.StoreSimulator
 
             if (infoUnlockButton)
                 infoUnlockButton.onClick.RemoveListener(OnUnlockButtonClicked);
+            if (openTreeButton != null)
+                openTreeButton.onClick.RemoveListener(ShowTreeView);
+            if (backToLegacyButton != null)
+                backToLegacyButton.onClick.RemoveListener(ShowLegacyView);
 
             listenersBound = false;
         }

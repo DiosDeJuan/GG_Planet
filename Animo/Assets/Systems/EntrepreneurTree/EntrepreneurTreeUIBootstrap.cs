@@ -121,6 +121,8 @@ namespace FLOBUK.StoreSimulator
                     Debug.LogWarning(LogPrefix + "TreeData not assigned in Inspector. Using runtime fallback tree data.");
                 }
             }
+
+            EntrepreneurTreeDefinition.SynchronizeTreeData(manager.treeData);
         }
 
 

@@ -41,6 +41,7 @@ namespace FLOBUK.StoreSimulator
             NewGroup("product_basic_3", "Productos Básicos 3", aliases: new[] { "café", "huevo" }, keywords: new [] { "coffee", "egg" }),
             NewGroup("product_dairy_1", "Lácteos 1", aliases: new[] { "cheddar", "yogurt natural", "mantequilla" }, keywords: new [] { "cheddar", "yogurt", "butter" }),
             NewGroup("product_dairy_2", "Lácteos 2", aliases: new[] { "queso americano", "queso crema" }, keywords: new [] { "american cheese", "cream cheese" }),
+            NewGroup("product_dairy_3", "Lácteos 3", aliases: new[] { "mozzarella", "parmesano" }, keywords: new [] { "mozzarella", "parmesan" }),
             NewGroup("product_spices_1", "Especias 1", aliases: new[] { "pimienta negra", "canela" }, keywords: new [] { "pepper", "cinnamon" }),
             NewGroup("product_fresh_1", "Productos Frescos 1", aliases: new[] { "manzana", "plátano", "jitomate", "cebolla" }, keywords: new [] { "apple", "banana", "tomato", "onion" }),
             NewGroup("product_fresh_2", "Productos Frescos 2", aliases: new[] { "uvas", "zanahorias", "ajo" }, keywords: new [] { "grape", "carrot", "garlic" }),
@@ -48,7 +49,7 @@ namespace FLOBUK.StoreSimulator
             NewGroup("product_protein_1", "Proteína 1", aliases: new[] { "res", "pollo", "cerdo", "pescado" }, keywords: new [] { "beef", "chicken", "pork", "fish" }),
             NewGroup("product_sodas", "Sodas", aliases: new[] { "cola", "cola sin azúcar", "refresco de limón" }, keywords: new [] { "cola", "soda", "lemon soda" }),
             NewGroup("product_luxury_1", "Productos de Lujo 1", aliases: new[] { "trufa", "chocolate importado", "caviar" }, keywords: new [] { "truffle", "imported chocolate", "caviar" }),
-            NewGroup("product_appliances_1", "Electrodomésticos 1", aliases: new[] { "refrigerador", "microondas", "horno", "licuadora" }, keywords: new [] { "fridge", "microwave", "oven", "blender" }),
+            NewGroup("product_appliances_1", "Electrodomésticos 1", aliases: new[] { "refrigerador", "microondas", "horno", "licuadora", "mesa", "mesas" }, keywords: new [] { "fridge", "microwave", "oven", "blender", "table" }),
         };
 
         void Awake()

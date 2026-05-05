@@ -67,6 +67,14 @@ namespace FLOBUK.StoreSimulator
             }
         }
 
+        public bool TryAutomaticArrest()
+        {
+            if (arrestChance <= 0f)
+                return false;
+
+            return UnityEngine.Random.value <= arrestChance;
+        }
+
 
         private void OnSecurityNodeUnlocked(NodeData node)
         {

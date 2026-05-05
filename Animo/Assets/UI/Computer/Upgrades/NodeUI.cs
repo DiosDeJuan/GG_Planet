@@ -37,9 +37,8 @@ namespace FLOBUK.StoreSimulator
                           IPointerClickHandler
     {
         // ── Visual state colours ──────────────────────────────────────────────────
-        private static readonly Color ColorLocked    = new Color(0.35f, 0.35f, 0.35f, 0.70f); // grey
-        private static readonly Color ColorAvailable = new Color(0.95f, 0.80f, 0.10f, 1f); // yellow
-        private static readonly Color ColorUnlocked  = new Color(0.20f, 0.75f, 0.20f, 1f); // green
+        private static readonly Color ColorLocked    = new Color(0.22f, 0.22f, 0.24f, 0.85f);
+        private static readonly Color RootHighlight  = new Color(0.95f, 0.82f, 0.20f, 1f);
 
         // ── Inspector references ──────────────────────────────────────────────────
         [Header("Node Visuals")]
@@ -89,11 +88,11 @@ namespace FLOBUK.StoreSimulator
             if (data == null) return;
 
             if (data.isUnlocked)
-                ApplyState(ColorUnlocked);
+                ApplyState(true, true);
             else if (EntrepreneurTreeManager.CanUnlockNode(data.id))
-                ApplyState(ColorAvailable);
+                ApplyState(false, true);
             else
-                ApplyState(ColorLocked);
+                ApplyState(false, false);
         }
 
 
@@ -137,13 +136,42 @@ namespace FLOBUK.StoreSimulator
 
         // ── Helpers ───────────────────────────────────────────────────────────────
 
-        private void ApplyState(Color color)
+        private void ApplyState(bool unlocked, bool available)
         {
-            if (background) background.color = color;
-            if (titleLabel) titleLabel.color = color == ColorLocked ? new Color(0.85f, 0.85f, 0.85f, 0.85f) : Color.white;
+            Color typeColor = GetTypeColor(data != null ? data.nodeType : TreeNodeType.Product);
+            Color fillColor = ColorLocked;
+            if (unlocked)
+                fillColor = data != null && data.id == EntrepreneurTreeDefinition.DefaultUnlockedNodeId ? RootHighlight : typeColor;
+            else if (available)
+                fillColor = Color.Lerp(typeColor, Color.white, 0.28f);
+
+            if (background) background.color = fillColor;
+            if (titleLabel)
+            {
+                string statusPrefix = unlocked ? "✓ " : available ? "▶ " : "🔒 ";
+                titleLabel.text = (data != null ? statusPrefix + data.title : titleLabel.text);
+                titleLabel.color = unlocked || available ? Color.white : new Color(0.85f, 0.85f, 0.85f, 0.85f);
+            }
 
             // Hide the icon when the node is locked so it stays mysterious.
-            if (iconImage) iconImage.gameObject.SetActive(color != ColorLocked);
+            if (iconImage) iconImage.gameObject.SetActive(unlocked || available);
+        }
+
+        private static Color GetTypeColor(TreeNodeType type)
+        {
+            switch (type)
+            {
+                case TreeNodeType.Product:
+                    return new Color(0.13f, 0.63f, 0.52f, 1f);
+                case TreeNodeType.Employee:
+                    return new Color(0.19f, 0.42f, 0.80f, 1f);
+                case TreeNodeType.Security:
+                    return new Color(0.82f, 0.37f, 0.16f, 1f);
+                case TreeNodeType.Improvement:
+                    return new Color(0.55f, 0.30f, 0.75f, 1f);
+                default:
+                    return new Color(0.45f, 0.45f, 0.45f, 1f);
+            }
         }
 
 

@@ -30,6 +30,16 @@ namespace FLOBUK.StoreSimulator
             return node != null && node.isUnlocked;
         }
 
+        public bool IsProductCategoryUnlocked(string categoryId)
+        {
+            return IsProductGroupUnlocked(categoryId);
+        }
+
+        public bool IsNodeUnlocked(string nodeId)
+        {
+            return EntrepreneurTreeManager.IsNodeUnlocked(nodeId);
+        }
+
 
         public bool IsProductUnlocked(ProductScriptableObject product)
         {
