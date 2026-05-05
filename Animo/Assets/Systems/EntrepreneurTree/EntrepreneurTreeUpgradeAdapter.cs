@@ -18,6 +18,7 @@ namespace FLOBUK.StoreSimulator
         private const float CaffeineMultiplier = 1.10f;
         private const float CharismaticMultiplier = 1.05f;
         private const float MinSelfCheckoutScanDelay = 0.2f;
+        private const float MinSafeSpeedMultiplier = 0.1f;
 
         public static EntrepreneurTreeUpgradeAdapter Instance { get; private set; }
 
@@ -190,6 +191,7 @@ namespace FLOBUK.StoreSimulator
                 ? EntrepreneurEmployeeSystem.Instance.GetCashierSpeedMultiplier()
                 : 1f;
             speedMultiplier *= cashierMultiplier;
+            speedMultiplier = Mathf.Max(MinSafeSpeedMultiplier, speedMultiplier);
             CheckoutObject[] checkoutObjects = FindObjectsOfType<CheckoutObject>(true);
             HashSet<int> liveIds = new HashSet<int>();
             for (int i = 0; i < checkoutObjects.Length; i++)

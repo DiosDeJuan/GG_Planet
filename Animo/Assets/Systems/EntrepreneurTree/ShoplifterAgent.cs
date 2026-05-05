@@ -17,6 +17,8 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class ShoplifterAgent : MonoBehaviour
     {
+        private const float FastThiefSpeedMultiplier = 1.25f;
+
         private readonly List<RobbedItem> reservedItems = new List<RobbedItem>();
         private IRobberyInventoryBridge inventoryBridge;
 
@@ -193,7 +195,9 @@ namespace FLOBUK.StoreSimulator
             if (owner == null)
                 return;
 
-            float multiplier = thiefType == ShoplifterType.Fast || thiefType == ShoplifterType.Special ? 1.25f : 1f;
+            float multiplier = thiefType == ShoplifterType.Fast || thiefType == ShoplifterType.Special
+                ? FastThiefSpeedMultiplier
+                : 1f;
             SetCurrentMovementSpeed(baseSpeed * multiplier);
         }
 

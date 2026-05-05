@@ -9,6 +9,9 @@ namespace FLOBUK.StoreSimulator
     {
         private const string CaptureActionPrimary = "Action";
         private const string CaptureActionMouseFallback = "LeftClick";
+        private const string CaptureHintKey = "E";
+        private const string CaptureHintActionLabel = "Detener ladrón";
+        private const string CaptureHintPrompt = "Presiona E para detener ladrón";
 
         [SerializeField] private float captureRange = 2.25f;
 
@@ -40,8 +43,8 @@ namespace FLOBUK.StoreSimulator
             if (!canInteract || agent == null || !agent.CanBeCaptured())
                 return;
 
-            UIGame.AddAction("E", "Detener ladrón");
-            UIGame.Instance?.ShowMessage("Presiona E para detener ladrón");
+            UIGame.AddAction(CaptureHintKey, CaptureHintActionLabel);
+            UIGame.Instance?.ShowMessage(CaptureHintPrompt);
         }
 
 
@@ -70,7 +73,7 @@ namespace FLOBUK.StoreSimulator
 
         public override void OnLostFocus()
         {
-            UIGame.RemoveAction("E");
+            UIGame.RemoveAction(CaptureHintKey);
         }
     }
 }

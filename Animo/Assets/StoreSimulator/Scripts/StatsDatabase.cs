@@ -204,6 +204,10 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        /// <summary>
+        /// Builds robbery + employee summary from persisted JSON data.
+        /// Used by UIStats scene where runtime gameplay singletons may not be available.
+        /// </summary>
         public static string BuildDailyRobberySummary(JSONNode data)
         {
             if (data == null || data.Count == 0)
