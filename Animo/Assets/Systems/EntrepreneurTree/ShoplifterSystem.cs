@@ -181,6 +181,7 @@ namespace FLOBUK.StoreSimulator
             cumulativeEscapes++;
             if (agent.stolenValue > 0)
                 StoreDatabase.AddRemoveMoney(-agent.stolenValue);
+            // TODO(phase3): Integrar descuento/reposición de inventario por producto en Storage/Placement cuando exista API de retiro seguro.
 
             StatsDatabase.RegisterThiefEscaped(agent.stolenValue, agent.stolenProductsCount);
             UIGame.AddNotification("Un ladrón escapó con " + StoreDatabase.FromLongToStringMoney(agent.stolenValue) + " en productos.",
