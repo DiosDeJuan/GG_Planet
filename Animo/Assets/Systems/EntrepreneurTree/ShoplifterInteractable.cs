@@ -7,8 +7,8 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class ShoplifterInteractable : Interactable
     {
-        private const string CaptureActionPrimary = "LeftClick";
-        private const string CaptureActionSecondary = "Interact";
+        private const string CaptureActionPrimary = "Action";
+        private const string CaptureActionMouseFallback = "LeftClick";
 
         [SerializeField] private float captureRange = 2.25f;
 
@@ -40,8 +40,8 @@ namespace FLOBUK.StoreSimulator
             if (!canInteract || agent == null || !agent.CanBeCaptured())
                 return;
 
-            UIGame.AddAction(CaptureActionPrimary, "Detener ladrón", true);
-            UIGame.Instance?.ShowMessage("Haz clic para detener al ladrón");
+            UIGame.AddAction("E", "Detener ladrón");
+            UIGame.Instance?.ShowMessage("Presiona E para detener ladrón");
         }
 
 
@@ -50,7 +50,7 @@ namespace FLOBUK.StoreSimulator
             if (!canInteract || agent == null || !agent.CanBeCaptured())
                 return false;
 
-            if (actionName != CaptureActionPrimary && actionName != CaptureActionSecondary)
+            if (actionName != CaptureActionPrimary && actionName != CaptureActionMouseFallback)
                 return false;
 
             Transform cameraTransform = PlayerController.GetCameraTransform();
@@ -70,7 +70,7 @@ namespace FLOBUK.StoreSimulator
 
         public override void OnLostFocus()
         {
-            UIGame.RemoveAction(CaptureActionPrimary);
+            UIGame.RemoveAction("E");
         }
     }
 }

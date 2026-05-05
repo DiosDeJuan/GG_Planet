@@ -137,21 +137,34 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             if (securityLevel1Visual == null)
-                securityLevel1Visual = CreatePlaceholder("SecurityCameraPlaceholder", new Vector3(-1.2f, 2f, 0f), new Color(0.95f, 0.45f, 0.1f));
+                securityLevel1Visual = CreatePlaceholder("SecurityCameraPlaceholder", PrimitiveType.Cylinder, new Vector3(-1.2f, 2f, 0f), new Vector3(0.2f, 0.25f, 0.2f), new Color(0.95f, 0.45f, 0.1f));
             if (securityLevel2Visual == null)
-                securityLevel2Visual = CreatePlaceholder("SecurityGuardPlaceholder", new Vector3(0f, 2f, 0f), new Color(0.85f, 0.25f, 0.15f));
+                securityLevel2Visual = CreateGuardPairPlaceholder();
             if (securityLevel3Visual == null)
-                securityLevel3Visual = CreatePlaceholder("SecurityGatePlaceholder", new Vector3(1.2f, 2f, 0f), new Color(1f, 0.2f, 0.2f));
+                securityLevel3Visual = CreatePlaceholder("SecurityGatePlaceholder", PrimitiveType.Cube, new Vector3(1.2f, 2f, 0f), new Vector3(1.2f, 1.8f, 0.2f), new Color(1f, 0.2f, 0.2f));
         }
 
 
-        private GameObject CreatePlaceholder(string name, Vector3 localOffset, Color color)
+        private GameObject CreateGuardPairPlaceholder()
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject root = new GameObject("SecurityGuardsPlaceholder");
+            root.transform.SetParent(transform, false);
+            root.transform.localPosition = new Vector3(0f, 0f, 0f);
+
+            CreatePlaceholder("SecurityGuard_A", PrimitiveType.Capsule, new Vector3(-0.35f, 1f, 0f), new Vector3(0.35f, 1f, 0.35f), new Color(0.85f, 0.25f, 0.15f), root.transform);
+            CreatePlaceholder("SecurityGuard_B", PrimitiveType.Capsule, new Vector3(0.35f, 1f, 0f), new Vector3(0.35f, 1f, 0.35f), new Color(0.85f, 0.25f, 0.15f), root.transform);
+            root.SetActive(false);
+            return root;
+        }
+
+
+        private GameObject CreatePlaceholder(string name, PrimitiveType primitive, Vector3 localOffset, Vector3 localScale, Color color, Transform parentOverride = null)
+        {
+            GameObject go = GameObject.CreatePrimitive(primitive);
             go.name = name;
-            go.transform.SetParent(transform, false);
+            go.transform.SetParent(parentOverride != null ? parentOverride : transform, false);
             go.transform.localPosition = localOffset;
-            go.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+            go.transform.localScale = localScale;
 
             Collider col = go.GetComponent<Collider>();
             if (col != null)

@@ -239,7 +239,6 @@ namespace FLOBUK.StoreSimulator
 
         public float GetRestockerSpeedMultiplier()
         {
-            // TODO(phase3): Conectar este multiplicador con una IA real de surtidores cuando exista sistema de rutas/reabasto.
             int restockers = GetRoleCount(EmployeeRole.Restocker);
             return 1f + Mathf.Clamp(restockers * 0.03f, 0f, 0.45f);
         }

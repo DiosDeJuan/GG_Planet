@@ -17,11 +17,15 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class ShoplifterAgent : MonoBehaviour
     {
+        private readonly List<RobbedItem> reservedItems = new List<RobbedItem>();
+        private IRobberyInventoryBridge inventoryBridge;
+
         public ShoplifterType thiefType { get; private set; }
         public bool isEscaping { get; private set; }
         public bool isResolved { get; private set; }
         public long stolenValue { get; private set; }
         public int stolenProductsCount { get; private set; }
+        public IReadOnlyList<RobbedItem> stolenItems => reservedItems;
 
         private Customer owner;
         private ShoplifterSystem system;
@@ -38,6 +42,7 @@ namespace FLOBUK.StoreSimulator
             system = sourceSystem;
             owner = customer;
             thiefType = type;
+            inventoryBridge = new EntrepreneurTreeRobberyInventoryBridge();
             interactable = GetComponent<ShoplifterInteractable>();
             if (interactable == null)
                 interactable = gameObject.AddComponent<ShoplifterInteractable>();
@@ -105,6 +110,26 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        public bool TryRestoreInventory(out int restoredCount, out long restoredValue)
+        {
+            restoredCount = 0;
+            restoredValue = 0;
+            if (inventoryBridge == null || reservedItems.Count == 0)
+                return false;
+
+            return inventoryBridge.RestoreStolenItems(reservedItems, out restoredCount, out restoredValue);
+        }
+
+
+        public bool ConfirmInventoryLoss()
+        {
+            if (inventoryBridge == null || reservedItems.Count == 0)
+                return false;
+
+            return inventoryBridge.ConfirmStolenItems(reservedItems);
+        }
+
+
         private void Resolve(bool autoArrest, bool escaped)
         {
             isResolved = true;
@@ -131,36 +156,13 @@ namespace FLOBUK.StoreSimulator
         private void CalculateStolenValues(CustomerCart cart)
         {
             long target = system.GetTargetStealValue(thiefType);
-            long total = 0;
-            int products = 0;
+            reservedItems.Clear();
+            long total;
+            int products;
+            bool hasReserved = inventoryBridge != null &&
+                               inventoryBridge.TryReserveStolenItems(cart, thiefType, target, reservedItems, out total, out products);
 
-            if (cart != null && cart.items != null && cart.items.Count > 0)
-            {
-                List<CustomerBagItem> bagItems = new List<CustomerBagItem>(cart.items);
-                if (thiefType == ShoplifterType.Expert || thiefType == ShoplifterType.Special)
-                    bagItems.Sort((a, b) => ((b.fixedPrice * b.count).CompareTo(a.fixedPrice * a.count)));
-
-                for (int i = 0; i < bagItems.Count; i++)
-                {
-                    CustomerBagItem item = bagItems[i];
-                    if (item == null || item.product == null)
-                        continue;
-
-                    long unitPrice = item.fixedPrice > 0 ? item.fixedPrice : item.product.storePrice;
-                    if (unitPrice <= 0)
-                        unitPrice = item.product.buyPrice;
-
-                    int count = Mathf.Max(1, item.count);
-                    long value = unitPrice * count;
-                    total += value;
-                    products += count;
-
-                    if (total >= target)
-                        break;
-                }
-            }
-
-            if (total <= 0)
+            if (!hasReserved || total <= 0)
             {
                 total = target;
                 products = Mathf.Max(1, Mathf.FloorToInt(total / 1000f));

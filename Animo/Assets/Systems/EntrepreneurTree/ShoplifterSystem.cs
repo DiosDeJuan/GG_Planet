@@ -139,7 +139,7 @@ namespace FLOBUK.StoreSimulator
             if (agent == null)
                 return;
 
-            StatsDatabase.RegisterThiefDetected(agent.stolenValue, agent.stolenProductsCount);
+            StatsDatabase.RegisterThiefDetected(agent.stolenValue, agent.stolenProductsCount, agent.stolenItems);
             UIGame.AddNotification("¡Ladrón detectado! Valor objetivo: " + StoreDatabase.FromLongToStringMoney(agent.stolenValue),
                 otherColor: new Color(1f, 0.28f, 0.18f));
         }
@@ -151,9 +151,20 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             cumulativeAutoCaptures++;
-            StatsDatabase.RegisterThiefAutomaticArrest(agent.stolenProductsCount);
+            int restoredCount;
+            long restoredValue;
+            bool restored = agent.TryRestoreInventory(out restoredCount, out restoredValue);
+            if (!restored)
+            {
+                restoredCount = agent.stolenProductsCount;
+                restoredValue = agent.stolenValue;
+            }
+
+            StatsDatabase.RegisterThiefAutomaticArrest(restoredCount, restoredValue, agent.stolenItems);
             AchievementSystem.RegisterThiefCaptured();
             UIGame.AddNotification("¡Ladrón arrestado automáticamente!", otherColor: new Color(0.2f, 0.8f, 0.24f));
+            if (restoredCount > 0)
+                UIGame.AddNotification("Productos recuperados: " + restoredCount, otherColor: new Color(0.25f, 0.9f, 0.35f));
         }
 
 
@@ -163,13 +174,24 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             cumulativeManualCaptures++;
+            int restoredCount;
+            long restoredValue;
+            bool restored = agent.TryRestoreInventory(out restoredCount, out restoredValue);
+            if (!restored)
+            {
+                restoredCount = agent.stolenProductsCount;
+                restoredValue = agent.stolenValue;
+            }
+
             long reward = (long)Mathf.Floor(agent.stolenValue * manualCaptureRewardFraction);
             if (reward > 0)
                 StoreDatabase.AddRemoveMoney(reward);
 
-            StatsDatabase.RegisterThiefManualArrest(agent.stolenProductsCount);
+            StatsDatabase.RegisterThiefManualArrest(restoredCount, restoredValue, agent.stolenItems);
             AchievementSystem.RegisterThiefCaptured();
             UIGame.AddNotification("¡Ladrón detenido por el jugador!", otherColor: new Color(0.2f, 0.82f, 0.28f));
+            if (restoredCount > 0)
+                UIGame.AddNotification("Productos recuperados: " + restoredCount, otherColor: new Color(0.25f, 0.9f, 0.35f));
         }
 
 
@@ -179,11 +201,11 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             cumulativeEscapes++;
+            agent.ConfirmInventoryLoss();
             if (agent.stolenValue > 0)
                 StoreDatabase.AddRemoveMoney(-agent.stolenValue);
-            // TODO(phase3): Integrar descuento/reposición de inventario por producto en Storage/Placement cuando exista API de retiro seguro.
 
-            StatsDatabase.RegisterThiefEscaped(agent.stolenValue, agent.stolenProductsCount);
+            StatsDatabase.RegisterThiefEscaped(agent.stolenValue, agent.stolenProductsCount, agent.stolenItems);
             UIGame.AddNotification("Un ladrón escapó con " + StoreDatabase.FromLongToStringMoney(agent.stolenValue) + " en productos.",
                 otherColor: new Color(0.75f, 0.15f, 0.12f));
         }
