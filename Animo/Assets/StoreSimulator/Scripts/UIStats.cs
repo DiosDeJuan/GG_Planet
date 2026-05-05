@@ -147,7 +147,7 @@ namespace FLOBUK.StoreSimulator
             if (robberySummary == null)
                 robberySummary = FindOrCreateRobberySummaryLabel();
             if (robberySummary != null)
-                robberySummary.text = StatsDatabase.GetDailyRobberySummary();
+                robberySummary.text = StatsDatabase.BuildDailyRobberySummary(dailyData);
 
             StartCoroutine(AnimateActive());
         }

@@ -58,6 +58,8 @@ namespace FLOBUK.StoreSimulator
         public int employeesHired { get; private set; }
         public int employeesCashier { get; private set; }
         public int employeesRestocker { get; private set; }
+        public int securityLevelSnapshot { get; private set; }
+        public float securityChanceSnapshot { get; private set; }
 
         private readonly Dictionary<string, int> robbedProductsByName = new Dictionary<string, int>();
         private readonly Dictionary<string, int> recoveredProductsByName = new Dictionary<string, int>();
@@ -87,6 +89,7 @@ namespace FLOBUK.StoreSimulator
             robbedProductsByName.Clear();
             recoveredProductsByName.Clear();
             RefreshEmployeeSnapshot();
+            RefreshSecuritySnapshot();
         }
 
 
@@ -168,6 +171,7 @@ namespace FLOBUK.StoreSimulator
                 return string.Empty;
 
             Instance.RefreshEmployeeSnapshot();
+            Instance.RefreshSecuritySnapshot();
 
             float effectiveness = 0f;
             int handled = Instance.thievesAutoArrested + Instance.thievesManualArrested;
@@ -177,12 +181,8 @@ namespace FLOBUK.StoreSimulator
             if (denominator > 0)
                 effectiveness = ((float)handled / denominator) * 100f;
 
-            int securityLevel = EntrepreneurTreeGameplayBridge.Instance != null
-                ? EntrepreneurTreeGameplayBridge.Instance.GetSecurityLevel()
-                : 0;
-            float securityChance = EntrepreneurTreeGameplayBridge.Instance != null
-                ? EntrepreneurTreeGameplayBridge.Instance.GetSecurityArrestChance() * 100f
-                : 0f;
+            int securityLevel = Instance.securityLevelSnapshot;
+            float securityChance = Instance.securityChanceSnapshot;
 
             return "Robos del día:\n" +
                    "- Ladrones aparecidos: " + Instance.thievesAppeared + "\n" +
@@ -201,6 +201,51 @@ namespace FLOBUK.StoreSimulator
                    "- Contratados: " + Instance.employeesHired + "/" + EntrepreneurEmployeeSystem.MaxEmployees + "\n" +
                    "- Cajeros: " + Instance.employeesCashier + "\n" +
                    "- Surtidores: " + Instance.employeesRestocker;
+        }
+
+
+        public static string BuildDailyRobberySummary(JSONNode data)
+        {
+            if (data == null || data.Count == 0)
+                return "Robos del día:\n- Sin datos disponibles.";
+
+            int thievesAppearedData = data["thievesAppeared"].AsInt;
+            int thievesDetectedData = data["thievesDetected"].AsInt;
+            int thievesAutoData = data["thievesAutoArrested"].AsInt;
+            int thievesManualData = data["thievesManualArrested"].AsInt;
+            int thievesEscapedData = data["thievesEscaped"].AsInt;
+            long robberyLostData = data["robberyMoneyLost"].AsLong;
+            long recoveredValueData = data["robberyValueRecovered"].AsLong;
+            int robbedProductsData = data["robbedProducts"].AsInt;
+            int recoveredProductsData = data["recoveredProducts"].AsInt;
+            int employeesHiredData = data["employeesHired"].AsInt;
+            int employeesCashierData = data["employeesCashier"].AsInt;
+            int employeesRestockerData = data["employeesRestocker"].AsInt;
+            int securityLevelData = data["securityLevelSnapshot"].AsInt;
+            float securityChanceData = data["securityChanceSnapshot"].AsFloat;
+
+            int handled = thievesAutoData + thievesManualData;
+            int denominator = handled + thievesEscapedData;
+            if (denominator <= 0)
+                denominator = thievesDetectedData;
+            float effectiveness = denominator > 0 ? (handled / (float)denominator) * 100f : 0f;
+
+            return "Robos del día:\n" +
+                   "- Ladrones aparecidos: " + thievesAppearedData + "\n" +
+                   "- Ladrones detectados: " + thievesDetectedData + "\n" +
+                   "- Arrestos automáticos: " + thievesAutoData + "\n" +
+                   "- Detenidos manualmente: " + thievesManualData + "\n" +
+                   "- Escaparon: " + thievesEscapedData + "\n" +
+                   "- Pérdida total: " + StoreDatabase.FromLongToStringMoney(robberyLostData) + "\n" +
+                   "- Valor recuperado: " + StoreDatabase.FromLongToStringMoney(recoveredValueData) + "\n" +
+                   "- Productos robados: " + robbedProductsData + "\n" +
+                   "- Productos recuperados: " + recoveredProductsData + "\n" +
+                   "- Efectividad seguridad: " + effectiveness.ToString("0") + "%\n" +
+                   "- Seguridad actual: Nivel " + securityLevelData + " / " + securityChanceData.ToString("0") + "%\n\n" +
+                   "Empleados:\n" +
+                   "- Contratados: " + employeesHiredData + "/" + EntrepreneurEmployeeSystem.MaxEmployees + "\n" +
+                   "- Cajeros: " + employeesCashierData + "\n" +
+                   "- Surtidores: " + employeesRestockerData;
         }
 
 
@@ -228,6 +273,8 @@ namespace FLOBUK.StoreSimulator
             data["employeesHired"] = employeesHired;
             data["employeesCashier"] = employeesCashier;
             data["employeesRestocker"] = employeesRestocker;
+            data["securityLevelSnapshot"] = securityLevelSnapshot;
+            data["securityChanceSnapshot"] = securityChanceSnapshot;
             data["robbedProductsByName"] = SerializeDictionary(robbedProductsByName);
             data["recoveredProductsByName"] = SerializeDictionary(recoveredProductsByName);
             
@@ -260,6 +307,8 @@ namespace FLOBUK.StoreSimulator
             employeesHired = data["employeesHired"].AsInt;
             employeesCashier = data["employeesCashier"].AsInt;
             employeesRestocker = data["employeesRestocker"].AsInt;
+            securityLevelSnapshot = data["securityLevelSnapshot"].AsInt;
+            securityChanceSnapshot = data["securityChanceSnapshot"].AsFloat;
             DeserializeDictionary(data["robbedProductsByName"].AsArray, robbedProductsByName);
             DeserializeDictionary(data["recoveredProductsByName"].AsArray, recoveredProductsByName);
         }
@@ -276,6 +325,16 @@ namespace FLOBUK.StoreSimulator
             employeesHired = EntrepreneurEmployeeSystem.Instance.GetHiredCount();
             employeesCashier = EntrepreneurEmployeeSystem.Instance.GetRoleCount(EmployeeRole.Cashier);
             employeesRestocker = EntrepreneurEmployeeSystem.Instance.GetRoleCount(EmployeeRole.Restocker);
+        }
+
+
+        private void RefreshSecuritySnapshot()
+        {
+            if (EntrepreneurTreeGameplayBridge.Instance == null)
+                return;
+
+            securityLevelSnapshot = EntrepreneurTreeGameplayBridge.Instance.GetSecurityLevel();
+            securityChanceSnapshot = EntrepreneurTreeGameplayBridge.Instance.GetSecurityArrestChance() * 100f;
         }
 
 
