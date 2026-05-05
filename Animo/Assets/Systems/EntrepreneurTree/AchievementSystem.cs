@@ -47,6 +47,9 @@ namespace FLOBUK.StoreSimulator
         GoldenEgg,           // Hidden: earn $50,000 in a single day
         TotalOptimization,   // Hidden: unlock every improvement node
         RedSeguridad,        // Unlock security levels 1, 2 and 3
+        Batman,              // Detain/capture first thief
+        FirstEmployeeHiredReal, // First employee hired from employee app
+        MaxEmployment,       // 18 employees hired and assigned
     }
 
 
@@ -148,6 +151,42 @@ namespace FLOBUK.StoreSimulator
         public static bool IsCompleted(AchievementId achievement)
         {
             return Instance != null && Instance.completedAchievements.Contains(achievement);
+        }
+
+
+        public static void RegisterThiefCaptured()
+        {
+            Complete(AchievementId.Batman);
+        }
+
+
+        public static void RegisterSecurityCompleted()
+        {
+            Complete(AchievementId.RedSeguridad);
+        }
+
+
+        public static void RegisterEmployeeHired(int hiredCount, int assignedCount, int maxEmployees)
+        {
+            if (hiredCount >= 1)
+                Complete(AchievementId.FirstEmployeeHiredReal);
+
+            if (hiredCount >= maxEmployees && assignedCount >= maxEmployees)
+                Complete(AchievementId.MaxEmployment);
+        }
+
+
+        public static void RegisterAllEmployeesAssigned(int hiredCount, int assignedCount, int maxEmployees)
+        {
+            if (hiredCount >= maxEmployees && assignedCount >= maxEmployees)
+                Complete(AchievementId.MaxEmployment);
+        }
+
+
+        public static void RegisterAllUpgradesUnlocked(bool allUnlocked)
+        {
+            if (allUnlocked)
+                Complete(AchievementId.TotalOptimization);
         }
 
 
@@ -262,7 +301,7 @@ namespace FLOBUK.StoreSimulator
             if (EntrepreneurTreeManager.IsNodeUnlocked("security_1") &&
                 EntrepreneurTreeManager.IsNodeUnlocked("security_2") &&
                 EntrepreneurTreeManager.IsNodeUnlocked("security_3"))
-                Complete(AchievementId.RedSeguridad);
+                RegisterSecurityCompleted();
         }
 
 

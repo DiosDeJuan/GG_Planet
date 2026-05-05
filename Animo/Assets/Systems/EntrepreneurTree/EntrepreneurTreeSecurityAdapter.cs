@@ -16,6 +16,8 @@ namespace FLOBUK.StoreSimulator
         public GameObject securityLevel1Visual;
         public GameObject securityLevel2Visual;
         public GameObject securityLevel3Visual;
+        [Tooltip("When visual references are missing, create simple runtime placeholders as safe fallback.")]
+        public bool createPlaceholdersWhenMissing = true;
 
         private int securityLevel;
         private float arrestChance;
@@ -115,14 +117,52 @@ namespace FLOBUK.StoreSimulator
             }
 
             ApplyVisuals();
+            if (securityLevel >= 3)
+                AchievementSystem.RegisterSecurityCompleted();
         }
 
 
         private void ApplyVisuals()
         {
+            EnsureVisualPlaceholders();
             if (securityLevel1Visual != null) securityLevel1Visual.SetActive(securityLevel >= 1);
             if (securityLevel2Visual != null) securityLevel2Visual.SetActive(securityLevel >= 2);
             if (securityLevel3Visual != null) securityLevel3Visual.SetActive(securityLevel >= 3);
+        }
+
+
+        private void EnsureVisualPlaceholders()
+        {
+            if (!createPlaceholdersWhenMissing)
+                return;
+
+            if (securityLevel1Visual == null)
+                securityLevel1Visual = CreatePlaceholder("SecurityCameraPlaceholder", new Vector3(-1.2f, 2f, 0f), new Color(0.95f, 0.45f, 0.1f));
+            if (securityLevel2Visual == null)
+                securityLevel2Visual = CreatePlaceholder("SecurityGuardPlaceholder", new Vector3(0f, 2f, 0f), new Color(0.85f, 0.25f, 0.15f));
+            if (securityLevel3Visual == null)
+                securityLevel3Visual = CreatePlaceholder("SecurityGatePlaceholder", new Vector3(1.2f, 2f, 0f), new Color(1f, 0.2f, 0.2f));
+        }
+
+
+        private GameObject CreatePlaceholder(string name, Vector3 localOffset, Color color)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(transform, false);
+            go.transform.localPosition = localOffset;
+            go.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+
+            Collider col = go.GetComponent<Collider>();
+            if (col != null)
+                Destroy(col);
+
+            Renderer renderer = go.GetComponent<Renderer>();
+            if (renderer != null && renderer.material != null)
+                renderer.material.color = color;
+
+            go.SetActive(false);
+            return go;
         }
 
 

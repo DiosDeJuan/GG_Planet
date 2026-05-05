@@ -86,6 +86,11 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public TMP_Text xpLevel;
 
+        /// <summary>
+        /// Optional label for daily robbery summary.
+        /// </summary>
+        public TMP_Text robberySummary;
+
 
         //initialize references
         void Awake()
@@ -138,6 +143,11 @@ namespace FLOBUK.StoreSimulator
             JSONNode storeData = SaveGameSystem.ReadComponentData("StoreDatabase");
             moneyCurrent.text = StoreDatabase.FromLongToStringMoney(storeData["currentMoney"].AsLong);
             xpLevel.text = storeData["currentLevel"].Value;
+
+            if (robberySummary == null)
+                robberySummary = FindOrCreateRobberySummaryLabel();
+            if (robberySummary != null)
+                robberySummary.text = StatsDatabase.GetDailyRobberySummary();
 
             StartCoroutine(AnimateActive());
         }
@@ -203,6 +213,30 @@ namespace FLOBUK.StoreSimulator
 
             yield return new WaitForSeconds(2);
             continueButton.SetActive(true);
+        }
+
+
+        private TMP_Text FindOrCreateRobberySummaryLabel()
+        {
+            Transform existing = transform.Find("RobberySummary");
+            if (existing != null)
+                return existing.GetComponent<TMP_Text>();
+
+            GameObject go = new GameObject("RobberySummary", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            go.transform.SetParent(transform, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(1f, 0f);
+            rt.anchoredPosition = new Vector2(-40f, 40f);
+            rt.sizeDelta = new Vector2(420f, 240f);
+
+            TextMeshProUGUI text = go.GetComponent<TextMeshProUGUI>();
+            text.fontSize = 20;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            text.color = new Color(0.92f, 0.93f, 0.96f, 1f);
+            text.enableWordWrapping = true;
+            return text;
         }
     }
 }

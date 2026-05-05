@@ -58,6 +58,21 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        public bool IsEmployeeHired(int employeeNumber)
+        {
+            return EntrepreneurEmployeeSystem.Instance != null &&
+                   EntrepreneurEmployeeSystem.Instance.IsEmployeeHired(employeeNumber);
+        }
+
+
+        public EmployeeRole GetEmployeeRole(int employeeNumber)
+        {
+            return EntrepreneurEmployeeSystem.Instance != null
+                ? EntrepreneurEmployeeSystem.Instance.GetEmployeeRole(employeeNumber)
+                : EmployeeRole.None;
+        }
+
+
         public int GetSecurityLevel()
         {
             return EntrepreneurTreeSecurityAdapter.Instance != null
@@ -71,6 +86,13 @@ namespace FLOBUK.StoreSimulator
             return EntrepreneurTreeSecurityAdapter.Instance != null
                 ? EntrepreneurTreeSecurityAdapter.Instance.GetArrestChance()
                 : 0f;
+        }
+
+
+        public bool TryAutomaticSecurityArrest()
+        {
+            return EntrepreneurTreeSecurityAdapter.Instance != null &&
+                   EntrepreneurTreeSecurityAdapter.Instance.TryAutomaticArrest();
         }
 
 

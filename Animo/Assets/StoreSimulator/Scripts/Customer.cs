@@ -71,6 +71,7 @@ namespace FLOBUK.StoreSimulator
         {
             spawnPosition = transform.position;
             payCash = Random.Range(100, 0) <= CustomerSystem.Instance.payCashRate;
+            ShoplifterSystem.Instance?.RegisterCustomer(this);
 
             agent.SetDestination(StoreDatabase.Instance.storeEntry.position);
         }
@@ -255,6 +256,7 @@ namespace FLOBUK.StoreSimulator
                 
                 //returned to spawn, despawn
                 case CustomerStep.GoHome:
+                    ShoplifterSystem.Instance?.OnCustomerReachedExit(this);
                     Destroy(gameObject);
                     break;
             }
@@ -329,6 +331,9 @@ namespace FLOBUK.StoreSimulator
             //all items processed or bag full, go to random CashDesk
             if (!cart.ShouldCollect() && cart.GetItemsCount() > 0 || cart.GetMissingCount() == 0)
             {
+                if (ShoplifterSystem.Instance != null && ShoplifterSystem.Instance.TryBeginTheft(this, cart))
+                    return;
+
                 currentStep = CustomerStep.Queue;
                 checkout = StoreDatabase.GetRandomCheckout();
                 //check if there is a checkout in the scene

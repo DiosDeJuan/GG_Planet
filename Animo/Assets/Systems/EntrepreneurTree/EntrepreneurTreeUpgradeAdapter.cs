@@ -40,6 +40,8 @@ namespace FLOBUK.StoreSimulator
 
             Instance = this;
             EntrepreneurTreeManager.onUpgradeNodeUnlocked += OnUpgradeNodeUnlocked;
+            EntrepreneurEmployeeSystem.onEmployeeRoleChanged += OnEmployeeRoleChanged;
+            EntrepreneurEmployeeSystem.onEmployeeHired += OnEmployeeHired;
             SaveGameSystem.dataLoadEvent += OnDataLoaded;
             StoreDatabase.onMoneyUpdate += OnMoneyUpdate;
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -127,6 +129,7 @@ namespace FLOBUK.StoreSimulator
             hasCaffeine = IsNodeUnlocked(CaffeineId);
             hasCharismatic = IsNodeUnlocked(CharismaticId);
             ApplyRuntimeSpeedEffects();
+            AchievementSystem.RegisterAllUpgradesUnlocked(hasCaffeine && hasCharismatic);
         }
 
 
@@ -169,9 +172,23 @@ namespace FLOBUK.StoreSimulator
             ApplyRuntimeSpeedEffects();
         }
 
+        private void OnEmployeeRoleChanged(int employeeId, EmployeeRole role)
+        {
+            ApplyRuntimeSpeedEffects();
+        }
+
+        private void OnEmployeeHired(int employeeId)
+        {
+            ApplyRuntimeSpeedEffects();
+        }
+
         private void ApplyRuntimeSpeedEffects()
         {
             float speedMultiplier = GetEmployeeSpeedMultiplier();
+            float cashierMultiplier = EntrepreneurEmployeeSystem.Instance != null
+                ? EntrepreneurEmployeeSystem.Instance.GetCashierSpeedMultiplier()
+                : 1f;
+            speedMultiplier *= cashierMultiplier;
             CheckoutObject[] checkoutObjects = FindObjectsOfType<CheckoutObject>(true);
             HashSet<int> liveIds = new HashSet<int>();
             for (int i = 0; i < checkoutObjects.Length; i++)
@@ -220,6 +237,8 @@ namespace FLOBUK.StoreSimulator
         void OnDestroy()
         {
             EntrepreneurTreeManager.onUpgradeNodeUnlocked -= OnUpgradeNodeUnlocked;
+            EntrepreneurEmployeeSystem.onEmployeeRoleChanged -= OnEmployeeRoleChanged;
+            EntrepreneurEmployeeSystem.onEmployeeHired -= OnEmployeeHired;
             SaveGameSystem.dataLoadEvent -= OnDataLoaded;
             StoreDatabase.onMoneyUpdate -= OnMoneyUpdate;
             SceneManager.sceneLoaded -= OnSceneLoaded;

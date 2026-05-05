@@ -44,6 +44,15 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public int customersUnhappy { get; private set; }
 
+        public int thievesAppeared { get; private set; }
+        public int thievesDetected { get; private set; }
+        public int thievesAutoArrested { get; private set; }
+        public int thievesManualArrested { get; private set; }
+        public int thievesEscaped { get; private set; }
+        public long robberyMoneyLost { get; private set; }
+        public int robbedProducts { get; private set; }
+        public int recoveredProducts { get; private set; }
+
 
         //initialize references
         void Awake()
@@ -63,6 +72,9 @@ namespace FLOBUK.StoreSimulator
             moneyEarned = moneySpent = 0;
             xpEarned = 0;
             customersHappy = customersUnhappy = 0;
+            thievesAppeared = thievesDetected = thievesAutoArrested = thievesManualArrested = thievesEscaped = 0;
+            robberyMoneyLost = 0;
+            robbedProducts = recoveredProducts = 0;
         }
 
 
@@ -92,6 +104,75 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        public static void RegisterThiefAppeared()
+        {
+            if (Instance == null) return;
+            Instance.thievesAppeared++;
+        }
+
+
+        public static void RegisterThiefDetected(long stolenValue, int productCount)
+        {
+            if (Instance == null) return;
+            Instance.thievesDetected++;
+            Instance.robbedProducts += Mathf.Max(0, productCount);
+        }
+
+
+        public static void RegisterThiefAutomaticArrest(int recoveredCount)
+        {
+            if (Instance == null) return;
+            Instance.thievesAutoArrested++;
+            Instance.recoveredProducts += Mathf.Max(0, recoveredCount);
+        }
+
+
+        public static void RegisterThiefManualArrest(int recoveredCount)
+        {
+            if (Instance == null) return;
+            Instance.thievesManualArrested++;
+            Instance.recoveredProducts += Mathf.Max(0, recoveredCount);
+        }
+
+
+        public static void RegisterThiefEscaped(long moneyLost, int productCount)
+        {
+            if (Instance == null) return;
+            Instance.thievesEscaped++;
+            Instance.robberyMoneyLost += Mathf.Max(0, moneyLost);
+        }
+
+
+        public static string GetDailyRobberySummary()
+        {
+            if (Instance == null)
+                return string.Empty;
+
+            float effectiveness = 0f;
+            int processed = Instance.thievesAutoArrested + Instance.thievesManualArrested + Instance.thievesEscaped;
+            if (processed > 0)
+                effectiveness = ((float)(Instance.thievesAutoArrested + Instance.thievesManualArrested) / processed) * 100f;
+
+            int securityLevel = EntrepreneurTreeGameplayBridge.Instance != null
+                ? EntrepreneurTreeGameplayBridge.Instance.GetSecurityLevel()
+                : 0;
+            float securityChance = EntrepreneurTreeGameplayBridge.Instance != null
+                ? EntrepreneurTreeGameplayBridge.Instance.GetSecurityArrestChance() * 100f
+                : 0f;
+
+            return "Robos del día:\n" +
+                   "- Ladrones detectados: " + Instance.thievesDetected + "\n" +
+                   "- Arrestos automáticos: " + Instance.thievesAutoArrested + "\n" +
+                   "- Detenidos manualmente: " + Instance.thievesManualArrested + "\n" +
+                   "- Escaparon: " + Instance.thievesEscaped + "\n" +
+                   "- Pérdida total: " + StoreDatabase.FromLongToStringMoney(Instance.robberyMoneyLost) + "\n" +
+                   "- Productos robados: " + Instance.robbedProducts + "\n" +
+                   "- Productos recuperados: " + Instance.recoveredProducts + "\n" +
+                   "- Efectividad seguridad: " + effectiveness.ToString("0") + "%\n" +
+                   "- Seguridad actual: Nivel " + securityLevel + " / " + securityChance.ToString("0") + "%";
+        }
+
+
         /// <summary>
         /// Reads component data that should be persisted and returns it as a JSONNode. 
         /// </summary>
@@ -104,6 +185,14 @@ namespace FLOBUK.StoreSimulator
             data["xpEarned"] = xpEarned;
             data["customersHappy"] = customersHappy;
             data["customersUnhappy"] = customersUnhappy;
+            data["thievesAppeared"] = thievesAppeared;
+            data["thievesDetected"] = thievesDetected;
+            data["thievesAutoArrested"] = thievesAutoArrested;
+            data["thievesManualArrested"] = thievesManualArrested;
+            data["thievesEscaped"] = thievesEscaped;
+            data["robberyMoneyLost"] = robberyMoneyLost;
+            data["robbedProducts"] = robbedProducts;
+            data["recoveredProducts"] = recoveredProducts;
             
             return data;
         }
@@ -122,6 +211,14 @@ namespace FLOBUK.StoreSimulator
             xpEarned = data["xpEarned"].AsLong;
             customersHappy = data["customersHappy"].AsInt;
             customersUnhappy = data["customersUnhappy"].AsInt;
+            thievesAppeared = data["thievesAppeared"].AsInt;
+            thievesDetected = data["thievesDetected"].AsInt;
+            thievesAutoArrested = data["thievesAutoArrested"].AsInt;
+            thievesManualArrested = data["thievesManualArrested"].AsInt;
+            thievesEscaped = data["thievesEscaped"].AsInt;
+            robberyMoneyLost = data["robberyMoneyLost"].AsLong;
+            robbedProducts = data["robbedProducts"].AsInt;
+            recoveredProducts = data["recoveredProducts"].AsInt;
         }
 
 
