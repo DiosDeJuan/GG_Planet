@@ -150,7 +150,9 @@ namespace FLOBUK.StoreSimulator
 
             float effectiveness = 0f;
             int handled = Instance.thievesAutoArrested + Instance.thievesManualArrested;
-            int denominator = Mathf.Max(Instance.thievesDetected, handled + Instance.thievesEscaped);
+            int denominator = handled + Instance.thievesEscaped;
+            if (denominator <= 0)
+                denominator = Instance.thievesDetected;
             if (denominator > 0)
                 effectiveness = ((float)handled / denominator) * 100f;
 

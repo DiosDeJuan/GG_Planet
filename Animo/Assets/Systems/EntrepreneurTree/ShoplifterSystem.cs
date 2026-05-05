@@ -195,12 +195,17 @@ namespace FLOBUK.StoreSimulator
                 if (valueRanges[i] == null || valueRanges[i].type != type)
                     continue;
 
-                long min = Mathf.Max(0, (int)valueRanges[i].minValue);
-                long max = Mathf.Max(min, (int)valueRanges[i].maxValue);
+                long min = Math.Max(0L, valueRanges[i].minValue);
+                long max = Math.Max(min, valueRanges[i].maxValue);
                 if (max <= min)
                     return min;
 
-                return UnityEngine.Random.Range((int)min, (int)max + 1);
+                int minInt = (int)Mathf.Clamp(min, 0, int.MaxValue);
+                int maxInt = (int)Mathf.Clamp(max, 0, int.MaxValue);
+                if (maxInt <= minInt)
+                    return minInt;
+
+                return UnityEngine.Random.Range(minInt, maxInt + 1);
             }
 
             return 10000;
