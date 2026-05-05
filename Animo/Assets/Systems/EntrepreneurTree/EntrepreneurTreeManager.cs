@@ -327,6 +327,9 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        /// <summary>
+        /// Public query API for external systems (UI, adapters, gameplay bridge) to check node unlock state.
+        /// </summary>
         public static bool IsNodeUnlocked(string nodeId)
         {
             return Instance != null && Instance.IsNodeUnlockedInternal(nodeId);

@@ -149,9 +149,10 @@ namespace FLOBUK.StoreSimulator
                 return string.Empty;
 
             float effectiveness = 0f;
-            int processed = Instance.thievesAutoArrested + Instance.thievesManualArrested + Instance.thievesEscaped;
-            if (processed > 0)
-                effectiveness = ((float)(Instance.thievesAutoArrested + Instance.thievesManualArrested) / processed) * 100f;
+            int handled = Instance.thievesAutoArrested + Instance.thievesManualArrested;
+            int denominator = Mathf.Max(Instance.thievesDetected, handled + Instance.thievesEscaped);
+            if (denominator > 0)
+                effectiveness = ((float)handled / denominator) * 100f;
 
             int securityLevel = EntrepreneurTreeGameplayBridge.Instance != null
                 ? EntrepreneurTreeGameplayBridge.Instance.GetSecurityLevel()

@@ -38,7 +38,7 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             UIGame.AddAction("LeftClick", "Detener ladrón", true);
-            UIGame.Instance?.ShowMessage("Presiona E para detener ladrón");
+            UIGame.Instance?.ShowMessage("Haz clic para detener al ladrón");
         }
 
 

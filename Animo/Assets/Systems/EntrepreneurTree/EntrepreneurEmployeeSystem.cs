@@ -332,10 +332,17 @@ namespace FLOBUK.StoreSimulator
             if (employeeId < 1 || employeeId > MaxEmployees)
                 return defaultHireCost;
 
-            if (employeeHireCosts == null || employeeHireCosts.Count < employeeId)
+            int index = GetHireCostIndex(employeeId);
+            if (employeeHireCosts == null || employeeHireCosts.Count <= index)
                 return defaultHireCost;
 
-            return Math.Max(0L, employeeHireCosts[employeeId - 1]);
+            return Math.Max(0L, employeeHireCosts[index]);
+        }
+
+
+        private static int GetHireCostIndex(int employeeId)
+        {
+            return employeeId - 1;
         }
 
 

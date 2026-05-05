@@ -113,6 +113,11 @@ namespace FLOBUK.StoreSimulator
 
         private void SelectEmployee(int employeeId)
         {
+            if (employeeId < 1 || employeeId > MaxEmployees)
+            {
+                Debug.LogWarning(LogPrefix + "Invalid employee id requested: " + employeeId);
+            }
+
             selectedEmployeeId = Mathf.Clamp(employeeId, 1, MaxEmployees);
             foreach (KeyValuePair<int, EmployeeCardUI> pair in cards)
                 pair.Value?.SetSelected(pair.Key == selectedEmployeeId);

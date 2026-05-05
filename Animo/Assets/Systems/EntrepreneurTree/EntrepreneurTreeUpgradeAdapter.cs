@@ -17,6 +17,7 @@ namespace FLOBUK.StoreSimulator
         private const float BaseMultiplier = 1f;
         private const float CaffeineMultiplier = 1.10f;
         private const float CharismaticMultiplier = 1.05f;
+        private const float MinSelfCheckoutScanDelay = 0.2f;
 
         public static EntrepreneurTreeUpgradeAdapter Instance { get; private set; }
 
@@ -209,7 +210,7 @@ namespace FLOBUK.StoreSimulator
                     if (!baseSelfCheckoutScanDelays.ContainsKey(id))
                         baseSelfCheckoutScanDelays[id] = selfCheckout.scanDelay;
 
-                    selfCheckout.scanDelay = Mathf.Max(0.2f, baseSelfCheckoutScanDelays[id] / speedMultiplier);
+                    selfCheckout.scanDelay = Mathf.Max(MinSelfCheckoutScanDelay, baseSelfCheckoutScanDelays[id] / speedMultiplier);
                 }
             }
 

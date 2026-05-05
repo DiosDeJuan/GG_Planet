@@ -183,7 +183,14 @@ namespace FLOBUK.StoreSimulator
             currentInfoNode = node;
 
             if (infoTitle) infoTitle.text = node.title;
-            if (infoDescription) infoDescription.text = "Tipo: " + GetNodeTypeLabel(node.nodeType) + "\n" + node.description;
+            if (infoDescription)
+            {
+                string typeLabel = "Tipo: " + GetNodeTypeLabel(node.nodeType);
+                if (!string.IsNullOrEmpty(node.description))
+                    infoDescription.text = typeLabel + "\n" + node.description;
+                else
+                    infoDescription.text = typeLabel;
+            }
             if (infoCost) infoCost.text = node.isUnlocked
                 ? "Estado: Desbloqueado"
                 : "Costo: " + node.cost + " punto" + (node.cost != 1 ? "s" : "");

@@ -254,9 +254,9 @@ namespace FLOBUK.StoreSimulator
 
         private bool ShouldBecomeThief()
         {
-            float oneInNChance = initialOneInNChance > 0 ? 1f / initialOneInNChance : 0f;
+            float initialThiefProbability = initialOneInNChance > 0 ? 1f / initialOneInNChance : 0f;
             float scaledChance = Mathf.Clamp(CalculateScaledChance(), 0f, maxThiefChance);
-            float chance = Mathf.Clamp(Mathf.Max(oneInNChance, scaledChance), 0f, 1f);
+            float chance = Mathf.Clamp(Mathf.Max(initialThiefProbability, scaledChance), 0f, 1f);
             return UnityEngine.Random.value <= chance;
         }
 
