@@ -148,7 +148,7 @@ namespace FLOBUK.StoreSimulator
             if (background) background.color = fillColor;
             if (titleLabel)
             {
-                string statusPrefix = unlocked ? "✓ " : available ? "▶ " : "🔒 ";
+                string statusPrefix = unlocked ? "[OK] " : available ? "[LISTO] " : "[BLOQ] ";
                 titleLabel.text = (data != null ? statusPrefix + data.title : titleLabel.text);
                 titleLabel.color = unlocked || available ? Color.white : new Color(0.85f, 0.85f, 0.85f, 0.85f);
             }

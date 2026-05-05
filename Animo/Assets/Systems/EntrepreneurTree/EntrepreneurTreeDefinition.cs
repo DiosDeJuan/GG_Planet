@@ -55,6 +55,7 @@ namespace FLOBUK.StoreSimulator
                 {
                     node = ScriptableObject.CreateInstance<NodeData>();
                     node.name = def.id;
+                    node.hideFlags = HideFlags.DontSave;
                     treeData.nodes.Add(node);
                     byId[def.id] = node;
                 }
