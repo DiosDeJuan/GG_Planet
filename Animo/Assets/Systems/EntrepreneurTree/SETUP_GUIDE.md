@@ -187,5 +187,6 @@ The system saves to a **separate file** (`entrepreneurTree.dat`) alongside the e
 For final runtime validation and QA matrix execution, see:
 
 - `Assets/Systems/EntrepreneurTree/PHASE4_QA_REPORT.md`
+- `Assets/Systems/EntrepreneurTree/HANDOFF_AFTER_PULL.md`
 
 That report tracks static checks, runtime-required test cases, and pull/merge readiness items.

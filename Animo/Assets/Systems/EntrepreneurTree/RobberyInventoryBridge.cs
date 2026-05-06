@@ -142,6 +142,11 @@ namespace FLOBUK.StoreSimulator
                 Debug.LogWarning(LogPrefix + "Unable to restore stolen product due to missing/invalid placement: " + product.name);
                 return false;
             }
+            if (target.container == null)
+            {
+                Debug.LogWarning(LogPrefix + "Unable to restore stolen product because placement container is missing: " + product.name);
+                return false;
+            }
 
             Vector3 localPosition = target.Add(product);
             Quaternion worldRotation = target.transform.rotation * Quaternion.Euler(0f, target.orientation, 0f);

@@ -221,6 +221,14 @@ namespace FLOBUK.StoreSimulator
         //show the text components one after the other until the end
         private IEnumerator AnimateActive()
         {
+            if (showArray == null || showArray.Length == 0)
+            {
+                yield return new WaitForSeconds(2);
+                if (continueButton != null)
+                    continueButton.SetActive(true);
+                yield break;
+            }
+
             for(int i = 0; i < showArray.Length; i++)
             {
                 yield return new WaitForSeconds(0.2f);
