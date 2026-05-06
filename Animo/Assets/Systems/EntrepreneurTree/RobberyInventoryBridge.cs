@@ -149,7 +149,7 @@ namespace FLOBUK.StoreSimulator
             }
             if (!target.IsPlaceable(product))
             {
-                Debug.LogWarning(LogPrefix + "Unable to restore stolen product due to missing/invalid placement: " + product.name);
+                Debug.LogWarning(LogPrefix + "Unable to restore stolen product because selected placement is not placeable: " + product.name);
                 return false;
             }
 
