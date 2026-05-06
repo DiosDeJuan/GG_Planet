@@ -179,3 +179,13 @@ The system saves to a **separate file** (`entrepreneurTree.dat`) alongside the e
 - The original `SaveGameSystem.cs` is **never modified**.
 - Both files are written at the same time (when `SaveGameSystem.Save()` is called).
 - Deleting `save.dat` without deleting `entrepreneurTree.dat` will cause a mismatch — delete both to fully reset.
+
+---
+
+## Phase 4 Validation Notes
+
+For final runtime validation and QA matrix execution, see:
+
+- `Assets/Systems/EntrepreneurTree/PHASE4_QA_REPORT.md`
+
+That report tracks static checks, runtime-required test cases, and pull/merge readiness items.

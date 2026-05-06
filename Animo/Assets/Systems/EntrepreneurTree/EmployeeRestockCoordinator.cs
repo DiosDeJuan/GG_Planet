@@ -107,8 +107,16 @@ namespace FLOBUK.StoreSimulator
                 return;
             }
 
+            if (sourcePackage.count <= 0)
+                return;
+
             if (!target.IsPlaceable(sourceProduct))
                 return;
+            if (target.container == null)
+            {
+                Debug.LogWarning(LogPrefix + "Restock target '" + target.name + "' has no container assigned.");
+                return;
+            }
 
             Transform item = sourcePackage.Remove();
             if (item == null)

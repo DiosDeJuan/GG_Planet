@@ -335,7 +335,11 @@ namespace FLOBUK.StoreSimulator
         private void RefreshSecuritySnapshot()
         {
             if (EntrepreneurTreeGameplayBridge.Instance == null)
+            {
+                securityLevelSnapshot = 0;
+                securityChanceSnapshot = 0f;
                 return;
+            }
 
             securityLevelSnapshot = EntrepreneurTreeGameplayBridge.Instance.GetSecurityLevel();
             securityChanceSnapshot = EntrepreneurTreeGameplayBridge.Instance.GetSecurityArrestChance() * 100f;

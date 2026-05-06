@@ -95,17 +95,27 @@ namespace FLOBUK.StoreSimulator
         //initialize references
         void Awake()
         {
-            continueButton.SetActive(false);
+            if (continueButton != null)
+                continueButton.SetActive(false);
 
-            for(int i = 0; i < showArray.Length; i++)
+            if (showArray != null)
             {
-                TMP_Text[] texts = showArray[i].GetComponentsInChildren<TMP_Text>();
-                for(int j = 0; j < texts.Length; j++)
-                    texts[j].enabled = false;
+                for (int i = 0; i < showArray.Length; i++)
+                {
+                    if (showArray[i] == null)
+                        continue;
+
+                    TMP_Text[] texts = showArray[i].GetComponentsInChildren<TMP_Text>();
+                    for (int j = 0; j < texts.Length; j++)
+                        texts[j].enabled = false;
+                }
             }
 
-            blockerGroup.gameObject.SetActive(true);
-            StartCoroutine(FadeInOut(blockerGroup, 0, false));
+            if (blockerGroup != null)
+            {
+                blockerGroup.gameObject.SetActive(true);
+                StartCoroutine(FadeInOut(blockerGroup, 0, false));
+            }
         }
 
 
@@ -118,6 +128,14 @@ namespace FLOBUK.StoreSimulator
             {
                 Debug.LogWarning("No SaveLoadSystem Instance found, data cannot be loaded.\n" + 
                                 "To test this scene, transition from a Game scene or temporarily add a SaveLoadSystem component.");
+                return;
+            }
+
+            if (dayNumber == null || moneyEarned == null || moneySpent == null || moneyProfit == null ||
+                moneyCurrent == null || customersTotal == null || customersHappy == null ||
+                customersUnhappy == null || xpEarned == null || xpLevel == null)
+            {
+                Debug.LogWarning("UIStats is missing one or more TMP_Text references in the inspector.");
                 return;
             }
 
@@ -187,7 +205,8 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public void Continue()
         {
-            StartCoroutine(FadeInOut(blockerGroup, 0, true));
+            if (blockerGroup != null)
+                StartCoroutine(FadeInOut(blockerGroup, 0, true));
             Invoke("LeaveScene", 1);
         }
 
@@ -206,13 +225,17 @@ namespace FLOBUK.StoreSimulator
             {
                 yield return new WaitForSeconds(0.2f);
 
+                if (showArray[i] == null)
+                    continue;
+
                 TMP_Text[] texts = showArray[i].GetComponentsInChildren<TMP_Text>();
                 for(int j = 0; j < texts.Length; j++)
                     texts[j].enabled = true;
             }
 
             yield return new WaitForSeconds(2);
-            continueButton.SetActive(true);
+            if (continueButton != null)
+                continueButton.SetActive(true);
         }
 
 
