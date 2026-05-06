@@ -135,7 +135,17 @@ namespace FLOBUK.StoreSimulator
                 moneyCurrent == null || customersTotal == null || customersHappy == null ||
                 customersUnhappy == null || xpEarned == null || xpLevel == null)
             {
-                Debug.LogWarning("UIStats is missing one or more TMP_Text references in the inspector.");
+                Debug.LogWarning("UIStats missing required TMP references: " +
+                    (dayNumber == null ? "dayNumber " : "") +
+                    (moneyEarned == null ? "moneyEarned " : "") +
+                    (moneySpent == null ? "moneySpent " : "") +
+                    (moneyProfit == null ? "moneyProfit " : "") +
+                    (moneyCurrent == null ? "moneyCurrent " : "") +
+                    (customersTotal == null ? "customersTotal " : "") +
+                    (customersHappy == null ? "customersHappy " : "") +
+                    (customersUnhappy == null ? "customersUnhappy " : "") +
+                    (xpEarned == null ? "xpEarned " : "") +
+                    (xpLevel == null ? "xpLevel " : ""));
                 return;
             }
 

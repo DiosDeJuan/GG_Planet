@@ -137,7 +137,7 @@ namespace FLOBUK.StoreSimulator
                 return false;
 
             PlacementObject target = FindPlacementForProduct(product);
-            if (target == null || !target.IsPlaceable(product))
+            if (target == null)
             {
                 Debug.LogWarning(LogPrefix + "Unable to restore stolen product due to missing/invalid placement: " + product.name);
                 return false;
@@ -145,6 +145,11 @@ namespace FLOBUK.StoreSimulator
             if (target.container == null)
             {
                 Debug.LogWarning(LogPrefix + "Unable to restore stolen product because placement container is missing: " + product.name);
+                return false;
+            }
+            if (!target.IsPlaceable(product))
+            {
+                Debug.LogWarning(LogPrefix + "Unable to restore stolen product due to missing/invalid placement: " + product.name);
                 return false;
             }
 
