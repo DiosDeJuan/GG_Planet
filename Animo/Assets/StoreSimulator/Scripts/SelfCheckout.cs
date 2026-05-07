@@ -124,7 +124,10 @@ namespace FLOBUK.StoreSimulator
             long cartAmount = StoreDatabase.FromStringToLongMoney(cart.total.text);
 
             cart.Clear();
-            StoreDatabase.AddRemoveMoney(cartAmount);
+            if (EntrepreneurTreeUpgradeAdapter.Instance != null)
+                EntrepreneurTreeUpgradeAdapter.Instance.CreditSaleIncome(cartAmount);
+            else
+                StoreDatabase.AddRemoveMoney(cartAmount);
             AudioSystem.Play2D(successClip);
 
             customerBag = null;

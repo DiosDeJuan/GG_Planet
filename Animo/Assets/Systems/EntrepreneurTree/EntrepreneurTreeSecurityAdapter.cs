@@ -16,6 +16,8 @@ namespace FLOBUK.StoreSimulator
         public GameObject securityLevel1Visual;
         public GameObject securityLevel2Visual;
         public GameObject securityLevel3Visual;
+        [Tooltip("When visual references are missing, create simple runtime placeholders as safe fallback.")]
+        public bool createPlaceholdersWhenMissing = true;
 
         private int securityLevel;
         private float arrestChance;
@@ -67,6 +69,14 @@ namespace FLOBUK.StoreSimulator
             }
         }
 
+        public bool TryAutomaticArrest()
+        {
+            if (arrestChance <= 0f)
+                return false;
+
+            return UnityEngine.Random.value <= arrestChance;
+        }
+
 
         private void OnSecurityNodeUnlocked(NodeData node)
         {
@@ -107,14 +117,65 @@ namespace FLOBUK.StoreSimulator
             }
 
             ApplyVisuals();
+            if (securityLevel >= 3)
+                AchievementSystem.RegisterSecurityCompleted();
         }
 
 
         private void ApplyVisuals()
         {
+            EnsureVisualPlaceholders();
             if (securityLevel1Visual != null) securityLevel1Visual.SetActive(securityLevel >= 1);
             if (securityLevel2Visual != null) securityLevel2Visual.SetActive(securityLevel >= 2);
             if (securityLevel3Visual != null) securityLevel3Visual.SetActive(securityLevel >= 3);
+        }
+
+
+        private void EnsureVisualPlaceholders()
+        {
+            if (!createPlaceholdersWhenMissing)
+                return;
+
+            if (securityLevel1Visual == null)
+                securityLevel1Visual = CreatePlaceholder("SecurityCameraPlaceholder", PrimitiveType.Cylinder, new Vector3(-1.2f, 2f, 0f), new Vector3(0.2f, 0.25f, 0.2f), new Color(0.95f, 0.45f, 0.1f));
+            if (securityLevel2Visual == null)
+                securityLevel2Visual = CreateGuardPairPlaceholder();
+            if (securityLevel3Visual == null)
+                securityLevel3Visual = CreatePlaceholder("SecurityGatePlaceholder", PrimitiveType.Cube, new Vector3(1.2f, 2f, 0f), new Vector3(1.2f, 1.8f, 0.2f), new Color(1f, 0.2f, 0.2f));
+        }
+
+
+        private GameObject CreateGuardPairPlaceholder()
+        {
+            GameObject root = new GameObject("SecurityGuardsPlaceholder");
+            root.transform.SetParent(transform, false);
+            root.transform.localPosition = new Vector3(0f, 0f, 0f);
+
+            CreatePlaceholder("SecurityGuard_A", PrimitiveType.Capsule, new Vector3(-0.35f, 1f, 0f), new Vector3(0.35f, 1f, 0.35f), new Color(0.85f, 0.25f, 0.15f), root.transform);
+            CreatePlaceholder("SecurityGuard_B", PrimitiveType.Capsule, new Vector3(0.35f, 1f, 0f), new Vector3(0.35f, 1f, 0.35f), new Color(0.85f, 0.25f, 0.15f), root.transform);
+            root.SetActive(false);
+            return root;
+        }
+
+
+        private GameObject CreatePlaceholder(string name, PrimitiveType primitive, Vector3 localOffset, Vector3 localScale, Color color, Transform parentOverride = null)
+        {
+            GameObject go = GameObject.CreatePrimitive(primitive);
+            go.name = name;
+            go.transform.SetParent(parentOverride != null ? parentOverride : transform, false);
+            go.transform.localPosition = localOffset;
+            go.transform.localScale = localScale;
+
+            Collider col = go.GetComponent<Collider>();
+            if (col != null)
+                Destroy(col);
+
+            Renderer renderer = go.GetComponent<Renderer>();
+            if (renderer != null && renderer.material != null)
+                renderer.material.color = color;
+
+            go.SetActive(false);
+            return go;
         }
 
 

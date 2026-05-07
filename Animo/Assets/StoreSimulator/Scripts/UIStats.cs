@@ -86,21 +86,36 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public TMP_Text xpLevel;
 
+        /// <summary>
+        /// Optional label for daily robbery summary.
+        /// </summary>
+        public TMP_Text robberySummary;
+
 
         //initialize references
         void Awake()
         {
-            continueButton.SetActive(false);
+            if (continueButton != null)
+                continueButton.SetActive(false);
 
-            for(int i = 0; i < showArray.Length; i++)
+            if (showArray != null)
             {
-                TMP_Text[] texts = showArray[i].GetComponentsInChildren<TMP_Text>();
-                for(int j = 0; j < texts.Length; j++)
-                    texts[j].enabled = false;
+                for (int i = 0; i < showArray.Length; i++)
+                {
+                    if (showArray[i] == null)
+                        continue;
+
+                    TMP_Text[] texts = showArray[i].GetComponentsInChildren<TMP_Text>();
+                    for (int j = 0; j < texts.Length; j++)
+                        texts[j].enabled = false;
+                }
             }
 
-            blockerGroup.gameObject.SetActive(true);
-            StartCoroutine(FadeInOut(blockerGroup, 0, false));
+            if (blockerGroup != null)
+            {
+                blockerGroup.gameObject.SetActive(true);
+                StartCoroutine(FadeInOut(blockerGroup, 0, false));
+            }
         }
 
 
@@ -113,6 +128,24 @@ namespace FLOBUK.StoreSimulator
             {
                 Debug.LogWarning("No SaveLoadSystem Instance found, data cannot be loaded.\n" + 
                                 "To test this scene, transition from a Game scene or temporarily add a SaveLoadSystem component.");
+                return;
+            }
+
+            if (dayNumber == null || moneyEarned == null || moneySpent == null || moneyProfit == null ||
+                moneyCurrent == null || customersTotal == null || customersHappy == null ||
+                customersUnhappy == null || xpEarned == null || xpLevel == null)
+            {
+                Debug.LogWarning("UIStats missing required TMP references: " +
+                    (dayNumber == null ? "dayNumber " : "") +
+                    (moneyEarned == null ? "moneyEarned " : "") +
+                    (moneySpent == null ? "moneySpent " : "") +
+                    (moneyProfit == null ? "moneyProfit " : "") +
+                    (moneyCurrent == null ? "moneyCurrent " : "") +
+                    (customersTotal == null ? "customersTotal " : "") +
+                    (customersHappy == null ? "customersHappy " : "") +
+                    (customersUnhappy == null ? "customersUnhappy " : "") +
+                    (xpEarned == null ? "xpEarned " : "") +
+                    (xpLevel == null ? "xpLevel " : ""));
                 return;
             }
 
@@ -138,6 +171,11 @@ namespace FLOBUK.StoreSimulator
             JSONNode storeData = SaveGameSystem.ReadComponentData("StoreDatabase");
             moneyCurrent.text = StoreDatabase.FromLongToStringMoney(storeData["currentMoney"].AsLong);
             xpLevel.text = storeData["currentLevel"].Value;
+
+            if (robberySummary == null)
+                robberySummary = FindOrCreateRobberySummaryLabel();
+            if (robberySummary != null)
+                robberySummary.text = StatsDatabase.BuildDailyRobberySummary(dailyData);
 
             StartCoroutine(AnimateActive());
         }
@@ -177,7 +215,8 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public void Continue()
         {
-            StartCoroutine(FadeInOut(blockerGroup, 0, true));
+            if (blockerGroup != null)
+                StartCoroutine(FadeInOut(blockerGroup, 0, true));
             Invoke("LeaveScene", 1);
         }
 
@@ -192,9 +231,20 @@ namespace FLOBUK.StoreSimulator
         //show the text components one after the other until the end
         private IEnumerator AnimateActive()
         {
+            if (showArray == null || showArray.Length == 0)
+            {
+                yield return new WaitForSeconds(2);
+                if (continueButton != null)
+                    continueButton.SetActive(true);
+                yield break;
+            }
+
             for(int i = 0; i < showArray.Length; i++)
             {
                 yield return new WaitForSeconds(0.2f);
+
+                if (showArray[i] == null)
+                    continue;
 
                 TMP_Text[] texts = showArray[i].GetComponentsInChildren<TMP_Text>();
                 for(int j = 0; j < texts.Length; j++)
@@ -202,7 +252,32 @@ namespace FLOBUK.StoreSimulator
             }
 
             yield return new WaitForSeconds(2);
-            continueButton.SetActive(true);
+            if (continueButton != null)
+                continueButton.SetActive(true);
+        }
+
+
+        private TMP_Text FindOrCreateRobberySummaryLabel()
+        {
+            Transform existing = transform.Find("RobberySummary");
+            if (existing != null)
+                return existing.GetComponent<TMP_Text>();
+
+            GameObject go = new GameObject("RobberySummary", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            go.transform.SetParent(transform, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(1f, 0f);
+            rt.anchoredPosition = new Vector2(-40f, 40f);
+            rt.sizeDelta = new Vector2(420f, 240f);
+
+            TextMeshProUGUI text = go.GetComponent<TextMeshProUGUI>();
+            text.fontSize = 20;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            text.color = new Color(0.92f, 0.93f, 0.96f, 1f);
+            text.enableWordWrapping = true;
+            return text;
         }
     }
 }

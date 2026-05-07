@@ -20,6 +20,22 @@ namespace FLOBUK.StoreSimulator
         Revenue1000,         // Earned $1,000 total
         Revenue5000,         // Earned $5,000 total
         Revenue10000,        // Earned $10,000 total
+        Revenue12000,        // Earned $12,000 total
+        Revenue15000,        // Earned $15,000 total
+        Revenue17000,        // Earned $17,000 total
+        Revenue20000,        // Earned $20,000 total
+        Revenue25000,        // Earned $25,000 total
+        Revenue35000,        // Earned $35,000 total
+        Revenue50000,        // Earned $50,000 total
+        Revenue100000,       // Earned $100,000 total
+        DailyRevenue1000,    // Earned $1,000 in a single day
+        DailyRevenue1500,    // Earned $1,500 in a single day
+        DailyRevenue5000,    // Earned $5,000 in a single day
+        DailyRevenue10000,   // Earned $10,000 in a single day
+        DailyRevenue15000,   // Earned $15,000 in a single day
+        DailyRevenue20000,   // Earned $20,000 in a single day
+        Play3Days,           // Survived 3 in-game days
+        Play5Days,           // Survived 5 in-game days
         HireFirstEmployee,   // Unlocked first employee node in the tree
         Hire5Employees,      // Unlocked 5 employee nodes
         Hire10Employees,     // Unlocked 10 employee nodes
@@ -30,6 +46,10 @@ namespace FLOBUK.StoreSimulator
         UnlockAllTree,       // Unlocked every node in the tree
         GoldenEgg,           // Hidden: earn $50,000 in a single day
         TotalOptimization,   // Hidden: unlock every improvement node
+        RedSeguridad,        // Unlock security levels 1, 2 and 3
+        Batman,              // Detain/capture first thief
+        FirstEmployeeHiredReal, // First employee hired from employee app
+        MaxEmployment,       // 18 employees hired and assigned
     }
 
 
@@ -57,6 +77,20 @@ namespace FLOBUK.StoreSimulator
         private const long ThresholdRevenue1000Cents  =   100000;  // $1,000
         private const long ThresholdRevenue5000Cents  =   500000;  // $5,000
         private const long ThresholdRevenue10000Cents = 1000000;   // $10,000
+        private const long ThresholdRevenue12000Cents = 1200000;   // $12,000
+        private const long ThresholdRevenue15000Cents = 1500000;   // $15,000
+        private const long ThresholdRevenue17000Cents = 1700000;   // $17,000
+        private const long ThresholdRevenue20000Cents = 2000000;   // $20,000
+        private const long ThresholdRevenue25000Cents = 2500000;   // $25,000
+        private const long ThresholdRevenue35000Cents = 3500000;   // $35,000
+        private const long ThresholdRevenue50000Cents = 5000000;   // $50,000
+        private const long ThresholdRevenue100000Cents = 10000000; // $100,000
+        private const long ThresholdDailyRevenue1000Cents = 100000;   // $1,000
+        private const long ThresholdDailyRevenue1500Cents = 150000;   // $1,500
+        private const long ThresholdDailyRevenue5000Cents = 500000;   // $5,000
+        private const long ThresholdDailyRevenue10000Cents = 1000000; // $10,000
+        private const long ThresholdDailyRevenue15000Cents = 1500000; // $15,000
+        private const long ThresholdDailyRevenue20000Cents = 2000000; // $20,000
         private const long ThresholdGoldenEggCents    = 5000000;   // $50,000 in one day
 
         // Persisted set of completed achievement IDs.
@@ -120,6 +154,42 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        public static void RegisterThiefCaptured()
+        {
+            Complete(AchievementId.Batman);
+        }
+
+
+        public static void RegisterSecurityCompleted()
+        {
+            Complete(AchievementId.RedSeguridad);
+        }
+
+
+        public static void RegisterEmployeeHired(int hiredCount, int assignedCount, int maxEmployees)
+        {
+            if (hiredCount >= 1)
+                Complete(AchievementId.FirstEmployeeHiredReal);
+
+            if (hiredCount >= maxEmployees && assignedCount >= maxEmployees)
+                Complete(AchievementId.MaxEmployment);
+        }
+
+
+        public static void RegisterAllEmployeesAssigned(int hiredCount, int assignedCount, int maxEmployees)
+        {
+            if (hiredCount >= maxEmployees && assignedCount >= maxEmployees)
+                Complete(AchievementId.MaxEmployment);
+        }
+
+
+        public static void RegisterAllUpgradesUnlocked(bool allUnlocked)
+        {
+            if (allUnlocked)
+                Complete(AchievementId.TotalOptimization);
+        }
+
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public static void GrantPointForTesting()
         {
@@ -149,6 +219,20 @@ namespace FLOBUK.StoreSimulator
             if (lifetimeMoneyEarnedCents >= ThresholdRevenue1000Cents)  Complete(AchievementId.Revenue1000);
             if (lifetimeMoneyEarnedCents >= ThresholdRevenue5000Cents)  Complete(AchievementId.Revenue5000);
             if (lifetimeMoneyEarnedCents >= ThresholdRevenue10000Cents) Complete(AchievementId.Revenue10000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue12000Cents) Complete(AchievementId.Revenue12000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue15000Cents) Complete(AchievementId.Revenue15000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue17000Cents) Complete(AchievementId.Revenue17000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue20000Cents) Complete(AchievementId.Revenue20000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue25000Cents) Complete(AchievementId.Revenue25000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue35000Cents) Complete(AchievementId.Revenue35000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue50000Cents) Complete(AchievementId.Revenue50000);
+            if (lifetimeMoneyEarnedCents >= ThresholdRevenue100000Cents) Complete(AchievementId.Revenue100000);
+            if (dailyRevenue >= ThresholdDailyRevenue1000Cents) Complete(AchievementId.DailyRevenue1000);
+            if (dailyRevenue >= ThresholdDailyRevenue1500Cents) Complete(AchievementId.DailyRevenue1500);
+            if (dailyRevenue >= ThresholdDailyRevenue5000Cents) Complete(AchievementId.DailyRevenue5000);
+            if (dailyRevenue >= ThresholdDailyRevenue10000Cents) Complete(AchievementId.DailyRevenue10000);
+            if (dailyRevenue >= ThresholdDailyRevenue15000Cents) Complete(AchievementId.DailyRevenue15000);
+            if (dailyRevenue >= ThresholdDailyRevenue20000Cents) Complete(AchievementId.DailyRevenue20000);
             if (dailyRevenue             >= ThresholdGoldenEggCents)    Complete(AchievementId.GoldenEgg);
         }
 
@@ -171,6 +255,8 @@ namespace FLOBUK.StoreSimulator
         private void OnDayFinished()
         {
             daysPlayed++;
+            if (daysPlayed >= 3)  Complete(AchievementId.Play3Days);
+            if (daysPlayed >= 5)  Complete(AchievementId.Play5Days);
             if (daysPlayed >= 7)  Complete(AchievementId.Play7Days);
             if (daysPlayed >= 30) Complete(AchievementId.Play30Days);
         }
@@ -211,6 +297,11 @@ namespace FLOBUK.StoreSimulator
             // Every single node unlocked?
             bool allUnlocked = allNodes.TrueForAll(n => n.isUnlocked);
             if (allUnlocked) Complete(AchievementId.UnlockAllTree);
+
+            if (EntrepreneurTreeManager.IsNodeUnlocked("security_1") &&
+                EntrepreneurTreeManager.IsNodeUnlocked("security_2") &&
+                EntrepreneurTreeManager.IsNodeUnlocked("security_3"))
+                RegisterSecurityCompleted();
         }
 
 

@@ -197,7 +197,10 @@ namespace FLOBUK.StoreSimulator
             }
 
             cart.Clear();
-            StoreDatabase.AddRemoveMoney(billAmount);
+            if (EntrepreneurTreeUpgradeAdapter.Instance != null)
+                EntrepreneurTreeUpgradeAdapter.Instance.CreditSaleIncome(billAmount);
+            else
+                StoreDatabase.AddRemoveMoney(billAmount);
             AudioSystem.Play2D(successClip);
 
             if (customerQueue[0].payCash)

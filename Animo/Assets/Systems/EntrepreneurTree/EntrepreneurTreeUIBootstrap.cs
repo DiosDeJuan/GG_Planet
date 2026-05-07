@@ -78,6 +78,13 @@ namespace FLOBUK.StoreSimulator
 
                     controller.TryAutoConfigureFromHierarchy();
                     controller.BuildTree();
+
+                    EmployeeAppUIController employeeUI = upgradesPanel.GetComponent<EmployeeAppUIController>();
+                    if (employeeUI == null)
+                    {
+                        upgradesPanel.gameObject.AddComponent<EmployeeAppUIController>();
+                        Debug.Log(LogPrefix + "Attached EmployeeAppUIController to ContentArea/Expansions.");
+                    }
                 }
             }
         }
@@ -100,6 +107,9 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EntrepreneurTreeSecurityAdapter>();
                 systems.AddComponent<EntrepreneurTreeUpgradeAdapter>();
                 systems.AddComponent<EntrepreneurTreeGameplayBridge>();
+                systems.AddComponent<EntrepreneurEmployeeSystem>();
+                systems.AddComponent<EmployeeRestockCoordinator>();
+                systems.AddComponent<ShoplifterSystem>();
 
                 Debug.Log(LogPrefix + "Created runtime EntrepreneurTree systems GameObject.");
             }
@@ -121,6 +131,8 @@ namespace FLOBUK.StoreSimulator
                     Debug.LogWarning(LogPrefix + "TreeData not assigned in Inspector. Using runtime fallback tree data.");
                 }
             }
+
+            EntrepreneurTreeDefinition.SynchronizeTreeData(manager.treeData);
         }
 
 
@@ -140,6 +152,12 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EntrepreneurTreeUpgradeAdapter>();
             if (systems.GetComponent<EntrepreneurTreeGameplayBridge>() == null)
                 systems.AddComponent<EntrepreneurTreeGameplayBridge>();
+            if (systems.GetComponent<EntrepreneurEmployeeSystem>() == null)
+                systems.AddComponent<EntrepreneurEmployeeSystem>();
+            if (systems.GetComponent<EmployeeRestockCoordinator>() == null)
+                systems.AddComponent<EmployeeRestockCoordinator>();
+            if (systems.GetComponent<ShoplifterSystem>() == null)
+                systems.AddComponent<ShoplifterSystem>();
         }
 
 

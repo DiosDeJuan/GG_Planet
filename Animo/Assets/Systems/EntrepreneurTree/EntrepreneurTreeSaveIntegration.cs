@@ -49,6 +49,12 @@ namespace FLOBUK.StoreSimulator
             if (AchievementSystem.Instance != null)
                 data["AchievementSystem"] = AchievementSystem.Instance.SaveToJSON();
 
+            if (EntrepreneurEmployeeSystem.Instance != null)
+                data["EntrepreneurEmployeeSystem"] = EntrepreneurEmployeeSystem.Instance.SaveToJSON();
+
+            if (ShoplifterSystem.Instance != null)
+                data["ShoplifterSystem"] = ShoplifterSystem.Instance.SaveToJSON();
+
             byte[] bytes = Encoding.ASCII.GetBytes(data.ToString());
             string path  = Application.persistentDataPath + "/" + fileName + SaveGameSystem.fileExt;
 
@@ -74,6 +80,8 @@ namespace FLOBUK.StoreSimulator
                 // New game or first run – reset managers to defaults.
                 EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
                 AchievementSystem.Instance?.LoadFromJSON(null);
+                EntrepreneurEmployeeSystem.Instance?.LoadFromJSON(null);
+                ShoplifterSystem.Instance?.LoadFromJSON(null);
                 Debug.Log(LogPrefix + "No EntrepreneurTree save file found. Loaded defaults.");
                 return;
             }
@@ -90,6 +98,8 @@ namespace FLOBUK.StoreSimulator
                 Debug.LogWarning(LogPrefix + "Failed to read progress file. Loading defaults. " + e.Message);
                 EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
                 AchievementSystem.Instance?.LoadFromJSON(null);
+                EntrepreneurEmployeeSystem.Instance?.LoadFromJSON(null);
+                ShoplifterSystem.Instance?.LoadFromJSON(null);
                 return;
             }
 
@@ -97,6 +107,8 @@ namespace FLOBUK.StoreSimulator
             {
                 EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
                 AchievementSystem.Instance?.LoadFromJSON(null);
+                EntrepreneurEmployeeSystem.Instance?.LoadFromJSON(null);
+                ShoplifterSystem.Instance?.LoadFromJSON(null);
                 Debug.LogWarning(LogPrefix + "Progress file was empty. Loaded defaults.");
                 return;
             }
@@ -111,11 +123,15 @@ namespace FLOBUK.StoreSimulator
                 Debug.LogWarning(LogPrefix + "Progress file JSON parse failed. Loading defaults. " + e.Message);
                 EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
                 AchievementSystem.Instance?.LoadFromJSON(null);
+                EntrepreneurEmployeeSystem.Instance?.LoadFromJSON(null);
+                ShoplifterSystem.Instance?.LoadFromJSON(null);
                 return;
             }
 
             EntrepreneurTreeManager.Instance?.LoadFromJSON(data["EntrepreneurTreeManager"]);
             AchievementSystem.Instance?.LoadFromJSON(data["AchievementSystem"]);
+            EntrepreneurEmployeeSystem.Instance?.LoadFromJSON(data["EntrepreneurEmployeeSystem"]);
+            ShoplifterSystem.Instance?.LoadFromJSON(data["ShoplifterSystem"]);
             Debug.Log(LogPrefix + "Progress loaded successfully.");
         }
 

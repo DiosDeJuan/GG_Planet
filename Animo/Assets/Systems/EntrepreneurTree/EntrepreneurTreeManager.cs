@@ -69,6 +69,7 @@ namespace FLOBUK.StoreSimulator
             }
 
             Instance = this;
+            EntrepreneurTreeDefinition.SynchronizeTreeData(treeData);
             EnsureDefaultUnlockedNodes();
         }
 
@@ -111,19 +112,10 @@ namespace FLOBUK.StoreSimulator
                 return false;
             }
 
-            List<string> missingNames = Instance.GetMissingRequirementNames(node);
-
-            if (missingNames.Count > 0)
+            string reason;
+            if (!CanUnlockNode(nodeId, out reason))
             {
-                UIGame.Instance?.ShowMessage("Faltan requisitos: " + string.Join(", ", missingNames));
-                return false;
-            }
-
-            // Check point balance.
-            if (Instance.currentPoints < node.cost)
-            {
-                UIGame.Instance?.ShowMessage(
-                    "No tienes suficientes puntos. Necesitas " + node.cost + ", tienes " + Instance.currentPoints + ".");
+                UIGame.Instance?.ShowMessage(reason);
                 return false;
             }
 
@@ -147,19 +139,59 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static bool CanUnlockNode(string nodeId)
         {
-            if (Instance == null || Instance.treeData == null) return false;
+            string _;
+            return CanUnlockNode(nodeId, out _);
+        }
 
+        public static bool CanUnlockNode(string nodeId, out string reason)
+        {
+            reason = string.Empty;
+            if (Instance == null || Instance.treeData == null)
+            {
+                reason = "El Árbol del Emprendedor no está disponible.";
+                return false;
+            }
             NodeData node = Instance.treeData.GetNodeById(nodeId);
-            if (node == null || node.isUnlocked) return false;
-            if (Instance.currentPoints < node.cost) return false;
+            if (node == null)
+            {
+                reason = "Nodo desconocido: " + nodeId;
+                return false;
+            }
+            if (node.isUnlocked)
+            {
+                reason = "Este nodo ya está desbloqueado.";
+                return false;
+            }
+            if (Instance.currentPoints < node.cost)
+            {
+                reason = "No tienes puntos de progreso suficientes.";
+                return false;
+            }
 
+            List<string> missingNames = null;
             foreach (string reqId in node.requiredNodeIds)
             {
                 NodeData req = Instance.treeData.GetNodeById(reqId);
-                if (req == null || !req.isUnlocked) return false;
+                if (req != null && req.isUnlocked)
+                    continue;
+
+                if (missingNames == null)
+                    missingNames = new List<string>();
+                missingNames.Add(req != null ? req.title : reqId);
+            }
+
+            if (missingNames != null && missingNames.Count > 0)
+            {
+                reason = "Faltan requisitos: " + string.Join(", ", missingNames);
+                return false;
             }
 
             return true;
+        }
+
+        public static int GetAvailablePoints()
+        {
+            return Instance != null ? Instance.currentPoints : 0;
         }
 
 
@@ -181,11 +213,11 @@ namespace FLOBUK.StoreSimulator
             if (Instance == null || Instance.treeData == null)
                 return 0;
 
-            if (Instance.IsNodeUnlocked("security_3"))
+            if (Instance.IsNodeUnlockedInternal("security_3"))
                 return SecurityLevel3Coverage;
-            if (Instance.IsNodeUnlocked("security_2"))
+            if (Instance.IsNodeUnlockedInternal("security_2"))
                 return SecurityLevel2Coverage;
-            if (Instance.IsNodeUnlocked("security_1"))
+            if (Instance.IsNodeUnlockedInternal("security_1"))
                 return SecurityLevel1Coverage;
             return 0;
         }
@@ -217,6 +249,8 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public void LoadFromJSON(JSONNode data)
         {
+            EntrepreneurTreeDefinition.SynchronizeTreeData(treeData);
+
             // Reset all node unlock flags first.
             if (treeData != null)
                 foreach (NodeData node in treeData.nodes)
@@ -293,8 +327,18 @@ namespace FLOBUK.StoreSimulator
         }
 
 
-        private bool IsNodeUnlocked(string nodeId)
+        /// <summary>
+        /// Public query API for external systems (UI, adapters, gameplay bridge) to check node unlock state.
+        /// </summary>
+        public static bool IsNodeUnlocked(string nodeId)
         {
+            return Instance != null && Instance.IsNodeUnlockedInternal(nodeId);
+        }
+
+        private bool IsNodeUnlockedInternal(string nodeId)
+        {
+            if (treeData == null)
+                return false;
             NodeData node = treeData.GetNodeById(nodeId);
             return node != null && node.isUnlocked;
         }
