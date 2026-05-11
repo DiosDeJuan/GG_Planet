@@ -134,7 +134,7 @@ namespace FLOBUK.StoreSimulator
             data["purchased"] = purchased;
 
             string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
-            File.WriteAllBytes(path, Encoding.ASCII.GetBytes(data.ToString()));
+            File.WriteAllBytes(path, Encoding.UTF8.GetBytes(data.ToString()));
         }
 
         private void OnLoad()
@@ -147,7 +147,7 @@ namespace FLOBUK.StoreSimulator
                 return;
             }
 
-            string json = Encoding.ASCII.GetString(File.ReadAllBytes(path));
+            string json = Encoding.UTF8.GetString(File.ReadAllBytes(path));
             JSONNode data = JSON.Parse(json);
             JSONArray purchased = data["purchased"].AsArray;
             for (int i = 0; i < purchased.Count; i++)
