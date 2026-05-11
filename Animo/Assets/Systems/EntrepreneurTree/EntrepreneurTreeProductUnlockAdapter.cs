@@ -31,13 +31,16 @@ namespace FLOBUK.StoreSimulator
         private readonly Dictionary<string, HashSet<string>> groupToProductIds = new Dictionary<string, HashSet<string>>();
         private readonly Dictionary<string, string> productIdToGroup = new Dictionary<string, string>();
         private readonly HashSet<string> unlockedGroups = new HashSet<string>();
+        private readonly HashSet<string> loggedUnmappedProducts = new HashSet<string>();
+        private readonly HashSet<string> loggedLockedProducts = new HashSet<string>();
+        private readonly HashSet<string> loggedStarterProducts = new HashSet<string>();
         private bool mappingBuilt;
 
         private static readonly ProductGroupMapping[] DefaultMappings =
         {
             // This project only ships Product_A..E assets; IDs 0..4 are mapped explicitly to avoid weak-only keyword matching.
-            NewGroup("product_basic_1", "Productos Básicos 1", ids: new[] { "0", "1", "2", "3" }, aliases: new[] { "leche", "sal", "agua", "pasta", "azúcar" }, keywords: new [] { "milk", "salt", "water", "pasta", "sugar" }),
-            NewGroup("product_basic_2", "Productos Básicos 2", ids: new[] { "4" }, aliases: new[] { "harina", "arroz", "frijoles", "pan", "aceite" }, keywords: new [] { "flour", "rice", "bean", "bread", "oil" }),
+            NewGroup("product_basic_1", "Productos Básicos 1", ids: new[] { "0", "1", "2", "3", "4" }, aliases: new[] { "leche", "sal", "agua", "pasta", "azúcar" }, keywords: new [] { "milk", "salt", "water", "pasta", "sugar" }),
+            NewGroup("product_basic_2", "Productos Básicos 2", aliases: new[] { "harina", "arroz", "frijoles", "pan", "aceite" }, keywords: new [] { "flour", "rice", "bean", "bread", "oil" }),
             NewGroup("product_basic_3", "Productos Básicos 3", aliases: new[] { "café", "huevo" }, keywords: new [] { "coffee", "egg" }),
             NewGroup("product_dairy_1", "Lácteos 1", aliases: new[] { "cheddar", "yogurt natural", "mantequilla" }, keywords: new [] { "cheddar", "yogurt", "butter" }),
             NewGroup("product_dairy_2", "Lácteos 2", aliases: new[] { "queso americano", "queso crema" }, keywords: new [] { "american cheese", "cream cheese" }),
@@ -83,9 +86,19 @@ namespace FLOBUK.StoreSimulator
 
             string groupId;
             if (!productIdToGroup.TryGetValue(product.id, out groupId))
+            {
+                if (loggedUnmappedProducts.Add(product.id))
+                    Debug.Log(LogPrefix + "Product has no mapping: " + product.title + " using fallback: available.");
                 return true;
+            }
 
-            return unlockedGroups.Contains(groupId);
+            bool isUnlocked = unlockedGroups.Contains(groupId);
+            if (!isUnlocked && loggedLockedProducts.Add(product.id))
+                Debug.Log(LogPrefix + "Product locked: " + product.title + " requires " + groupId + ".");
+            if (isUnlocked && groupId == EntrepreneurTreeDefinition.DefaultUnlockedNodeId && loggedStarterProducts.Add(product.id))
+                Debug.Log(LogPrefix + "Starter product available: " + product.title + "/" + product.id + ".");
+
+            return isUnlocked;
         }
 
 
@@ -166,6 +179,7 @@ namespace FLOBUK.StoreSimulator
             }
 
             LogUnmappedProducts(allProducts);
+            Debug.Log(LogPrefix + "Product unlock mapping loaded: " + productIdToGroup.Count + " entries.");
         }
 
 
@@ -299,6 +313,9 @@ namespace FLOBUK.StoreSimulator
                 if (node.isUnlocked)
                     unlockedGroups.Add(node.id);
             }
+
+            if (unlockedGroups.Contains(EntrepreneurTreeDefinition.DefaultUnlockedNodeId))
+                Debug.Log(LogPrefix + "Starter node unlocked: " + EntrepreneurTreeDefinition.DefaultUnlockedNodeId + ".");
         }
 
 
@@ -324,7 +341,7 @@ namespace FLOBUK.StoreSimulator
 
         private static void RefreshVisibleProductItems()
         {
-            UIShopItemProduct[] items = Object.FindObjectsOfType<UIShopItemProduct>(true);
+            UIShopItemProduct[] items = UnityEngine.Object.FindObjectsByType<UIShopItemProduct>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             for (int i = 0; i < items.Length; i++)
             {
                 UIShopItemProduct item = items[i];

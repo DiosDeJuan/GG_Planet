@@ -252,7 +252,7 @@ namespace FLOBUK.StoreSimulator
             EntrepreneurTreeDefinition.SynchronizeTreeData(treeData);
 
             // Reset all node unlock flags first.
-            if (treeData != null)
+            if (treeData != null && treeData.nodes != null)
                 foreach (NodeData node in treeData.nodes)
                     node.isUnlocked = false;
 
@@ -279,6 +279,8 @@ namespace FLOBUK.StoreSimulator
 
             if (unlockedNodeIds.Count == 0)
                 EnsureDefaultUnlockedNodes();
+            else
+                EnsureDefaultNodeMigrated();
         }
 
 
@@ -304,6 +306,24 @@ namespace FLOBUK.StoreSimulator
                 node.isUnlocked = true;
                 unlockedNodeIds.Add(node.id);
                 Debug.Log(LogPrefix + "Default node unlocked: " + node.id);
+                return;
+            }
+        }
+
+        private void EnsureDefaultNodeMigrated()
+        {
+            if (treeData == null || treeData.nodes == null || unlockedNodeIds.Contains(EntrepreneurTreeDefinition.DefaultUnlockedNodeId))
+                return;
+
+            for (int i = 0; i < treeData.nodes.Count; i++)
+            {
+                NodeData node = treeData.nodes[i];
+                if (node == null || node.id != EntrepreneurTreeDefinition.DefaultUnlockedNodeId)
+                    continue;
+
+                node.isUnlocked = true;
+                unlockedNodeIds.Add(node.id);
+                Debug.Log(LogPrefix + "Starter migration applied. Default node unlocked: " + node.id);
                 return;
             }
         }
@@ -375,7 +395,7 @@ namespace FLOBUK.StoreSimulator
             // Reset ScriptableObject runtime flags when leaving play mode in the editor
             // so stale data does not persist across edit sessions.
 #if UNITY_EDITOR
-            if (treeData != null)
+            if (treeData != null && treeData.nodes != null)
                 foreach (NodeData node in treeData.nodes)
                     node.isUnlocked = false;
 #endif

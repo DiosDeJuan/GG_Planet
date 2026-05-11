@@ -140,7 +140,7 @@ namespace FLOBUK.StoreSimulator
             if (Instance == null) return;
             Instance.thievesAutoArrested++;
             Instance.recoveredProducts += Mathf.Max(0, recoveredCount);
-            Instance.robberyValueRecovered += Mathf.Max(0, recoveredValue);
+            Instance.robberyValueRecovered += recoveredValue > 0 ? recoveredValue : 0;
             Instance.AccumulateItemDictionary(Instance.recoveredProductsByName, items, true);
         }
 
@@ -150,7 +150,7 @@ namespace FLOBUK.StoreSimulator
             if (Instance == null) return;
             Instance.thievesManualArrested++;
             Instance.recoveredProducts += Mathf.Max(0, recoveredCount);
-            Instance.robberyValueRecovered += Mathf.Max(0, recoveredValue);
+            Instance.robberyValueRecovered += recoveredValue > 0 ? recoveredValue : 0;
             Instance.AccumulateItemDictionary(Instance.recoveredProductsByName, items, true);
         }
 
@@ -159,7 +159,7 @@ namespace FLOBUK.StoreSimulator
         {
             if (Instance == null) return;
             Instance.thievesEscaped++;
-            Instance.robberyMoneyLost += Mathf.Max(0, moneyLost);
+            Instance.robberyMoneyLost += moneyLost > 0 ? moneyLost : 0;
             if (items != null && items.Count > 0)
                 Instance.AccumulateItemDictionary(Instance.robbedProductsByName, items, false);
         }

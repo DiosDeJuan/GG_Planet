@@ -118,6 +118,9 @@ namespace FLOBUK.StoreSimulator
             TreeData tree = EntrepreneurTreeManager.Instance.treeData;
             int createdNodes = 0;
             int createdLines = 0;
+            Debug.Log(LogPrefix + "Tree data loaded: " + (tree != null && tree.nodes != null ? tree.nodes.Count : 0) + " nodes.");
+            Debug.Log(LogPrefix + "Tree root resolved: " + (treeRootObject != null ? treeRootObject.name : "null") + ".");
+            Debug.Log(LogPrefix + "Content parent resolved: " + (treeScrollContent != null ? treeScrollContent.name : "null") + ".");
 
             for (int i = 0; i < tree.nodes.Count; i++)
             {
@@ -131,10 +134,16 @@ namespace FLOBUK.StoreSimulator
 
                 RectTransform rt = nodeObj.GetComponent<RectTransform>();
                 rt.anchoredPosition = nodeData.uiPosition;
+                Debug.Log(LogPrefix + "Rendering node: " + nodeData.id + " at " + nodeData.uiPosition.x + "/" + nodeData.uiPosition.y + ".");
 
                 NodeUI nodeUI = nodeObj.GetComponent<NodeUI>();
                 if (nodeUI == null)
-                    continue;
+                {
+                    Debug.LogWarning(LogPrefix + "Node prefab missing, using runtime fallback.");
+                    nodeUI = EnsureFallbackNodeVisuals(nodeObj);
+                    if (nodeUI == null)
+                        continue;
+                }
 
                 nodeUI.Initialize(nodeData, this);
                 nodeUIMap[nodeData.id] = nodeUI;
@@ -171,7 +180,7 @@ namespace FLOBUK.StoreSimulator
                 ShowLegacyView();
             else
                 ShowTreeView();
-            Debug.Log(LogPrefix + "Tree built: " + createdNodes + " nodes, " + createdLines + " lines.");
+            Debug.Log(LogPrefix + "Tree render complete: " + createdNodes + " nodes, " + createdLines + " connections.");
         }
 
 
@@ -348,6 +357,21 @@ namespace FLOBUK.StoreSimulator
                 Debug.Log(LogPrefix + "Existing EntrepreneurTreeRoot reused.");
             }
 
+            int rootCount = 0;
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i);
+                if (child == null || child.name != "EntrepreneurTreeRoot")
+                    continue;
+
+                rootCount++;
+                if (rootCount > 1)
+                {
+                    child.gameObject.SetActive(false);
+                    Debug.LogWarning(LogPrefix + "Skipping duplicate tree root.");
+                }
+            }
+
             if (rootTransform == null)
                 return;
 
@@ -378,6 +402,8 @@ namespace FLOBUK.StoreSimulator
             }
 
             treeRootObject = rootTransform.gameObject;
+            Debug.Log(LogPrefix + "Tree root resolved: " + rootTransform.name + ".");
+            Debug.Log(LogPrefix + "Content parent resolved: " + (treeScrollContent != null ? treeScrollContent.name : "null") + ".");
             EnsureTreeOpenButton();
         }
 
@@ -542,12 +568,58 @@ namespace FLOBUK.StoreSimulator
             return nodeObj;
         }
 
+        private NodeUI EnsureFallbackNodeVisuals(GameObject nodeObj)
+        {
+            if (nodeObj == null)
+                return null;
+
+            Image background = nodeObj.GetComponent<Image>();
+            if (background == null)
+                background = nodeObj.AddComponent<Image>();
+            background.color = new Color(0.35f, 0.35f, 0.35f, 1f);
+            background.raycastTarget = true;
+
+            NodeUI nodeUI = nodeObj.GetComponent<NodeUI>();
+            if (nodeUI == null)
+                nodeUI = nodeObj.AddComponent<NodeUI>();
+
+            RectTransform rt = nodeObj.GetComponent<RectTransform>();
+            if (rt != null && rt.sizeDelta.sqrMagnitude <= 0.01f)
+                rt.sizeDelta = new Vector2(180f, 88f);
+
+            Transform iconTransform = nodeObj.transform.Find("Icon");
+            Image iconImage = iconTransform != null ? iconTransform.GetComponent<Image>() : null;
+            if (iconImage == null)
+            {
+                GameObject iconObj = CreateUIObject("Icon", nodeObj.transform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0.5f, 0.5f));
+                RectTransform iconRT = iconObj.GetComponent<RectTransform>();
+                iconRT.sizeDelta = new Vector2(46f, 46f);
+                iconRT.anchoredPosition = new Vector2(30f, 0f);
+                iconImage = iconObj.AddComponent<Image>();
+                iconImage.raycastTarget = false;
+            }
+
+            TMP_Text label = FindText(nodeObj.transform, "Label");
+            if (label == null)
+            {
+                label = CreateTextObject("Label", nodeObj.transform, "", 18, TextAlignmentOptions.Left,
+                    new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, 0f), new Vector2(-12f, 0f));
+            }
+
+            nodeUI.background = background;
+            nodeUI.iconImage = iconImage;
+            nodeUI.titleLabel = label;
+            return nodeUI;
+        }
+
 
         private GameObject CreateLineObject()
         {
             if (linePrefab != null)
             {
                 GameObject line = Instantiate(linePrefab, linesContainer, false);
+                if (line.GetComponent<ConnectionLineUI>() == null)
+                    line.AddComponent<ConnectionLineUI>();
                 line.transform.SetAsFirstSibling();
                 return line;
             }

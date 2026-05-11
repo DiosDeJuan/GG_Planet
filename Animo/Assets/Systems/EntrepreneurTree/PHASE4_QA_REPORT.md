@@ -111,3 +111,46 @@ In Unity Editor, start with:
 6. save/load loop (I),
 then mark this report rows as OK/Falló with screenshot/log evidence.
 
+---
+
+## Update — 2026-05-11
+
+- **Fecha:** 2026-05-11
+- **Rama:** `copilot/repair-emprendedor-tree-ui`
+- **Escena probada:** validación estática en sandbox (Unity Editor no disponible)
+
+### Errores encontrados
+- CS0266 por uso de `Mathf.Max` con `long` en `StatsDatabase`.
+- CS0029 y CS0104 en `RobberyInventoryBridge`.
+- CS0165 en `ShoplifterAgent`.
+- CS0104 en `EntrepreneurTreeProductUnlockAdapter`.
+- `NullReferenceException` potencial en `EntrepreneurTreeManager.OnDestroy()`.
+- Render del árbol vulnerable a prefab incompleto (`NodeUI` ausente).
+
+### Correcciones aplicadas
+- Conversiones seguras a `long` en `StatsDatabase`.
+- Parse seguro `string -> int` con fallback/log en `RobberyInventoryBridge`.
+- `UnityEngine.Object` explícito en referencias ambiguas.
+- Inicialización/fallback de `total/products` en `ShoplifterAgent`.
+- Guardas nulas y migración de nodo inicial en `EntrepreneurTreeManager`.
+- Fallback runtime de nodos y logs estructurados `[EntrepreneurTree]` en `UpgradesUIController`.
+- Mapeo starter reforzado (`Product A-E`) y logs de mapeo/bloqueo en `EntrepreneurTreeProductUnlockAdapter`.
+
+### Resultado de compilación
+- **Pendiente de validación en Unity Editor** (no disponible en este entorno).
+
+### Resultado de Products
+- Lógica actualizada para desbloqueo inicial de grupo `product_basic_1` y starter `0..4`.
+- Migración de saves antiguos agregada para garantizar nodo inicial desbloqueado.
+
+### Resultado de Árbol
+- Se reforzó carga/render con logs y fallback si prefab no trae `NodeUI`.
+- Prevención de raíz duplicada y trazas de render por nodo.
+
+### Resultado de EXPANDIR
+- Se creó integración runtime de pestaña `EXPANDIR`.
+- Se agregó app UI con mapa 2D, selección de zonas, detalle y compra con validación de fondos.
+- Se agregó sistema `SupermarketExpansionSystem` con reglas/costos y persistencia separada.
+
+### Pendientes
+- QA completo en Play Mode (compilación Unity, navegación de pestañas, compras reales, no duplicados, consola limpia).
