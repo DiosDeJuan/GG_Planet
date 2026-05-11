@@ -44,7 +44,6 @@ namespace FLOBUK.StoreSimulator
 
                 ExpansionZoneButtonUI zoneButton = zoneObj.GetComponent<ExpansionZoneButtonUI>();
                 zoneButton.Initialize(zone, OnZoneSelected);
-                zoneObj.GetComponent<Button>().onClick.AddListener(() => OnZoneSelected(zone.id));
                 buttonsByZone[zone.id] = zoneButton;
             }
 
