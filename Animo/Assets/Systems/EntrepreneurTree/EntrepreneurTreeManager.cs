@@ -254,7 +254,7 @@ namespace FLOBUK.StoreSimulator
             // Reset all node unlock flags first.
             if (treeData != null && treeData.nodes != null)
                 foreach (NodeData node in treeData.nodes)
-                    node.isUnlocked = false;
+                    if (node != null) node.isUnlocked = false;
 
             unlockedNodeIds.Clear();
             currentPoints = 0;
@@ -397,7 +397,7 @@ namespace FLOBUK.StoreSimulator
 #if UNITY_EDITOR
             if (treeData != null && treeData.nodes != null)
                 foreach (NodeData node in treeData.nodes)
-                    node.isUnlocked = false;
+                    if (node != null) node.isUnlocked = false;
 #endif
 
             if (Instance == this)

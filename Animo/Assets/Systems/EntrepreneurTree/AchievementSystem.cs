@@ -279,23 +279,23 @@ namespace FLOBUK.StoreSimulator
 
             // Count unlocked employees.
             int unlockedEmployees = allNodes.FindAll(
-                n => n.nodeType == TreeNodeType.Employee && n.isUnlocked).Count;
+                n => n != null && n.nodeType == TreeNodeType.Employee && n.isUnlocked).Count;
             if (unlockedEmployees >= 1)  Complete(AchievementId.HireFirstEmployee);
             if (unlockedEmployees >= 5)  Complete(AchievementId.Hire5Employees);
             if (unlockedEmployees >= 10) Complete(AchievementId.Hire10Employees);
 
             // All product nodes unlocked?
             bool allProducts = allNodes.TrueForAll(
-                n => n.nodeType != TreeNodeType.Product || n.isUnlocked);
+                n => n == null || n.nodeType != TreeNodeType.Product || n.isUnlocked);
             if (allProducts) Complete(AchievementId.UnlockAllProducts);
 
             // All improvement nodes unlocked?
             bool allImprovements = allNodes.TrueForAll(
-                n => n.nodeType != TreeNodeType.Improvement || n.isUnlocked);
+                n => n == null || n.nodeType != TreeNodeType.Improvement || n.isUnlocked);
             if (allImprovements) Complete(AchievementId.TotalOptimization);
 
             // Every single node unlocked?
-            bool allUnlocked = allNodes.TrueForAll(n => n.isUnlocked);
+            bool allUnlocked = allNodes.TrueForAll(n => n == null || n.isUnlocked);
             if (allUnlocked) Complete(AchievementId.UnlockAllTree);
 
             if (EntrepreneurTreeManager.IsNodeUnlocked("security_1") &&

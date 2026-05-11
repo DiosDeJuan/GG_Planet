@@ -27,7 +27,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public NodeData GetNodeById(string nodeId)
         {
-            return nodes.Find(n => n.id == nodeId);
+            return nodes.Find(n => n != null && n.id == nodeId);
         }
     }
 }
