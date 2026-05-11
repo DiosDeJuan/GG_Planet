@@ -121,8 +121,6 @@ namespace FLOBUK.StoreSimulator
             int createdNodes = 0;
             int createdLines = 0;
             Debug.Log(LogPrefix + "Tree data loaded: " + (tree != null && tree.nodes != null ? tree.nodes.Count : 0) + " nodes.");
-            Debug.Log(LogPrefix + "Tree root resolved: " + (treeRootObject != null ? treeRootObject.name : "null") + ".");
-            Debug.Log(LogPrefix + "Content parent resolved: " + (treeScrollContent != null ? treeScrollContent.name : "null") + ".");
 
             for (int i = 0; i < tree.nodes.Count; i++)
             {
