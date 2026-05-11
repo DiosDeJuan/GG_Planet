@@ -133,7 +133,7 @@ namespace FLOBUK.StoreSimulator
             sourcePackage = null;
             sourceProduct = null;
 
-            PlacementObject[] placements = Object.FindObjectsByType<PlacementObject>(FindObjectsSortMode.None);
+            PlacementObject[] placements = FindAllPlacements();
             PlacementObject bestTarget = null;
             float bestFillRatio = 1f;
 
@@ -188,7 +188,7 @@ namespace FLOBUK.StoreSimulator
             if (product == null)
                 return null;
 
-            PackageObject[] packages = Object.FindObjectsByType<PackageObject>(FindObjectsSortMode.None);
+            PackageObject[] packages = FindAllPackages();
             for (int i = 0; i < packages.Length; i++)
             {
                 PackageObject package = packages[i];
@@ -209,7 +209,7 @@ namespace FLOBUK.StoreSimulator
         private static PackageObject FindPackageForStorageType(StorageType storageType, out ProductScriptableObject product)
         {
             product = null;
-            PackageObject[] packages = Object.FindObjectsByType<PackageObject>(FindObjectsSortMode.None);
+            PackageObject[] packages = FindAllPackages();
             for (int i = 0; i < packages.Length; i++)
             {
                 PackageObject package = packages[i];
@@ -265,6 +265,24 @@ namespace FLOBUK.StoreSimulator
                 speed *= EntrepreneurTreeGameplayBridge.Instance.GetEmployeeSpeedMultiplier();
 
             return speed;
+        }
+
+        private static PlacementObject[] FindAllPlacements()
+        {
+#if UNITY_2022_2_OR_NEWER
+            return Object.FindObjectsByType<PlacementObject>(FindObjectsSortMode.None);
+#else
+            return Object.FindObjectsOfType<PlacementObject>();
+#endif
+        }
+
+        private static PackageObject[] FindAllPackages()
+        {
+#if UNITY_2022_2_OR_NEWER
+            return Object.FindObjectsByType<PackageObject>(FindObjectsSortMode.None);
+#else
+            return Object.FindObjectsOfType<PackageObject>();
+#endif
         }
 
 

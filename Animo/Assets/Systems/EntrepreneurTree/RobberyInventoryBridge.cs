@@ -54,7 +54,7 @@ namespace FLOBUK.StoreSimulator
 
                 RobbedItem robbedItem = new RobbedItem
                 {
-                    productId = bagItem.product.id,
+                    productId = ParseProductId(bagItem.product.id, bagItem.product.name),
                     productName = bagItem.product.name,
                     quantity = quantity,
                     unitValue = unitValue,
@@ -156,14 +156,14 @@ namespace FLOBUK.StoreSimulator
             Vector3 localPosition = target.Add(product);
             Quaternion worldRotation = target.transform.rotation * Quaternion.Euler(0f, target.orientation, 0f);
             Vector3 worldPosition = target.container.TransformPoint(localPosition);
-            Object.Instantiate(product.prefab, worldPosition, worldRotation, target.container);
+            UnityEngine.Object.Instantiate(product.prefab, worldPosition, worldRotation, target.container);
             return true;
         }
 
 
         private static PlacementObject FindPlacementForProduct(ProductScriptableObject product)
         {
-            PlacementObject[] placements = Object.FindObjectsByType<PlacementObject>(FindObjectsSortMode.None);
+            PlacementObject[] placements = FindAllPlacements();
             PlacementObject bestExisting = null;
             PlacementObject bestEmpty = null;
 
@@ -187,6 +187,24 @@ namespace FLOBUK.StoreSimulator
             }
 
             return bestExisting != null ? bestExisting : bestEmpty;
+        }
+
+        private static PlacementObject[] FindAllPlacements()
+        {
+#if UNITY_2022_2_OR_NEWER
+            return UnityEngine.Object.FindObjectsByType<PlacementObject>(FindObjectsSortMode.None);
+#else
+            return UnityEngine.Object.FindObjectsOfType<PlacementObject>();
+#endif
+        }
+
+        private static int ParseProductId(string productId, string productName)
+        {
+            if (int.TryParse(productId, out int parsed))
+                return parsed;
+
+            Debug.LogWarning(LogPrefix + "Unable to map robbed product id '" + productId + "' (" + productName + ") to int. Using -1 fallback.");
+            return -1;
         }
     }
 }

@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using TMPro;
 
 namespace FLOBUK.StoreSimulator
 {
@@ -85,6 +87,8 @@ namespace FLOBUK.StoreSimulator
                         upgradesPanel.gameObject.AddComponent<EmployeeAppUIController>();
                         Debug.Log(LogPrefix + "Attached EmployeeAppUIController to ContentArea/Expansions.");
                     }
+
+                    EnsureExpansionTab(helper, contentArea);
                 }
             }
         }
@@ -110,6 +114,7 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EntrepreneurEmployeeSystem>();
                 systems.AddComponent<EmployeeRestockCoordinator>();
                 systems.AddComponent<ShoplifterSystem>();
+                systems.AddComponent<SupermarketExpansionSystem>();
 
                 Debug.Log(LogPrefix + "Created runtime EntrepreneurTree systems GameObject.");
             }
@@ -158,6 +163,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EmployeeRestockCoordinator>();
             if (systems.GetComponent<ShoplifterSystem>() == null)
                 systems.AddComponent<ShoplifterSystem>();
+            if (systems.GetComponent<SupermarketExpansionSystem>() == null)
+                systems.AddComponent<SupermarketExpansionSystem>();
         }
 
 
@@ -166,7 +173,7 @@ namespace FLOBUK.StoreSimulator
             if (cachedManager != null)
                 return cachedManager;
 
-            EntrepreneurTreeManager[] managers = Object.FindObjectsOfType<EntrepreneurTreeManager>(true);
+            EntrepreneurTreeManager[] managers = FindTreeManagers();
             if (managers != null && managers.Length > 0)
             {
                 cachedManager = managers[0];
@@ -212,6 +219,112 @@ namespace FLOBUK.StoreSimulator
 #endif
 
             return null;
+        }
+
+        private static void EnsureExpansionTab(UIShopCategoryHelper helper, Transform contentArea)
+        {
+            if (helper == null || contentArea == null)
+                return;
+
+            Transform expandirPanel = contentArea.Find("Expandir");
+            if (expandirPanel == null)
+            {
+                GameObject panelObject = new GameObject("Expandir", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panelObject.transform.SetParent(contentArea, false);
+                RectTransform panelRT = panelObject.GetComponent<RectTransform>();
+                panelRT.anchorMin = Vector2.zero;
+                panelRT.anchorMax = Vector2.one;
+                panelRT.offsetMin = Vector2.zero;
+                panelRT.offsetMax = Vector2.zero;
+                Image panelImage = panelObject.GetComponent<Image>();
+                panelImage.color = new Color(0.09f, 0.10f, 0.13f, 0.96f);
+
+                panelObject.SetActive(false);
+                expandirPanel = panelObject.transform;
+                Debug.Log("[ExpansionApp] Expansion panel created.");
+            }
+
+            ExpansionAppUIController app = expandirPanel.GetComponent<ExpansionAppUIController>();
+            if (app == null)
+                app = expandirPanel.gameObject.AddComponent<ExpansionAppUIController>();
+
+            app.Initialize(helper, expandirPanel as RectTransform);
+            EnsureExpansionButton(helper, expandirPanel.gameObject);
+        }
+
+        private static void EnsureExpansionButton(UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (helper == null || panel == null)
+                return;
+
+            Transform root = helper.transform.parent != null ? helper.transform.parent : helper.transform;
+            Button[] buttons = root.GetComponentsInChildren<Button>(true);
+            Button template = null;
+            Button existing = null;
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Button button = buttons[i];
+                if (button == null)
+                    continue;
+
+                TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+                string text = label != null ? label.text.Trim().ToUpperInvariant() : string.Empty;
+                if (text == "EXPANDIR")
+                {
+                    existing = button;
+                    break;
+                }
+
+                if ((text == "CUSTOMIZATION" || text == "BOOSTERS") && template == null)
+                    template = button;
+            }
+
+            if (existing != null)
+            {
+                ConfigureExpansionButton(existing, helper, panel);
+                return;
+            }
+
+            if (template == null)
+                return;
+
+            Button newButton = Object.Instantiate(template, template.transform.parent, false);
+            newButton.name = "ExpandirButton";
+            TMP_Text newLabel = newButton.GetComponentInChildren<TMP_Text>(true);
+            if (newLabel != null)
+            {
+                newLabel.text = "EXPANDIR";
+                newLabel.color = Color.white;
+            }
+
+            Image buttonImage = newButton.GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = new Color(0.89f, 0.23f, 0.56f, 0.95f);
+
+            newButton.onClick.RemoveAllListeners();
+            ConfigureExpansionButton(newButton, helper, panel);
+            newButton.transform.SetAsLastSibling();
+            Debug.Log("[ExpansionApp] Expansion tab created.");
+        }
+
+        private static void ConfigureExpansionButton(Button button, UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (button == null)
+                return;
+
+            ExpansionTabButtonLink link = button.GetComponent<ExpansionTabButtonLink>();
+            if (link == null)
+                link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
+            link.Configure(helper, panel);
+        }
+
+        private static EntrepreneurTreeManager[] FindTreeManagers()
+        {
+#if UNITY_2022_2_OR_NEWER
+            return Object.FindObjectsByType<EntrepreneurTreeManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+            return Object.FindObjectsOfType<EntrepreneurTreeManager>(true);
+#endif
         }
     }
 }

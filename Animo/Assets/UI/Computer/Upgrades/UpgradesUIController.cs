@@ -39,12 +39,14 @@ namespace FLOBUK.StoreSimulator
         private RectTransform linesContainer;
         private RectTransform nodesContainer;
         private GameObject treeRootObject;
+        private ScrollRect treeScrollRect;
         private Button openTreeButton;
         private Button backToLegacyButton;
 
         private bool treeBuilt;
         private bool listenersBound;
         private bool autoConfigured;
+        private int lastFocusFrame = -1;
 
 
         void Awake()
@@ -101,6 +103,7 @@ namespace FLOBUK.StoreSimulator
             {
                 ShowTreeView();
                 RefreshNodeStates();
+                FocusDefaultNode();
                 Debug.Log(LogPrefix + "BuildTree skipped. Existing tree reused.");
                 return;
             }
@@ -118,6 +121,7 @@ namespace FLOBUK.StoreSimulator
             TreeData tree = EntrepreneurTreeManager.Instance.treeData;
             int createdNodes = 0;
             int createdLines = 0;
+            Debug.Log(LogPrefix + "Tree data loaded: " + (tree != null && tree.nodes != null ? tree.nodes.Count : 0) + " nodes.");
 
             for (int i = 0; i < tree.nodes.Count; i++)
             {
@@ -131,10 +135,16 @@ namespace FLOBUK.StoreSimulator
 
                 RectTransform rt = nodeObj.GetComponent<RectTransform>();
                 rt.anchoredPosition = nodeData.uiPosition;
+                Debug.Log(LogPrefix + "Rendering node: " + nodeData.id + " at " + nodeData.uiPosition.x + "/" + nodeData.uiPosition.y + ".");
 
                 NodeUI nodeUI = nodeObj.GetComponent<NodeUI>();
                 if (nodeUI == null)
-                    continue;
+                {
+                    Debug.LogWarning(LogPrefix + "Node prefab missing, using runtime fallback.");
+                    nodeUI = EnsureFallbackNodeVisuals(nodeObj);
+                    if (nodeUI == null)
+                        continue;
+                }
 
                 nodeUI.Initialize(nodeData, this);
                 nodeUIMap[nodeData.id] = nodeUI;
@@ -171,7 +181,8 @@ namespace FLOBUK.StoreSimulator
                 ShowLegacyView();
             else
                 ShowTreeView();
-            Debug.Log(LogPrefix + "Tree built: " + createdNodes + " nodes, " + createdLines + " lines.");
+            FocusDefaultNode();
+            Debug.Log(LogPrefix + "Tree render complete: " + createdNodes + " nodes, " + createdLines + " connections.");
         }
 
 
@@ -348,6 +359,21 @@ namespace FLOBUK.StoreSimulator
                 Debug.Log(LogPrefix + "Existing EntrepreneurTreeRoot reused.");
             }
 
+            int rootCount = 0;
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i);
+                if (child == null || child.name != "EntrepreneurTreeRoot")
+                    continue;
+
+                rootCount++;
+                if (rootCount > 1)
+                {
+                    child.gameObject.SetActive(false);
+                    Debug.LogWarning(LogPrefix + "Skipping duplicate tree root.");
+                }
+            }
+
             if (rootTransform == null)
                 return;
 
@@ -376,8 +402,16 @@ namespace FLOBUK.StoreSimulator
                 if (content != null)
                     treeScrollContent = content as RectTransform;
             }
+            if (treeScrollRect == null)
+            {
+                Transform scroll = rootTransform.Find("TreeScrollView");
+                if (scroll != null)
+                    treeScrollRect = scroll.GetComponent<ScrollRect>();
+            }
 
             treeRootObject = rootTransform.gameObject;
+            Debug.Log(LogPrefix + "Tree root resolved: " + rootTransform.name + ".");
+            Debug.Log(LogPrefix + "Content parent resolved: " + (treeScrollContent != null ? treeScrollContent.name : "null") + ".");
             EnsureTreeOpenButton();
         }
 
@@ -485,6 +519,7 @@ namespace FLOBUK.StoreSimulator
             scrollRect.horizontal = true;
             scrollRect.vertical = true;
             scrollRect.scrollSensitivity = 24f;
+            treeScrollRect = scrollRect;
 
             GameObject viewport = CreateUIObject("Viewport", treeScroll.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
             RectTransform viewportRT = viewport.GetComponent<RectTransform>();
@@ -507,6 +542,49 @@ namespace FLOBUK.StoreSimulator
 
             info.SetActive(false);
             return rootObj.transform;
+        }
+
+
+        private void FocusDefaultNode()
+        {
+            if (treeScrollRect == null || treeScrollContent == null || EntrepreneurTreeManager.Instance == null)
+                return;
+            if (lastFocusFrame == Time.frameCount)
+                return;
+
+            if (!nodeUIMap.TryGetValue(EntrepreneurTreeDefinition.DefaultUnlockedNodeId, out NodeUI defaultNode) || defaultNode == null)
+                return;
+
+            RectTransform viewport = treeScrollRect.viewport;
+            RectTransform nodeRT = defaultNode.GetComponent<RectTransform>();
+            if (viewport == null || nodeRT == null)
+                return;
+
+            Canvas.ForceUpdateCanvases();
+
+            float contentWidth = Mathf.Max(treeScrollContent.rect.width, treeScrollContent.sizeDelta.x);
+            float contentHeight = Mathf.Max(treeScrollContent.rect.height, treeScrollContent.sizeDelta.y);
+            float viewportWidth = viewport.rect.width;
+            float viewportHeight = viewport.rect.height;
+            if (contentWidth <= 0f || contentHeight <= 0f || viewportWidth <= 0f || viewportHeight <= 0f)
+                return;
+
+            Vector2 nodePos = nodeRT.anchoredPosition;
+            float nodeXFromLeft = nodePos.x + (contentWidth * 0.5f);
+            float nodeYFromBottom = nodePos.y + (contentHeight * 0.5f);
+            float horizontalRange = Mathf.Max(1f, contentWidth - viewportWidth);
+            float verticalRange = Mathf.Max(1f, contentHeight - viewportHeight);
+            float hNormalized = contentWidth <= viewportWidth
+                ? 0.5f
+                : Mathf.Clamp01((nodeXFromLeft - (viewportWidth * 0.5f)) / horizontalRange);
+            float vNormalized = contentHeight <= viewportHeight
+                ? 0.5f
+                : Mathf.Clamp01((nodeYFromBottom - (viewportHeight * 0.5f)) / verticalRange);
+
+            treeScrollRect.horizontalNormalizedPosition = hNormalized;
+            treeScrollRect.verticalNormalizedPosition = vNormalized;
+            lastFocusFrame = Time.frameCount;
+            Debug.Log(LogPrefix + "Focused default node: " + EntrepreneurTreeDefinition.DefaultUnlockedNodeId + ".");
         }
 
 
@@ -542,12 +620,58 @@ namespace FLOBUK.StoreSimulator
             return nodeObj;
         }
 
+        private NodeUI EnsureFallbackNodeVisuals(GameObject nodeObj)
+        {
+            if (nodeObj == null)
+                return null;
+
+            Image background = nodeObj.GetComponent<Image>();
+            if (background == null)
+                background = nodeObj.AddComponent<Image>();
+            background.color = new Color(0.35f, 0.35f, 0.35f, 1f);
+            background.raycastTarget = true;
+
+            NodeUI nodeUI = nodeObj.GetComponent<NodeUI>();
+            if (nodeUI == null)
+                nodeUI = nodeObj.AddComponent<NodeUI>();
+
+            RectTransform rt = nodeObj.GetComponent<RectTransform>();
+            if (rt != null && rt.sizeDelta.sqrMagnitude <= 0.01f)
+                rt.sizeDelta = new Vector2(180f, 88f);
+
+            Transform iconTransform = nodeObj.transform.Find("Icon");
+            Image iconImage = iconTransform != null ? iconTransform.GetComponent<Image>() : null;
+            if (iconImage == null)
+            {
+                GameObject iconObj = CreateUIObject("Icon", nodeObj.transform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0.5f, 0.5f));
+                RectTransform iconRT = iconObj.GetComponent<RectTransform>();
+                iconRT.sizeDelta = new Vector2(46f, 46f);
+                iconRT.anchoredPosition = new Vector2(30f, 0f);
+                iconImage = iconObj.AddComponent<Image>();
+                iconImage.raycastTarget = false;
+            }
+
+            TMP_Text label = FindText(nodeObj.transform, "Label");
+            if (label == null)
+            {
+                label = CreateTextObject("Label", nodeObj.transform, "", 18, TextAlignmentOptions.Left,
+                    new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, 0f), new Vector2(-12f, 0f));
+            }
+
+            nodeUI.background = background;
+            nodeUI.iconImage = iconImage;
+            nodeUI.titleLabel = label;
+            return nodeUI;
+        }
+
 
         private GameObject CreateLineObject()
         {
             if (linePrefab != null)
             {
                 GameObject line = Instantiate(linePrefab, linesContainer, false);
+                if (line.GetComponent<ConnectionLineUI>() == null)
+                    line.AddComponent<ConnectionLineUI>();
                 line.transform.SetAsFirstSibling();
                 return line;
             }
@@ -594,6 +718,7 @@ namespace FLOBUK.StoreSimulator
         private void ShowTreeView()
         {
             ToggleLegacyContent(false);
+            FocusDefaultNode();
         }
 
         private void ShowLegacyView()

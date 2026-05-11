@@ -111,3 +111,78 @@ In Unity Editor, start with:
 6. save/load loop (I),
 then mark this report rows as OK/Falló with screenshot/log evidence.
 
+---
+
+## Update — 2026-05-11
+
+- **Fecha:** 2026-05-11
+- **Rama:** `copilot/repair-emprendedor-tree-ui`
+- **Escena probada:** validación estática en sandbox (Unity Editor no disponible)
+
+### Errores encontrados
+- CS0266 por uso de `Mathf.Max` con `long` en `StatsDatabase`.
+- CS0029 y CS0104 en `RobberyInventoryBridge`.
+- CS0165 en `ShoplifterAgent`.
+- CS0104 en `EntrepreneurTreeProductUnlockAdapter`.
+- `NullReferenceException` potencial en `EntrepreneurTreeManager.OnDestroy()`.
+- Render del árbol vulnerable a prefab incompleto (`NodeUI` ausente).
+
+### Correcciones aplicadas
+- Conversiones seguras a `long` en `StatsDatabase`.
+- Parse seguro `string -> int` con fallback/log en `RobberyInventoryBridge`.
+- `UnityEngine.Object` explícito en referencias ambiguas.
+- Inicialización/fallback de `total/products` en `ShoplifterAgent`.
+- Guardas nulas y migración de nodo inicial en `EntrepreneurTreeManager`.
+- Fallback runtime de nodos y logs estructurados `[EntrepreneurTree]` en `UpgradesUIController`.
+- Mapeo starter reforzado (`Product A-E`) y logs de mapeo/bloqueo en `EntrepreneurTreeProductUnlockAdapter`.
+
+### Resultado de compilación
+- **Pendiente de validación en Unity Editor** (no disponible en este entorno).
+
+### Resultado de Products
+- Lógica actualizada para desbloqueo inicial de grupo `product_basic_1` y starter `0..4`.
+- Migración de saves antiguos agregada para garantizar nodo inicial desbloqueado.
+
+### Resultado de Árbol
+- Se reforzó carga/render con logs y fallback si prefab no trae `NodeUI`.
+- Prevención de raíz duplicada y trazas de render por nodo.
+
+### Resultado de EXPANDIR
+- Se creó integración runtime de pestaña `EXPANDIR`.
+- Se agregó app UI con mapa 2D, selección de zonas, detalle y compra con validación de fondos.
+- Se agregó sistema `SupermarketExpansionSystem` con reglas/costos y persistencia separada.
+
+### Pendientes
+- QA completo en Play Mode (compilación Unity, navegación de pestañas, compras reales, no duplicados, consola limpia).
+
+---
+
+## Update — 2026-05-11 (Auditoría commit d40c44d)
+
+- **Fecha:** 2026-05-11
+- **Rama:** `copilot/repair-emprendedor-tree-ui`
+- **Commit revisado:** `d40c44d`
+- **Estado real:** **Unity Editor pendiente** (no disponible en este entorno)
+
+### Resultado de auditoría
+- Se auditó el alcance de `d40c44d` y se revisaron sus archivos críticos en la rama actual.
+- Se detectaron riesgos funcionales aún abiertos tras el arreglo automático inicial.
+
+### Errores/riesgos encontrados después de `d40c44d`
+- Riesgo de árbol “vacío” por falta de enfoque inicial al nodo raíz (`product_basic_1`) en el scroll.
+- Riesgo de listeners duplicados en botón `EXPANDIR` al reintegrar UI por escenas recargadas.
+- Save/load de expansión sin `try/catch` ni manejo defensivo de JSON vacío/corrupto.
+- Compra de zonas sin validar explícitamente `StoreDatabase.Instance` antes de usar dinero.
+- Riesgo de compatibilidad Unity por `FindObjectsByType` en rutas runtime (dependiendo de versión).
+
+### Correcciones nuevas aplicadas
+- `UpgradesUIController`: se agregó `FocusDefaultNode()` y se ejecuta al abrir/construir el árbol con log:
+  - `[EntrepreneurTree] Focused default node: product_basic_1.`
+- `EntrepreneurTreeUIBootstrap`: se evitó duplicación de listeners de `EXPANDIR` mediante `ExpansionTabButtonLink`.
+- `SupermarketExpansionSystem`: hardening de `TryPurchaseZone`, `OnSave`, `OnLoad` con validaciones y `try/catch`.
+- `ExpansionMapRenderer`: normalización de log de refresco del mapa.
+- Compatibilidad de búsqueda runtime (`FindObjectsByType`/`FindObjectsOfType`) en scripts críticos para reducir riesgo de compilación por versión.
+
+### Riesgos pendientes
+- Validación final de Play Mode y UX real en Unity (scroll inicial visible, interacción completa de pestañas, compra y persistencia).
+- Verificación visual fina de layout/anchoring en distintas resoluciones dentro del Editor.

@@ -159,8 +159,8 @@ namespace FLOBUK.StoreSimulator
         {
             long target = system.GetTargetStealValue(thiefType);
             reservedItems.Clear();
-            long total;
-            int products;
+            long total = 0;
+            int products = 0;
             bool hasReserved = inventoryBridge != null &&
                                inventoryBridge.TryReserveStolenItems(cart, thiefType, target, reservedItems, out total, out products);
 
@@ -168,6 +168,8 @@ namespace FLOBUK.StoreSimulator
             {
                 total = target;
                 products = Mathf.Max(1, Mathf.FloorToInt(total / 1000f));
+                if (!hasReserved)
+                    Debug.LogWarning("[EntrepreneurTree] Inventory bridge did not return stolen items. Using fallback theft values.");
             }
 
             stolenValue = total;
