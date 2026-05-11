@@ -46,6 +46,7 @@ namespace FLOBUK.StoreSimulator
         private bool treeBuilt;
         private bool listenersBound;
         private bool autoConfigured;
+        private int lastFocusFrame = -1;
 
 
         void Awake()
@@ -548,6 +549,8 @@ namespace FLOBUK.StoreSimulator
         {
             if (treeScrollRect == null || treeScrollContent == null || EntrepreneurTreeManager.Instance == null)
                 return;
+            if (lastFocusFrame == Time.frameCount)
+                return;
 
             if (!nodeUIMap.TryGetValue(EntrepreneurTreeDefinition.DefaultUnlockedNodeId, out NodeUI defaultNode) || defaultNode == null)
                 return;
@@ -580,6 +583,7 @@ namespace FLOBUK.StoreSimulator
 
             treeScrollRect.horizontalNormalizedPosition = hNormalized;
             treeScrollRect.verticalNormalizedPosition = vNormalized;
+            lastFocusFrame = Time.frameCount;
             Debug.Log(LogPrefix + "Focused default node: " + EntrepreneurTreeDefinition.DefaultUnlockedNodeId + ".");
         }
 

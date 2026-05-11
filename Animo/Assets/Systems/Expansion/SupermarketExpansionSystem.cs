@@ -180,6 +180,12 @@ namespace FLOBUK.StoreSimulator
                 }
 
                 JSONArray purchased = data["purchased"].AsArray;
+                if (purchased == null)
+                {
+                    Debug.LogWarning(LogPrefix + "Load warning: expansion save file has no purchased zone array.");
+                    onZonesChanged?.Invoke();
+                    return;
+                }
                 for (int i = 0; i < purchased.Count; i++)
                 {
                     string zoneId = purchased[i].Value;
