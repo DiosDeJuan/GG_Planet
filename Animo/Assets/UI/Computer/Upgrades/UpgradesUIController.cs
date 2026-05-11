@@ -39,6 +39,7 @@ namespace FLOBUK.StoreSimulator
         private RectTransform linesContainer;
         private RectTransform nodesContainer;
         private GameObject treeRootObject;
+        private ScrollRect treeScrollRect;
         private Button openTreeButton;
         private Button backToLegacyButton;
 
@@ -101,6 +102,7 @@ namespace FLOBUK.StoreSimulator
             {
                 ShowTreeView();
                 RefreshNodeStates();
+                FocusDefaultNode();
                 Debug.Log(LogPrefix + "BuildTree skipped. Existing tree reused.");
                 return;
             }
@@ -180,6 +182,7 @@ namespace FLOBUK.StoreSimulator
                 ShowLegacyView();
             else
                 ShowTreeView();
+            FocusDefaultNode();
             Debug.Log(LogPrefix + "Tree render complete: " + createdNodes + " nodes, " + createdLines + " connections.");
         }
 
@@ -400,6 +403,12 @@ namespace FLOBUK.StoreSimulator
                 if (content != null)
                     treeScrollContent = content as RectTransform;
             }
+            if (treeScrollRect == null)
+            {
+                Transform scroll = rootTransform.Find("TreeScrollView");
+                if (scroll != null)
+                    treeScrollRect = scroll.GetComponent<ScrollRect>();
+            }
 
             treeRootObject = rootTransform.gameObject;
             Debug.Log(LogPrefix + "Tree root resolved: " + rootTransform.name + ".");
@@ -511,6 +520,7 @@ namespace FLOBUK.StoreSimulator
             scrollRect.horizontal = true;
             scrollRect.vertical = true;
             scrollRect.scrollSensitivity = 24f;
+            treeScrollRect = scrollRect;
 
             GameObject viewport = CreateUIObject("Viewport", treeScroll.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
             RectTransform viewportRT = viewport.GetComponent<RectTransform>();
@@ -533,6 +543,46 @@ namespace FLOBUK.StoreSimulator
 
             info.SetActive(false);
             return rootObj.transform;
+        }
+
+
+        private void FocusDefaultNode()
+        {
+            if (treeScrollRect == null || treeScrollContent == null || EntrepreneurTreeManager.Instance == null)
+                return;
+
+            if (!nodeUIMap.TryGetValue(EntrepreneurTreeDefinition.DefaultUnlockedNodeId, out NodeUI defaultNode) || defaultNode == null)
+                return;
+
+            RectTransform viewport = treeScrollRect.viewport;
+            RectTransform nodeRT = defaultNode.GetComponent<RectTransform>();
+            if (viewport == null || nodeRT == null)
+                return;
+
+            Canvas.ForceUpdateCanvases();
+
+            float contentWidth = Mathf.Max(treeScrollContent.rect.width, treeScrollContent.sizeDelta.x);
+            float contentHeight = Mathf.Max(treeScrollContent.rect.height, treeScrollContent.sizeDelta.y);
+            float viewportWidth = viewport.rect.width;
+            float viewportHeight = viewport.rect.height;
+            if (contentWidth <= 0f || contentHeight <= 0f || viewportWidth <= 0f || viewportHeight <= 0f)
+                return;
+
+            Vector2 nodePos = nodeRT.anchoredPosition;
+            float nodeXFromLeft = nodePos.x + (contentWidth * 0.5f);
+            float nodeYFromBottom = nodePos.y + (contentHeight * 0.5f);
+            float horizontalRange = Mathf.Max(1f, contentWidth - viewportWidth);
+            float verticalRange = Mathf.Max(1f, contentHeight - viewportHeight);
+            float hNormalized = contentWidth <= viewportWidth
+                ? 0.5f
+                : Mathf.Clamp01((nodeXFromLeft - (viewportWidth * 0.5f)) / horizontalRange);
+            float vNormalized = contentHeight <= viewportHeight
+                ? 0.5f
+                : Mathf.Clamp01((nodeYFromBottom - (viewportHeight * 0.5f)) / verticalRange);
+
+            treeScrollRect.horizontalNormalizedPosition = hNormalized;
+            treeScrollRect.verticalNormalizedPosition = vNormalized;
+            Debug.Log(LogPrefix + "Focused default node: " + EntrepreneurTreeDefinition.DefaultUnlockedNodeId + ".");
         }
 
 
@@ -666,6 +716,7 @@ namespace FLOBUK.StoreSimulator
         private void ShowTreeView()
         {
             ToggleLegacyContent(false);
+            FocusDefaultNode();
         }
 
         private void ShowLegacyView()

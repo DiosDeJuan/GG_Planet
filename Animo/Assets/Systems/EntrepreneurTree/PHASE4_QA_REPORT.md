@@ -154,3 +154,35 @@ then mark this report rows as OK/Falló with screenshot/log evidence.
 
 ### Pendientes
 - QA completo en Play Mode (compilación Unity, navegación de pestañas, compras reales, no duplicados, consola limpia).
+
+---
+
+## Update — 2026-05-11 (Auditoría commit d40c44d)
+
+- **Fecha:** 2026-05-11
+- **Rama:** `copilot/repair-emprendedor-tree-ui`
+- **Commit revisado:** `d40c44d`
+- **Estado real:** **Unity Editor pendiente** (no disponible en este entorno)
+
+### Resultado de auditoría
+- Se auditó el alcance de `d40c44d` y se revisaron sus archivos críticos en la rama actual.
+- Se detectaron riesgos funcionales aún abiertos tras el arreglo automático inicial.
+
+### Errores/riesgos encontrados después de `d40c44d`
+- Riesgo de árbol “vacío” por falta de enfoque inicial al nodo raíz (`product_basic_1`) en el scroll.
+- Riesgo de listeners duplicados en botón `EXPANDIR` al reintegrar UI por escenas recargadas.
+- Save/load de expansión sin `try/catch` ni manejo defensivo de JSON vacío/corrupto.
+- Compra de zonas sin validar explícitamente `StoreDatabase.Instance` antes de usar dinero.
+- Riesgo de compatibilidad Unity por `FindObjectsByType` en rutas runtime (dependiendo de versión).
+
+### Correcciones nuevas aplicadas
+- `UpgradesUIController`: se agregó `FocusDefaultNode()` y se ejecuta al abrir/construir el árbol con log:
+  - `[EntrepreneurTree] Focused default node: product_basic_1.`
+- `EntrepreneurTreeUIBootstrap`: se evitó duplicación de listeners de `EXPANDIR` mediante `ExpansionTabButtonLink`.
+- `SupermarketExpansionSystem`: hardening de `TryPurchaseZone`, `OnSave`, `OnLoad` con validaciones y `try/catch`.
+- `ExpansionMapRenderer`: normalización de log de refresco del mapa.
+- Compatibilidad de búsqueda runtime (`FindObjectsByType`/`FindObjectsOfType`) en scripts críticos para reducir riesgo de compilación por versión.
+
+### Riesgos pendientes
+- Validación final de Play Mode y UX real en Unity (scroll inicial visible, interacción completa de pestañas, compra y persistencia).
+- Verificación visual fina de layout/anchoring en distintas resoluciones dentro del Editor.

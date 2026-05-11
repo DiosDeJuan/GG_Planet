@@ -341,7 +341,7 @@ namespace FLOBUK.StoreSimulator
 
         private static void RefreshVisibleProductItems()
         {
-            UIShopItemProduct[] items = UnityEngine.Object.FindObjectsByType<UIShopItemProduct>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            UIShopItemProduct[] items = FindVisibleProductItems();
             for (int i = 0; i < items.Length; i++)
             {
                 UIShopItemProduct item = items[i];
@@ -350,6 +350,15 @@ namespace FLOBUK.StoreSimulator
 
                 item.Initialize(item.purchasable);
             }
+        }
+
+        private static UIShopItemProduct[] FindVisibleProductItems()
+        {
+#if UNITY_2022_2_OR_NEWER
+            return UnityEngine.Object.FindObjectsByType<UIShopItemProduct>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+            return UnityEngine.Object.FindObjectsOfType<UIShopItemProduct>(true);
+#endif
         }
 
 

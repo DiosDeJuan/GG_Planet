@@ -34,7 +34,11 @@ namespace FLOBUK.StoreSimulator
                 labelRT.offsetMax = new Vector2(-6f, -6f);
                 label = labelObj.GetComponent<TextMeshProUGUI>();
                 label.alignment = TextAlignmentOptions.Center;
+#if TMP_VERSION_3_0_0_OR_NEWER || TMP_VERSION_4_0_0_OR_NEWER
+                label.textWrappingMode = TextWrappingModes.Normal;
+#else
                 label.enableWordWrapping = true;
+#endif
                 label.fontSize = 16f;
                 label.color = Color.white;
             }

@@ -58,9 +58,16 @@ namespace FLOBUK.StoreSimulator
                 return false;
             }
 
+            if (StoreDatabase.Instance == null)
+            {
+                reason = "Sistema de dinero no disponible.";
+                Debug.LogWarning(LogPrefix + "Purchase failed: StoreDatabase.Instance is null.");
+                return false;
+            }
+
             if (!StoreDatabase.CanPurchase(zone.price))
             {
-                long money = StoreDatabase.Instance != null ? StoreDatabase.Instance.currentMoney : 0;
+                long money = StoreDatabase.Instance.currentMoney;
                 missingFunds = Math.Max(0L, zone.price - money);
                 reason = "Fondos insuficientes.";
                 Debug.Log(LogPrefix + "Purchase failed: insufficient funds. Missing " + missingFunds + ".");
@@ -127,42 +134,74 @@ namespace FLOBUK.StoreSimulator
 
         private void OnSave()
         {
-            JSONNode data = new JSONObject();
-            JSONArray purchased = new JSONArray();
-            foreach (string zoneId in purchasedZoneIds)
-                purchased.Add(zoneId);
-            data["purchased"] = purchased;
+            try
+            {
+                JSONNode data = new JSONObject();
+                JSONArray purchased = new JSONArray();
+                foreach (string zoneId in purchasedZoneIds)
+                    purchased.Add(zoneId);
+                data["purchased"] = purchased;
 
-            string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
-            File.WriteAllBytes(path, Encoding.UTF8.GetBytes(data.ToString()));
+                string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
+                File.WriteAllBytes(path, Encoding.UTF8.GetBytes(data.ToString()));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(LogPrefix + "Save failed: " + ex.Message);
+            }
         }
 
         private void OnLoad()
         {
-            ResetToDefaults();
-            string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
-            if (!File.Exists(path))
+            try
             {
+                ResetToDefaults();
+                string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
+                if (!File.Exists(path))
+                {
+                    onZonesChanged?.Invoke();
+                    return;
+                }
+
+                string json = Encoding.UTF8.GetString(File.ReadAllBytes(path));
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    Debug.LogWarning(LogPrefix + "Load warning: expansion save file is empty.");
+                    onZonesChanged?.Invoke();
+                    return;
+                }
+
+                JSONNode data = JSON.Parse(json);
+                if (data == null || data.IsNull)
+                {
+                    Debug.LogWarning(LogPrefix + "Load warning: expansion save file could not be parsed.");
+                    onZonesChanged?.Invoke();
+                    return;
+                }
+
+                JSONArray purchased = data["purchased"].AsArray;
+                for (int i = 0; i < purchased.Count; i++)
+                {
+                    string zoneId = purchased[i].Value;
+                    ExpansionZoneData zone = GetZone(zoneId);
+                    if (zone == null)
+                        continue;
+
+                    zone.state = ExpansionZoneState.Purchased;
+                    zone.blockedReason = string.Empty;
+                    purchasedZoneIds.Add(zone.id);
+                    if (zone.price > 0)
+                        UnlockNextBlockedZone(zone.type);
+                }
+
                 onZonesChanged?.Invoke();
-                return;
             }
-
-            string json = Encoding.UTF8.GetString(File.ReadAllBytes(path));
-            JSONNode data = JSON.Parse(json);
-            JSONArray purchased = data["purchased"].AsArray;
-            for (int i = 0; i < purchased.Count; i++)
+            catch (Exception ex)
             {
-                string zoneId = purchased[i].Value;
-                ExpansionZoneData zone = GetZone(zoneId);
-                if (zone == null)
-                    continue;
-
-                zone.state = ExpansionZoneState.Purchased;
-                zone.blockedReason = string.Empty;
-                purchasedZoneIds.Add(zone.id);
+                Debug.LogWarning(LogPrefix + "Load failed: " + ex.Message + ". Restoring defaults.");
+                ResetToDefaults();
+                onZonesChanged?.Invoke();
             }
-
-            onZonesChanged?.Invoke();
         }
 
         private void ResetToDefaults()

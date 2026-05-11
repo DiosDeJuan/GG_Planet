@@ -40,3 +40,36 @@
 ## Riesgos residuales
 - QA runtime final pendiente en Unity Editor (no disponible en sandbox).
 - El estilo visual usa UI runtime sin prefabs dedicados; puede requerir ajuste fino en Editor para pixel-perfect.
+
+---
+
+## Update — 2026-05-11 (Integración auditada)
+
+### Estado de integración
+- `EXPANDIR` sigue integrado en la computadora sin reemplazar tabs base.
+- Se reforzó la vinculación del botón para evitar duplicación de listeners al recargar/integrar escena.
+- Se endureció persistencia de expansión para archivos inexistentes, vacíos o corruptos.
+
+### Cómo probar en Unity
+1. Play Mode > abrir computadora > confirmar tab `EXPANDIR` (una sola vez).
+2. Abrir/cerrar computadora varias veces y cambiar de escena si aplica.
+3. Entrar a `EXPANDIR`, seleccionar zonas y verificar panel derecho completo.
+4. Intentar compra con fondos insuficientes y con fondos suficientes.
+5. Guardar/cargar y confirmar persistencia de zonas compradas.
+
+### Riesgos de UI
+- Ajuste visual de layout runtime (mapa y paneles) puede requerir calibración en resoluciones extremas.
+- Verificar que el tab creado no compita con estilos/animaciones de botones del asset base.
+
+### Riesgos de save/load
+- Persistencia separada (`expansionApp.dat`) depende del ciclo de eventos de `SaveGameSystem`.
+- Se agregó manejo defensivo; aún debe validarse en ciclo real de guardado/carga dentro de Unity.
+
+### Logs esperados
+- `[ExpansionApp] Expansion tab created.`
+- `[ExpansionApp] Expansion panel created.`
+- `[ExpansionApp] Loaded X zones.`
+- `[ExpansionApp] Selected zone: zoneId.`
+- `[ExpansionApp] Purchase failed: insufficient funds. Missing X.`
+- `[ExpansionApp] Purchased zone: zoneId.`
+- `[ExpansionApp] Map refresh complete.`

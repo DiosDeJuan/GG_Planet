@@ -173,7 +173,7 @@ namespace FLOBUK.StoreSimulator
             if (cachedManager != null)
                 return cachedManager;
 
-            EntrepreneurTreeManager[] managers = Object.FindObjectsByType<EntrepreneurTreeManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            EntrepreneurTreeManager[] managers = FindTreeManagers();
             if (managers != null && managers.Length > 0)
             {
                 cachedManager = managers[0];
@@ -281,7 +281,7 @@ namespace FLOBUK.StoreSimulator
 
             if (existing != null)
             {
-                existing.onClick.AddListener(() => helper.Show(panel));
+                ConfigureExpansionButton(existing, helper, panel);
                 return;
             }
 
@@ -302,9 +302,29 @@ namespace FLOBUK.StoreSimulator
                 buttonImage.color = new Color(0.89f, 0.23f, 0.56f, 0.95f);
 
             newButton.onClick.RemoveAllListeners();
-            newButton.onClick.AddListener(() => helper.Show(panel));
+            ConfigureExpansionButton(newButton, helper, panel);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[ExpansionApp] Expansion tab created.");
+        }
+
+        private static void ConfigureExpansionButton(Button button, UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (button == null)
+                return;
+
+            ExpansionTabButtonLink link = button.GetComponent<ExpansionTabButtonLink>();
+            if (link == null)
+                link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
+            link.Configure(helper, panel);
+        }
+
+        private static EntrepreneurTreeManager[] FindTreeManagers()
+        {
+#if UNITY_2022_2_OR_NEWER
+            return Object.FindObjectsByType<EntrepreneurTreeManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+            return Object.FindObjectsOfType<EntrepreneurTreeManager>(true);
+#endif
         }
     }
 }

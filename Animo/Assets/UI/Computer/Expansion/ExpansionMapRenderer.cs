@@ -47,7 +47,7 @@ namespace FLOBUK.StoreSimulator
                 buttonsByZone[zone.id] = zoneButton;
             }
 
-            Debug.Log(LogPrefix + "Map rebuild complete.");
+            Debug.Log(LogPrefix + "Map refresh complete.");
         }
 
         public void Refresh(IReadOnlyList<ExpansionZoneData> zones)
@@ -64,7 +64,7 @@ namespace FLOBUK.StoreSimulator
                     button.Refresh(zone);
             }
 
-            Debug.Log(LogPrefix + "Map state refresh complete.");
+            Debug.Log(LogPrefix + "Map refresh complete.");
         }
 
         private void OnZoneSelected(string zoneId)

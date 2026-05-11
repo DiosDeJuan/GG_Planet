@@ -17,6 +17,7 @@ namespace FLOBUK.StoreSimulator
         private Button buyButton;
         private string selectedZoneId;
         private bool initialized;
+        private bool zonesSubscribed;
 
         public void Initialize(UIShopCategoryHelper helper, RectTransform root)
         {
@@ -33,14 +34,25 @@ namespace FLOBUK.StoreSimulator
 
         void OnEnable()
         {
+            SubscribeZoneEvents();
             Refresh();
+        }
+
+        void OnDisable()
+        {
+            UnsubscribeZoneEvents();
+        }
+
+        void OnDestroy()
+        {
+            UnsubscribeZoneEvents();
         }
 
         public void SelectZone(string zoneId)
         {
             selectedZoneId = zoneId;
             ExpansionZoneData zone = SupermarketExpansionSystem.Instance != null ? SupermarketExpansionSystem.Instance.GetZone(zoneId) : null;
-            if (zone == null || detailsText == null)
+            if (zone == null || detailsText == null || buyButton == null || messageText == null)
                 return;
 
             detailsText.text =
@@ -152,9 +164,39 @@ namespace FLOBUK.StoreSimulator
             label.text = text;
             label.fontSize = size;
             label.alignment = align;
+#if TMP_VERSION_3_0_0_OR_NEWER || TMP_VERSION_4_0_0_OR_NEWER
+            label.textWrappingMode = TextWrappingModes.Normal;
+#else
             label.enableWordWrapping = true;
+#endif
             label.color = Color.white;
             return label;
+        }
+
+        private void SubscribeZoneEvents()
+        {
+            if (zonesSubscribed)
+                return;
+
+            SupermarketExpansionSystem.onZonesChanged += OnZonesChanged;
+            zonesSubscribed = true;
+        }
+
+        private void UnsubscribeZoneEvents()
+        {
+            if (!zonesSubscribed)
+                return;
+
+            SupermarketExpansionSystem.onZonesChanged -= OnZonesChanged;
+            zonesSubscribed = false;
+        }
+
+        private void OnZonesChanged()
+        {
+            if (!isActiveAndEnabled)
+                return;
+
+            Refresh();
         }
 
         private static string GetTypeLabel(ExpansionZoneType type)

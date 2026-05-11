@@ -163,7 +163,7 @@ namespace FLOBUK.StoreSimulator
 
         private static PlacementObject FindPlacementForProduct(ProductScriptableObject product)
         {
-            PlacementObject[] placements = UnityEngine.Object.FindObjectsByType<PlacementObject>(FindObjectsSortMode.None);
+            PlacementObject[] placements = FindAllPlacements();
             PlacementObject bestExisting = null;
             PlacementObject bestEmpty = null;
 
@@ -187,6 +187,15 @@ namespace FLOBUK.StoreSimulator
             }
 
             return bestExisting != null ? bestExisting : bestEmpty;
+        }
+
+        private static PlacementObject[] FindAllPlacements()
+        {
+#if UNITY_2022_2_OR_NEWER
+            return UnityEngine.Object.FindObjectsByType<PlacementObject>(FindObjectsSortMode.None);
+#else
+            return UnityEngine.Object.FindObjectsOfType<PlacementObject>();
+#endif
         }
 
         private static int ParseProductId(string productId, string productName)
