@@ -33,7 +33,6 @@ namespace FLOBUK.StoreSimulator
         public int maxSpawnRate = 120;
 
         private int baseSpawnRate = -1;
-        private bool customerSystemMissing;
         private bool warnedOnce;
 
         void Awake()
@@ -85,7 +84,6 @@ namespace FLOBUK.StoreSimulator
         {
             if (CustomerSystem.Instance == null)
             {
-                customerSystemMissing = true;
                 WarnOnce();
                 return;
             }
@@ -99,7 +97,6 @@ namespace FLOBUK.StoreSimulator
         {
             if (CustomerSystem.Instance == null)
             {
-                customerSystemMissing = true;
                 WarnOnce();
                 return;
             }

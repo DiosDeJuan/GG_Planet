@@ -790,7 +790,7 @@ namespace FLOBUK.StoreSimulator
             label.text = text;
             label.fontSize = fontSize;
             label.alignment = alignment;
-            label.enableWordWrapping = true;
+            label.textWrappingMode = TextWrappingModes.Normal;
             label.color = Color.white;
 
             return label;

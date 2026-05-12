@@ -179,6 +179,7 @@ namespace FLOBUK.StoreSimulator
             }
 
             LogUnmappedProducts(allProducts);
+            LogStarterMapping(allProducts);
             Debug.Log(LogPrefix + "Product unlock mapping loaded: " + productIdToGroup.Count + " entries.");
         }
 
@@ -295,6 +296,29 @@ namespace FLOBUK.StoreSimulator
                 if (!productIdToGroup.ContainsKey(product.id))
                     Debug.LogWarning(LogPrefix + "Product mapping warning: unmapped product id " + product.id + " (" + product.title + ").");
             }
+        }
+
+
+        private void LogStarterMapping(List<ProductScriptableObject> allProducts)
+        {
+            string starterNode = EntrepreneurTreeDefinition.DefaultUnlockedNodeId;
+            int resolvedCount = 0;
+            for (int i = 0; i < allProducts.Count; i++)
+            {
+                ProductScriptableObject p = allProducts[i];
+                if (p == null || string.IsNullOrEmpty(p.id))
+                    continue;
+                if (productIdToGroup.TryGetValue(p.id, out string groupId) && groupId == starterNode)
+                    resolvedCount++;
+            }
+
+            if (resolvedCount == 0 && allProducts.Count > 0)
+                Debug.LogWarning(LogPrefix + "Starter product mapping missing: " + starterNode
+                    + " — no products from ItemDatabase resolved to this node. "
+                    + "Starter products will be visible via the unmapped fallback (available=true). "
+                    + "Add the real product IDs or title keywords to DefaultMappings to suppress this warning.");
+            else
+                Debug.Log(LogPrefix + "Starter node '" + starterNode + "' resolved " + resolvedCount + " product(s) from catalog.");
         }
 
 

@@ -114,10 +114,10 @@ namespace FLOBUK.StoreSimulator
             colHeader.GetComponent<Image>().color = ColHeaderBg;
 
             AddLabel(colHeader.transform, "Producto",         new Vector2(0.00f, 0f), new Vector2(0.28f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.MidlineLeft,   Color.white);
-            AddLabel(colHeader.transform, "Tipo mueble",      new Vector2(0.28f, 0f), new Vector2(0.50f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.MidlineCenter, Color.white);
-            AddLabel(colHeader.transform, "Cajas",            new Vector2(0.50f, 0f), new Vector2(0.65f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.MidlineCenter, Color.white);
-            AddLabel(colHeader.transform, "Estante",          new Vector2(0.65f, 0f), new Vector2(0.80f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.MidlineCenter, Color.white);
-            AddLabel(colHeader.transform, "Estado",           new Vector2(0.80f, 0f), new Vector2(1.00f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.MidlineCenter, Color.white);
+            AddLabel(colHeader.transform, "Tipo mueble",      new Vector2(0.28f, 0f), new Vector2(0.50f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.Midline, Color.white);
+            AddLabel(colHeader.transform, "Cajas",            new Vector2(0.50f, 0f), new Vector2(0.65f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.Midline, Color.white);
+            AddLabel(colHeader.transform, "Estante",          new Vector2(0.65f, 0f), new Vector2(0.80f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.Midline, Color.white);
+            AddLabel(colHeader.transform, "Estado",           new Vector2(0.80f, 0f), new Vector2(1.00f, 1f), 9, FontStyles.Bold, TextAlignmentOptions.Midline, Color.white);
 
             // ── Scroll container for product rows ────────────────────────────────
             GameObject scrollArea = new GameObject("ScrollArea",
@@ -171,23 +171,23 @@ namespace FLOBUK.StoreSimulator
                 // Furniture type
                 AddLabel(rowObj.transform, product.storageType.ToString(),
                     new Vector2(0.28f, 0f), new Vector2(0.50f, 1f),
-                    9, FontStyles.Normal, TextAlignmentOptions.MidlineCenter,
+                    9, FontStyles.Normal, TextAlignmentOptions.Midline,
                     new Color(0.70f, 0.72f, 0.80f, 1f));
 
                 // Boxes (runtime)
                 TMP_Text boxesLabel = AddLabel(rowObj.transform, "—",
                     new Vector2(0.50f, 0f), new Vector2(0.65f, 1f),
-                    9, FontStyles.Normal, TextAlignmentOptions.MidlineCenter, Color.white);
+                    9, FontStyles.Normal, TextAlignmentOptions.Midline, Color.white);
 
                 // Shelf (runtime)
                 TMP_Text shelfLabel = AddLabel(rowObj.transform, "—",
                     new Vector2(0.65f, 0f), new Vector2(0.80f, 1f),
-                    9, FontStyles.Normal, TextAlignmentOptions.MidlineCenter, Color.white);
+                    9, FontStyles.Normal, TextAlignmentOptions.Midline, Color.white);
 
                 // Status (runtime)
                 TMP_Text statusLabel = AddLabel(rowObj.transform, "—",
                     new Vector2(0.80f, 0f), new Vector2(1.00f, 1f),
-                    9, FontStyles.Bold, TextAlignmentOptions.MidlineCenter, ColGood);
+                    9, FontStyles.Bold, TextAlignmentOptions.Midline, ColGood);
 
                 _rows.Add(new ProductRow
                 {
@@ -318,7 +318,7 @@ namespace FLOBUK.StoreSimulator
             label.alignment      = alignment;
             label.color          = color;
             label.overflowMode   = TextOverflowModes.Ellipsis;
-            label.enableWordWrapping = false;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
 
             return label;
         }

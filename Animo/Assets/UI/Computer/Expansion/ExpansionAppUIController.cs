@@ -477,11 +477,7 @@ namespace FLOBUK.StoreSimulator
             label.fontSize  = size;
             label.alignment = align;
             label.color     = Color.white;
-#if TMP_VERSION_3_0_0_OR_NEWER || TMP_VERSION_4_0_0_OR_NEWER
             label.textWrappingMode = TextWrappingModes.Normal;
-#else
-            label.enableWordWrapping = true;
-#endif
             return label;
         }
 
