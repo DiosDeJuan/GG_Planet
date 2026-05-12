@@ -91,6 +91,12 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public TMP_Text robberySummary;
 
+        /// <summary>
+        /// Optional label for the expanded daily report (expansion, inventory, achievements).
+        /// If left unassigned, a label is created dynamically at the bottom-left of the canvas.
+        /// </summary>
+        public TMP_Text expandedReportSummary;
+
 
         //initialize references
         void Awake()
@@ -176,6 +182,17 @@ namespace FLOBUK.StoreSimulator
                 robberySummary = FindOrCreateRobberySummaryLabel();
             if (robberySummary != null)
                 robberySummary.text = StatsDatabase.BuildDailyRobberySummary(dailyData);
+
+            // Expanded daily report: expansion zones, inventory status, achievements.
+            JSONNode achieveData = EntrepreneurTreeSaveIntegration.ReadComponentData("AchievementSystem");
+            int totalCompleted = achieveData != null ? achieveData["completed"].AsArray.Count : 0;
+            int totalPossible  = System.Enum.GetValues(typeof(AchievementId)).Length;
+
+            if (expandedReportSummary == null)
+                expandedReportSummary = FindOrCreateExpandedReportLabel();
+            if (expandedReportSummary != null)
+                expandedReportSummary.text = StatsDatabase.BuildInventoryExpansionSummary(
+                    dailyData, totalCompleted, totalPossible);
 
             StartCoroutine(AnimateActive());
         }
@@ -271,6 +288,30 @@ namespace FLOBUK.StoreSimulator
             rt.pivot = new Vector2(1f, 0f);
             rt.anchoredPosition = new Vector2(-40f, 40f);
             rt.sizeDelta = new Vector2(420f, 240f);
+
+            TextMeshProUGUI text = go.GetComponent<TextMeshProUGUI>();
+            text.fontSize = 20;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            text.color = new Color(0.92f, 0.93f, 0.96f, 1f);
+            text.enableWordWrapping = true;
+            return text;
+        }
+
+
+        private TMP_Text FindOrCreateExpandedReportLabel()
+        {
+            Transform existing = transform.Find("ExpandedReportSummary");
+            if (existing != null)
+                return existing.GetComponent<TMP_Text>();
+
+            GameObject go = new GameObject("ExpandedReportSummary", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            go.transform.SetParent(transform, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(0f, 0f);
+            rt.pivot = new Vector2(0f, 0f);
+            rt.anchoredPosition = new Vector2(40f, 40f);
+            rt.sizeDelta = new Vector2(420f, 280f);
 
             TextMeshProUGUI text = go.GetComponent<TextMeshProUGUI>();
             text.fontSize = 20;

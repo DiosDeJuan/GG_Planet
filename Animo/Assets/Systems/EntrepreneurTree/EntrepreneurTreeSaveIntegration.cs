@@ -141,5 +141,34 @@ namespace FLOBUK.StoreSimulator
             SaveGameSystem.dataSaveEvent -= OnSave;
             SaveGameSystem.dataLoadEvent -= OnLoad;
         }
+
+
+        /// <summary>
+        /// Returns a copy of a single component's data from the EntrepreneurTree save file.
+        /// Returns an empty JSONObject when the file does not exist or cannot be read.
+        /// </summary>
+        public static JSONNode ReadComponentData(string component)
+        {
+            string path = Application.persistentDataPath + "/" + fileName + SaveGameSystem.fileExt;
+            if (!File.Exists(path))
+                return new JSONObject();
+
+            try
+            {
+                byte[] bytes = File.ReadAllBytes(path);
+                string json  = Encoding.ASCII.GetString(bytes);
+                if (string.IsNullOrEmpty(json))
+                    return new JSONObject();
+
+                JSONNode data = JSON.Parse(json);
+                JSONNode node = data[component];
+                return node != null ? node.Clone() : new JSONObject();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(LogPrefix + "ReadComponentData(\"" + component + "\") failed: " + e.Message);
+                return new JSONObject();
+            }
+        }
     }
 }

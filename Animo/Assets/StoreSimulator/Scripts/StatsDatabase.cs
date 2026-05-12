@@ -61,6 +61,22 @@ namespace FLOBUK.StoreSimulator
         public int securityLevelSnapshot { get; private set; }
         public float securityChanceSnapshot { get; private set; }
 
+        // ── Expansion snapshot (captured when the store closes) ───────────────
+        public int expansionZonesPurchasedToday { get; private set; }
+        public int expansionTotalZones { get; private set; }
+        public int expansionSalesAreaM2 { get; private set; }
+        public int expansionStorageAreaM2 { get; private set; }
+
+        // ── Achievement counters ───────────────────────────────────────────────
+        public int achievementsCompletedToday { get; private set; }
+
+        // ── Inventory snapshot (captured when the store closes) ───────────────
+        public int lowStockProductCount { get; private set; }
+        public int outOfStockProductCount { get; private set; }
+        public string lowStockProductNames { get; private set; } = string.Empty;
+
+        private const int LowStockThreshold = 3;
+
         private readonly Dictionary<string, int> robbedProductsByName = new Dictionary<string, int>();
         private readonly Dictionary<string, int> recoveredProductsByName = new Dictionary<string, int>();
 
@@ -73,7 +89,10 @@ namespace FLOBUK.StoreSimulator
             StoreDatabase.onMoneyUpdate += OnMoneyUpdate;
             StoreDatabase.onExperienceUpdate += OnExperienceUpdate;
             DayCycleSystem.onDayLoaded += OnDayLoaded;
+            DayCycleSystem.onDayOver += OnDayOver;
             CustomerSystem.onCustomerLeft += OnCustomerLeft;
+            SupermarketExpansionSystem.onZonePurchased += OnZonePurchased;
+            AchievementSystem.onAchievementCompleted += OnAchievementCompleted;
         }
 
 
@@ -88,6 +107,8 @@ namespace FLOBUK.StoreSimulator
             robbedProducts = recoveredProducts = 0;
             robbedProductsByName.Clear();
             recoveredProductsByName.Clear();
+            expansionZonesPurchasedToday = 0;
+            achievementsCompletedToday = 0;
             RefreshEmployeeSnapshot();
             RefreshSecuritySnapshot();
         }
@@ -116,6 +137,132 @@ namespace FLOBUK.StoreSimulator
         {
             if (wasHappy) customersHappy++;
             else customersUnhappy++;
+        }
+
+
+        //subscribed to expansion zone purchase
+        private void OnZonePurchased(ExpansionZoneData zone)
+        {
+            expansionZonesPurchasedToday++;
+        }
+
+
+        //subscribed to achievement completion
+        private void OnAchievementCompleted(AchievementId id)
+        {
+            achievementsCompletedToday++;
+        }
+
+
+        //subscribed to day-over event: capture end-of-day snapshots before the scene transitions
+        private void OnDayOver()
+        {
+            RefreshEmployeeSnapshot();
+            RefreshSecuritySnapshot();
+            CaptureExpansionSnapshot();
+            CaptureInventorySnapshot();
+        }
+
+
+        private void CaptureExpansionSnapshot()
+        {
+            if (SupermarketExpansionSystem.Instance == null) return;
+
+            expansionTotalZones = SupermarketExpansionSystem.Instance.GetPurchasedZonesCount();
+            expansionSalesAreaM2 = SupermarketExpansionSystem.Instance.GetPurchasedSalesAreaM2();
+            expansionStorageAreaM2 = SupermarketExpansionSystem.Instance.GetPurchasedStorageAreaM2();
+        }
+
+
+        private void CaptureInventorySnapshot()
+        {
+            if (ProductInventorySystem.Instance == null) return;
+
+            List<PurchasableScriptableObject> all =
+                ItemDatabase.GetByType(typeof(ProductScriptableObject));
+
+            int outOf = 0;
+            int lowOf = 0;
+            var namesBuf = new StringBuilder();
+            int namesAdded = 0;
+            const int maxNames = 8;
+
+            for (int i = 0; i < all.Count; i++)
+            {
+                ProductScriptableObject product = all[i] as ProductScriptableObject;
+                if (product == null) continue;
+
+                int total = ProductInventorySystem.Instance.GetTotalStock(product);
+                if (total == 0)
+                {
+                    outOf++;
+                    if (namesAdded < maxNames)
+                    {
+                        if (namesAdded > 0) namesBuf.Append(", ");
+                        namesBuf.Append(product.title).Append(" (agotado)");
+                        namesAdded++;
+                    }
+                }
+                else if (total < LowStockThreshold)
+                {
+                    lowOf++;
+                    if (namesAdded < maxNames)
+                    {
+                        if (namesAdded > 0) namesBuf.Append(", ");
+                        namesBuf.Append(product.title).Append(" x").Append(total);
+                        namesAdded++;
+                    }
+                }
+            }
+
+            outOfStockProductCount = outOf;
+            lowStockProductCount = lowOf;
+            lowStockProductNames = namesBuf.ToString();
+        }
+
+
+        /// <summary>
+        /// Builds a summary of expansion, inventory, and achievement data from persisted JSON.
+        /// <paramref name="totalAchievementsCompleted"/> and <paramref name="totalAchievementsPossible"/>
+        /// are provided by the caller (read from AchievementSystem save data in UIStats).
+        /// </summary>
+        public static string BuildInventoryExpansionSummary(
+            JSONNode data,
+            int totalAchievementsCompleted,
+            int totalAchievementsPossible)
+        {
+            if (data == null || data.Count == 0)
+                return string.Empty;
+
+            int zonesToday       = data["expansionZonesPurchasedToday"].AsInt;
+            int zonesTotalBought = data["expansionTotalZones"].AsInt;
+            int salesAreaM2      = data["expansionSalesAreaM2"].AsInt;
+            int storageAreaM2    = data["expansionStorageAreaM2"].AsInt;
+            int lowStockCount    = data["lowStockProductCount"].AsInt;
+            int outOfStockCount  = data["outOfStockProductCount"].AsInt;
+            string lowStockNames = data["lowStockProductNames"].Value;
+            int achievesToday    = data["achievementsCompletedToday"].AsInt;
+
+            var sb = new StringBuilder();
+
+            sb.Append("Expansión:\n");
+            sb.Append("- Zonas totales: ").Append(zonesTotalBought).Append('\n');
+            sb.Append("- Área de ventas: ").Append(salesAreaM2).Append(" m²\n");
+            sb.Append("- Área de almacén: ").Append(storageAreaM2).Append(" m²\n");
+            sb.Append("- Compradas hoy: ").Append(zonesToday).Append('\n');
+
+            sb.Append("\nInventario (cierre):\n");
+            sb.Append("- Sin stock: ").Append(outOfStockCount).Append('\n');
+            sb.Append("- Stock bajo (<3 und.): ").Append(lowStockCount).Append('\n');
+            if (!string.IsNullOrEmpty(lowStockNames))
+                sb.Append("- Detalle: ").Append(lowStockNames).Append('\n');
+
+            sb.Append("\nLogros:\n");
+            sb.Append("- Desbloqueados hoy: ").Append(achievesToday).Append('\n');
+            sb.Append("- Total: ").Append(totalAchievementsCompleted)
+              .Append('/').Append(totalAchievementsPossible).Append('\n');
+
+            return sb.ToString();
         }
 
 
@@ -281,6 +428,14 @@ namespace FLOBUK.StoreSimulator
             data["securityChanceSnapshot"] = securityChanceSnapshot;
             data["robbedProductsByName"] = SerializeDictionary(robbedProductsByName);
             data["recoveredProductsByName"] = SerializeDictionary(recoveredProductsByName);
+            data["expansionZonesPurchasedToday"] = expansionZonesPurchasedToday;
+            data["expansionTotalZones"] = expansionTotalZones;
+            data["expansionSalesAreaM2"] = expansionSalesAreaM2;
+            data["expansionStorageAreaM2"] = expansionStorageAreaM2;
+            data["achievementsCompletedToday"] = achievementsCompletedToday;
+            data["lowStockProductCount"] = lowStockProductCount;
+            data["outOfStockProductCount"] = outOfStockProductCount;
+            data["lowStockProductNames"] = lowStockProductNames ?? string.Empty;
             
             return data;
         }
@@ -315,6 +470,14 @@ namespace FLOBUK.StoreSimulator
             securityChanceSnapshot = data["securityChanceSnapshot"].AsFloat;
             DeserializeDictionary(data["robbedProductsByName"].AsArray, robbedProductsByName);
             DeserializeDictionary(data["recoveredProductsByName"].AsArray, recoveredProductsByName);
+            expansionZonesPurchasedToday = data["expansionZonesPurchasedToday"].AsInt;
+            expansionTotalZones = data["expansionTotalZones"].AsInt;
+            expansionSalesAreaM2 = data["expansionSalesAreaM2"].AsInt;
+            expansionStorageAreaM2 = data["expansionStorageAreaM2"].AsInt;
+            achievementsCompletedToday = data["achievementsCompletedToday"].AsInt;
+            lowStockProductCount = data["lowStockProductCount"].AsInt;
+            outOfStockProductCount = data["outOfStockProductCount"].AsInt;
+            lowStockProductNames = data["lowStockProductNames"].Value ?? string.Empty;
         }
 
 
@@ -445,7 +608,10 @@ namespace FLOBUK.StoreSimulator
             StoreDatabase.onMoneyUpdate -= OnMoneyUpdate;
             StoreDatabase.onExperienceUpdate -= OnExperienceUpdate;
             DayCycleSystem.onDayLoaded -= OnDayLoaded;
+            DayCycleSystem.onDayOver -= OnDayOver;
             CustomerSystem.onCustomerLeft -= OnCustomerLeft;
+            SupermarketExpansionSystem.onZonePurchased -= OnZonePurchased;
+            AchievementSystem.onAchievementCompleted -= OnAchievementCompleted;
         }
     }
 }
