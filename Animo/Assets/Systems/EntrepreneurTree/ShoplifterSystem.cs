@@ -18,7 +18,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class ShoplifterSystem : MonoBehaviour
     {
-        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string LogPrefix = "[Shoplifter] ";
 
         public static ShoplifterSystem Instance { get; private set; }
 
@@ -87,7 +87,7 @@ namespace FLOBUK.StoreSimulator
             agent.Initialize(this, customer, type);
             activeAgents[id] = agent;
             StatsDatabase.RegisterThiefAppeared();
-            UIGame.AddNotification("¡Ladrón detectado!", otherColor: new Color(0.92f, 0.16f, 0.16f));
+            UIGame.AddNotification("Un ladrón está actuando en la tienda.", otherColor: new Color(0.92f, 0.16f, 0.16f));
             Debug.Log(LogPrefix + "Assigned thief type " + type + " to customer " + id);
         }
 

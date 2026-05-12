@@ -169,7 +169,7 @@ namespace FLOBUK.StoreSimulator
                 total = target;
                 products = Mathf.Max(1, Mathf.FloorToInt(total / 1000f));
                 if (!hasReserved)
-                    Debug.LogWarning("[EntrepreneurTree] Inventory bridge did not return stolen items. Using fallback theft values.");
+                    Debug.LogWarning("[Robbery] Inventory bridge did not return stolen items. Using fallback theft values.");
             }
 
             stolenValue = total;
