@@ -81,14 +81,8 @@ namespace FLOBUK.StoreSimulator
                     controller.TryAutoConfigureFromHierarchy();
                     controller.BuildTree();
 
-                    EmployeeAppUIController employeeUI = upgradesPanel.GetComponent<EmployeeAppUIController>();
-                    if (employeeUI == null)
-                    {
-                        upgradesPanel.gameObject.AddComponent<EmployeeAppUIController>();
-                        Debug.Log(LogPrefix + "Attached EmployeeAppUIController to ContentArea/Expansions.");
-                    }
-
                     EnsureExpansionTab(helper, contentArea);
+                    EnsureEmployeeTab(helper, contentArea);
                 }
             }
         }
@@ -314,6 +308,112 @@ namespace FLOBUK.StoreSimulator
         }
 
         private static void ConfigureExpansionButton(Button button, UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (button == null)
+                return;
+
+            ExpansionTabButtonLink link = button.GetComponent<ExpansionTabButtonLink>();
+            if (link == null)
+                link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
+            link.Configure(helper, panel);
+        }
+
+        // ── Employee tab (Empleados) ──────────────────────────────────────────
+
+        /// <summary>
+        /// Creates (or reuses) a dedicated "Empleados" content panel inside contentArea,
+        /// attaches EmployeeAppUIController to it, and wires a tab button — mirrors EnsureExpansionTab.
+        /// </summary>
+        private static void EnsureEmployeeTab(UIShopCategoryHelper helper, Transform contentArea)
+        {
+            if (helper == null || contentArea == null)
+                return;
+
+            Transform empleadosPanel = contentArea.Find("Empleados");
+            if (empleadosPanel == null)
+            {
+                GameObject panelObject = new GameObject("Empleados", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panelObject.transform.SetParent(contentArea, false);
+                RectTransform panelRT = panelObject.GetComponent<RectTransform>();
+                panelRT.anchorMin = Vector2.zero;
+                panelRT.anchorMax = Vector2.one;
+                panelRT.offsetMin = Vector2.zero;
+                panelRT.offsetMax = Vector2.zero;
+                Image panelImage = panelObject.GetComponent<Image>();
+                panelImage.color = new Color(0.07f, 0.09f, 0.12f, 0.96f);
+
+                panelObject.SetActive(false);
+                empleadosPanel = panelObject.transform;
+                Debug.Log("[Employees] Employee panel created.");
+            }
+
+            EmployeeAppUIController app = empleadosPanel.GetComponent<EmployeeAppUIController>();
+            if (app == null)
+            {
+                app = empleadosPanel.gameObject.AddComponent<EmployeeAppUIController>();
+                Debug.Log("[Employees] EmployeeAppUIController attached to Empleados panel.");
+            }
+
+            if (helper != null)
+                EnsureEmployeeButton(helper, empleadosPanel.gameObject);
+        }
+
+        private static void EnsureEmployeeButton(UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (helper == null || panel == null)
+                return;
+
+            Transform root = helper.transform.parent != null ? helper.transform.parent : helper.transform;
+            Button[] buttons = root.GetComponentsInChildren<Button>(true);
+            Button template = null;
+            Button existing = null;
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Button button = buttons[i];
+                if (button == null)
+                    continue;
+
+                TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+                string text = label != null ? label.text.Trim().ToUpperInvariant() : string.Empty;
+                if (text == "EMPLEADOS")
+                {
+                    existing = button;
+                    break;
+                }
+
+                if ((text == "CUSTOMIZATION" || text == "BOOSTERS" || text == "EXPANDIR") && template == null)
+                    template = button;
+            }
+
+            if (existing != null)
+            {
+                ConfigureEmployeeButton(existing, helper, panel);
+                return;
+            }
+
+            if (template == null)
+                return;
+
+            Button newButton = Object.Instantiate(template, template.transform.parent, false);
+            newButton.name = "EmpleadosButton";
+            TMP_Text newLabel = newButton.GetComponentInChildren<TMP_Text>(true);
+            if (newLabel != null)
+            {
+                newLabel.text = "EMPLEADOS";
+                newLabel.color = Color.white;
+            }
+
+            Image buttonImage = newButton.GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = new Color(0.18f, 0.46f, 0.28f, 0.95f);
+
+            newButton.onClick.RemoveAllListeners();
+            ConfigureEmployeeButton(newButton, helper, panel);
+            newButton.transform.SetAsLastSibling();
+            Debug.Log("[Employees] Employee tab button created.");
+        }
+
+        private static void ConfigureEmployeeButton(Button button, UIShopCategoryHelper helper, GameObject panel)
         {
             if (button == null)
                 return;
