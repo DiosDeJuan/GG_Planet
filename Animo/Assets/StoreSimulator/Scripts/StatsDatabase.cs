@@ -76,6 +76,7 @@ namespace FLOBUK.StoreSimulator
         public string lowStockProductNames { get; private set; } = string.Empty;
 
         private const int LowStockThreshold = 3;
+        private const int MaxLowStockNamesInReport = 8;
 
         private readonly Dictionary<string, int> robbedProductsByName = new Dictionary<string, int>();
         private readonly Dictionary<string, int> recoveredProductsByName = new Dictionary<string, int>();
@@ -185,7 +186,6 @@ namespace FLOBUK.StoreSimulator
             int lowOf = 0;
             var namesBuf = new StringBuilder();
             int namesAdded = 0;
-            const int maxNames = 8;
 
             for (int i = 0; i < all.Count; i++)
             {
@@ -196,7 +196,7 @@ namespace FLOBUK.StoreSimulator
                 if (total == 0)
                 {
                     outOf++;
-                    if (namesAdded < maxNames)
+                    if (namesAdded < MaxLowStockNamesInReport)
                     {
                         if (namesAdded > 0) namesBuf.Append(", ");
                         namesBuf.Append(product.title).Append(" (agotado)");
@@ -206,7 +206,7 @@ namespace FLOBUK.StoreSimulator
                 else if (total < LowStockThreshold)
                 {
                     lowOf++;
-                    if (namesAdded < maxNames)
+                    if (namesAdded < MaxLowStockNamesInReport)
                     {
                         if (namesAdded > 0) namesBuf.Append(", ");
                         namesBuf.Append(product.title).Append(" x").Append(total);
