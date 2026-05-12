@@ -152,12 +152,6 @@ namespace FLOBUK.StoreSimulator
                              : zone.state == ExpansionZoneState.Available  ? "+"
                              : "✗";
 
-            // Short name: first word only to keep label small
-            string shortName = zone.displayName ?? string.Empty;
-            int spaceIdx = shortName.IndexOf(' ');
-            if (spaceIdx > 0 && shortName.Length > 10)
-                shortName = shortName.Substring(0, spaceIdx);
-
             label.text = typeAbbr + "\n" + stateLine;
         }
 

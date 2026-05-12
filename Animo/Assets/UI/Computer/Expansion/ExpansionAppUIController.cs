@@ -241,12 +241,28 @@ namespace FLOBUK.StoreSimulator
             }
 
             if (salesAreaLabel != null && SupermarketExpansionSystem.Instance != null)
+            {
+                float mult = SupermarketExpansionSystem.Instance.GetCustomerCapacityMultiplier();
+                string bonusStr = FormatBonusPct(mult, "% clientes");
                 salesAreaLabel.text = "Venta: "
-                    + SupermarketExpansionSystem.Instance.GetPurchasedSalesAreaM2() + " m²";
+                    + SupermarketExpansionSystem.Instance.GetPurchasedSalesAreaM2() + " m²"
+                    + bonusStr;
+            }
 
             if (storageAreaLabel != null && SupermarketExpansionSystem.Instance != null)
+            {
+                float mult = SupermarketExpansionSystem.Instance.GetStorageCapacityMultiplier();
+                string bonusStr = FormatBonusPct(mult, "% cap.");
                 storageAreaLabel.text = "Almacén: "
-                    + SupermarketExpansionSystem.Instance.GetPurchasedStorageAreaM2() + " m²";
+                    + SupermarketExpansionSystem.Instance.GetPurchasedStorageAreaM2() + " m²"
+                    + bonusStr;
+            }
+        }
+
+        private static string FormatBonusPct(float multiplier, string suffix)
+        {
+            int bonusPct = Mathf.RoundToInt((multiplier - 1f) * 100f);
+            return bonusPct > 0 ? " +" + bonusPct + suffix : string.Empty;
         }
 
         private void ShowEmptyDetail()

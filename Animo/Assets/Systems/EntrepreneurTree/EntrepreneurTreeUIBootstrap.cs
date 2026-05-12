@@ -115,6 +115,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EmployeeRestockCoordinator>();
                 systems.AddComponent<ShoplifterSystem>();
                 systems.AddComponent<SupermarketExpansionSystem>();
+                systems.AddComponent<ExpansionCustomerDemandAdapter>();
+                systems.AddComponent<ExpansionStorageCapacityAdapter>();
 
                 Debug.Log(LogPrefix + "Created runtime EntrepreneurTree systems GameObject.");
             }
@@ -165,6 +167,10 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ShoplifterSystem>();
             if (systems.GetComponent<SupermarketExpansionSystem>() == null)
                 systems.AddComponent<SupermarketExpansionSystem>();
+            if (systems.GetComponent<ExpansionCustomerDemandAdapter>() == null)
+                systems.AddComponent<ExpansionCustomerDemandAdapter>();
+            if (systems.GetComponent<ExpansionStorageCapacityAdapter>() == null)
+                systems.AddComponent<ExpansionStorageCapacityAdapter>();
         }
 
 

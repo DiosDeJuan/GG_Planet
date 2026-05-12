@@ -43,6 +43,19 @@ namespace FLOBUK.StoreSimulator
         private const long SalesPrice   = 175000L;  // $1,750 (cents)
         private const long StoragePrice = 250000L;  // $2,500 (cents)
 
+        // ── Gameplay constants ────────────────────────────────────────────────
+        /// <summary>
+        /// Customer spawn-rate bonus granted per purchased sales-expansion zone.
+        /// 0.10 = +10 % per zone. Adjust here to tune difficulty.
+        /// </summary>
+        public const float SalesExpansionCustomerBonusPercent = 0.10f;
+
+        /// <summary>
+        /// Storage capacity bonus granted per purchased storage-expansion zone.
+        /// 0.15 = +15 % per zone.
+        /// </summary>
+        public const float StorageExpansionCapacityBonusPercent = 0.15f;
+
         // ─────────────────────────────────────────────────────────────────────
 
         void Awake()
@@ -159,6 +172,58 @@ namespace FLOBUK.StoreSimulator
 
         /// <summary>Number of zones currently purchased (including initial).</summary>
         public int GetPurchasedZonesCount() => purchasedZoneIds.Count;
+
+        /// <summary>
+        /// Number of paid (non-initial) sales expansion zones purchased.
+        /// Used by ExpansionCustomerDemandAdapter to calculate the spawn-rate bonus.
+        /// </summary>
+        public int GetPurchasedSalesExpansionCount()
+        {
+            int count = 0;
+            for (int i = 0; i < zones.Count; i++)
+            {
+                ExpansionZoneData z = zones[i];
+                if (z != null && z.type == ExpansionZoneType.Sales
+                    && z.state == ExpansionZoneState.Purchased && z.price > 0)
+                    count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Number of paid (non-initial) storage expansion zones purchased.
+        /// Used by ExpansionStorageCapacityAdapter.
+        /// </summary>
+        public int GetPurchasedStorageExpansionCount()
+        {
+            int count = 0;
+            for (int i = 0; i < zones.Count; i++)
+            {
+                ExpansionZoneData z = zones[i];
+                if (z != null && z.type == ExpansionZoneType.Storage
+                    && z.state == ExpansionZoneState.Purchased && z.price > 0)
+                    count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Customer spawn-rate multiplier: 1.0 = no bonus, 1.1 = +10 %, etc.
+        /// Based on the number of purchased sales-expansion zones.
+        /// </summary>
+        public float GetCustomerCapacityMultiplier()
+        {
+            return 1f + GetPurchasedSalesExpansionCount() * SalesExpansionCustomerBonusPercent;
+        }
+
+        /// <summary>
+        /// Storage capacity multiplier: 1.0 = no bonus, 1.15 = +15 %, etc.
+        /// Based on the number of purchased storage-expansion zones.
+        /// </summary>
+        public float GetStorageCapacityMultiplier()
+        {
+            return 1f + GetPurchasedStorageExpansionCount() * StorageExpansionCapacityBonusPercent;
+        }
 
         /// <summary>
         /// Returns true if the zone exists, is Available, and the player has enough money.
