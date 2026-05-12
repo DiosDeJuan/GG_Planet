@@ -83,6 +83,7 @@ namespace FLOBUK.StoreSimulator
 
                     EnsureExpansionTab(helper, contentArea);
                     EnsureEmployeeTab(helper, contentArea);
+                    EnsureAchievementsTab(helper, contentArea);
                 }
             }
         }
@@ -414,6 +415,113 @@ namespace FLOBUK.StoreSimulator
         }
 
         private static void ConfigureEmployeeButton(Button button, UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (button == null)
+                return;
+
+            ExpansionTabButtonLink link = button.GetComponent<ExpansionTabButtonLink>();
+            if (link == null)
+                link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
+            link.Configure(helper, panel);
+        }
+
+        // ── Achievements tab (Logros) ──────────────────────────────────────────
+
+        /// <summary>
+        /// Creates (or reuses) a dedicated "Logros" content panel inside contentArea,
+        /// attaches AchievementsAppUIController to it, and wires a tab button.
+        /// Mirrors EnsureEmployeeTab.
+        /// </summary>
+        private static void EnsureAchievementsTab(UIShopCategoryHelper helper, Transform contentArea)
+        {
+            if (helper == null || contentArea == null)
+                return;
+
+            Transform logrosPanel = contentArea.Find("Logros");
+            if (logrosPanel == null)
+            {
+                GameObject panelObject = new GameObject("Logros", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panelObject.transform.SetParent(contentArea, false);
+                RectTransform panelRT = panelObject.GetComponent<RectTransform>();
+                panelRT.anchorMin = Vector2.zero;
+                panelRT.anchorMax = Vector2.one;
+                panelRT.offsetMin = Vector2.zero;
+                panelRT.offsetMax = Vector2.zero;
+                Image panelImage = panelObject.GetComponent<Image>();
+                panelImage.color = new Color(0.07f, 0.08f, 0.11f, 0.96f);
+
+                panelObject.SetActive(false);
+                logrosPanel = panelObject.transform;
+                Debug.Log("[Achievements] Achievements panel created.");
+            }
+
+            AchievementsAppUIController app = logrosPanel.GetComponent<AchievementsAppUIController>();
+            if (app == null)
+            {
+                app = logrosPanel.gameObject.AddComponent<AchievementsAppUIController>();
+                Debug.Log("[Achievements] AchievementsAppUIController attached to Logros panel.");
+            }
+
+            if (helper != null)
+                EnsureAchievementsButton(helper, logrosPanel.gameObject);
+        }
+
+        private static void EnsureAchievementsButton(UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (helper == null || panel == null)
+                return;
+
+            Transform root = helper.transform.parent != null ? helper.transform.parent : helper.transform;
+            Button[] buttons = root.GetComponentsInChildren<Button>(true);
+            Button template = null;
+            Button existing = null;
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Button button = buttons[i];
+                if (button == null)
+                    continue;
+
+                TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+                string text = label != null ? label.text.Trim().ToUpperInvariant() : string.Empty;
+                if (text == "LOGROS")
+                {
+                    existing = button;
+                    break;
+                }
+
+                if ((text == "CUSTOMIZATION" || text == "BOOSTERS" || text == "EXPANDIR" || text == "EMPLEADOS") && template == null)
+                    template = button;
+            }
+
+            if (existing != null)
+            {
+                ConfigureAchievementsButton(existing, helper, panel);
+                return;
+            }
+
+            if (template == null)
+                return;
+
+            Button newButton = Object.Instantiate(template, template.transform.parent, false);
+            newButton.name = "LogrosButton";
+            TMP_Text newLabel = newButton.GetComponentInChildren<TMP_Text>(true);
+            if (newLabel != null)
+            {
+                newLabel.text  = "LOGROS";
+                newLabel.color = Color.white;
+            }
+
+            Image buttonImage = newButton.GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = new Color(0.72f, 0.45f, 0.10f, 0.95f);
+
+            newButton.onClick.RemoveAllListeners();
+            ConfigureAchievementsButton(newButton, helper, panel);
+            newButton.transform.SetAsLastSibling();
+            Debug.Log("[Achievements] Achievements tab button created.");
+        }
+
+        private static void ConfigureAchievementsButton(Button button, UIShopCategoryHelper helper, GameObject panel)
         {
             if (button == null)
                 return;

@@ -480,6 +480,10 @@ namespace FLOBUK.StoreSimulator
                     return;
                 }
 
+                int savedVersion = data["version"].AsInt; // 0 if absent (legacy v1 save)
+                if (savedVersion != 2)
+                    Debug.LogWarning(LogPrefix + "Expansion save version mismatch (expected 2, got " + savedVersion + "). Applying best-effort load.");
+
                 int loadedCount = 0;
                 for (int i = 0; i < purchased.Count; i++)
                 {

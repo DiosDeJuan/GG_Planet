@@ -50,6 +50,8 @@ namespace FLOBUK.StoreSimulator
         Batman,              // Detain/capture first thief
         FirstEmployeeHiredReal, // First employee hired from employee app
         MaxEmployment,       // 18 employees hired and assigned
+        MaxSupermarket,      // All expansion zones purchased
+        MaxStorage,          // All storage expansion zones purchased
     }
 
 
@@ -66,7 +68,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class AchievementSystem : MonoBehaviour
     {
-        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string LogPrefix = "[Achievement] ";
         /// <summary>Singleton instance.</summary>
         public static AchievementSystem Instance { get; private set; }
 
@@ -111,7 +113,7 @@ namespace FLOBUK.StoreSimulator
             if (Instance != null && Instance != this)
             {
                 Debug.LogWarning(LogPrefix + "Duplicate AchievementSystem detected. Destroying duplicate instance.");
-                Destroy(gameObject);
+                Destroy(this);
                 return;
             }
 
@@ -124,6 +126,7 @@ namespace FLOBUK.StoreSimulator
             DayCycleSystem.onDayLoaded       += OnDayLoaded;
             DayCycleSystem.onDayFinished     += OnDayFinished;
             EntrepreneurTreeManager.onNodeUnlocked += OnNodeUnlocked;
+            SupermarketExpansionSystem.onZonePurchased += OnZonePurchased;
         }
 
 
@@ -269,6 +272,33 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        // Zone purchased from SupermarketExpansionSystem: detect expansion milestones.
+        private void OnZonePurchased(ExpansionZoneData zone)
+        {
+            if (zone == null || SupermarketExpansionSystem.Instance == null)
+                return;
+
+            Complete(AchievementId.ExpandStore);
+
+            int purchasedCount = SupermarketExpansionSystem.Instance.GetPurchasedZonesCount();
+            int totalCount     = SupermarketExpansionSystem.Instance.Zones.Count;
+            if (totalCount > 0 && purchasedCount >= totalCount)
+                Complete(AchievementId.MaxSupermarket);
+
+            int storageCount    = SupermarketExpansionSystem.Instance.GetPurchasedStorageExpansionCount();
+            int storageExpTotal = 0;
+            IReadOnlyList<ExpansionZoneData> allZones = SupermarketExpansionSystem.Instance.Zones;
+            for (int i = 0; i < allZones.Count; i++)
+            {
+                ExpansionZoneData z = allZones[i];
+                if (z != null && z.type == ExpansionZoneType.Storage && z.price > 0)
+                    storageExpTotal++;
+            }
+            if (storageExpTotal > 0 && storageCount >= storageExpTotal)
+                Complete(AchievementId.MaxStorage);
+        }
+
+
         // Node unlocked in the tree: detect employee / product / full-tree milestones.
         private void OnNodeUnlocked(NodeData node)
         {
@@ -370,6 +400,7 @@ namespace FLOBUK.StoreSimulator
             DayCycleSystem.onDayLoaded           -= OnDayLoaded;
             DayCycleSystem.onDayFinished         -= OnDayFinished;
             EntrepreneurTreeManager.onNodeUnlocked -= OnNodeUnlocked;
+            SupermarketExpansionSystem.onZonePurchased -= OnZonePurchased;
 
             if (Instance == this)
                 Instance = null;

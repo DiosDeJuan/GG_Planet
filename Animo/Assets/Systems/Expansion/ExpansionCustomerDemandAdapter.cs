@@ -21,6 +21,17 @@ namespace FLOBUK.StoreSimulator
     {
         private const string LogPrefix = "[Expansion] ";
 
+        /// <summary>
+        /// Hard cap on the customer spawn rate after expansion scaling.
+        /// Set to 0 to disable the cap.
+        /// With 14 purchasable Sales zones at the default 10% bonus each,
+        /// the multiplier tops out at 1 + 14×0.10 = 2.4×.
+        /// A default base rate of ~50 customers/min × 2.4 = 120 → this cap
+        /// prevents runaway values if baseRate is set higher in the Inspector.
+        /// </summary>
+        [Tooltip("Maximum customer spawn rate after expansion scaling (0 = no cap).")]
+        public int maxSpawnRate = 120;
+
         private int baseSpawnRate = -1;
         private bool customerSystemMissing;
         private bool warnedOnce;
@@ -104,6 +115,8 @@ namespace FLOBUK.StoreSimulator
 
             float multiplier = SupermarketExpansionSystem.Instance.GetCustomerCapacityMultiplier();
             int newRate = Mathf.Max(1, Mathf.RoundToInt(baseSpawnRate * multiplier));
+            if (maxSpawnRate > 0)
+                newRate = Mathf.Min(newRate, maxSpawnRate);
 
             if (CustomerSystem.Instance.spawnRate == newRate)
                 return; // nothing changed, avoid spammy logs

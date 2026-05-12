@@ -40,6 +40,7 @@ namespace FLOBUK.StoreSimulator
 
         // Selection border
         private static readonly Color BorderSelected   = new Color(1f, 0.92f, 0.28f, 1f);  // bright yellow
+        private const float BorderSelectedAlpha = 0.55f; // alpha for the selection glow
 
         // ── Lifecycle ─────────────────────────────────────────────────────────
 
@@ -135,7 +136,7 @@ namespace FLOBUK.StoreSimulator
             rt.offsetMax = new Vector2(3f, 3f);
 
             selectedBorder = borderObj.GetComponent<Image>();
-            selectedBorder.color = new Color(1f, 0.92f, 0.28f, 0.55f);
+            selectedBorder.color = new Color(BorderSelected.r, BorderSelected.g, BorderSelected.b, BorderSelectedAlpha);
             selectedBorder.enabled = false;
         }
 
