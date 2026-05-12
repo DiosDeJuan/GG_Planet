@@ -52,6 +52,10 @@ namespace FLOBUK.StoreSimulator
         MaxEmployment,       // 18 employees hired and assigned
         MaxSupermarket,      // All expansion zones purchased
         MaxStorage,          // All storage expansion zones purchased
+        // ── Pricing ──────────────────────────────────────────────────────────────
+        Donador,             // Sold 5 products at $0.00 (generous pricing)
+        LuxuryProductSold,   // Sold a luxury-category product
+        ApplianceProductSold,// Sold an appliance-category product
     }
 
 
@@ -204,6 +208,59 @@ namespace FLOBUK.StoreSimulator
             // When a dedicated "first_order" achievement is added to AchievementId, complete it here.
             if (product != null)
                 Debug.Log(LogPrefix + "Product ordered: " + product.title + " (hook registered).");
+        }
+
+        // ── Pricing hooks ─────────────────────────────────────────────────────────
+
+        // Counter for products sold at $0.  Not persisted via EntrepreneurTreeSaveIntegration
+        // because it resets on each session — 5 free sales in one session earns the award.
+        private static int zeroSaleCount;
+
+        /// <summary>
+        /// Call this when a customer buys a product whose storePrice was $0.
+        /// After 5 such sales in the current session, completes AchievementId.Donador.
+        /// </summary>
+        public static void RegisterProductSoldAtZero(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            zeroSaleCount++;
+            Debug.Log(LogPrefix + "Free sale registered for '" +
+                      (product != null ? product.title : "?") + "' (" + zeroSaleCount + "/5).");
+            if (zeroSaleCount >= 5)
+                Complete(AchievementId.Donador);
+        }
+
+        /// <summary>
+        /// Call this when a customer complains that a product is too expensive.
+        /// Hook prepared — no dedicated AchievementId yet (Paciente achievement).
+        /// </summary>
+        public static void RegisterPriceComplaint(ProductScriptableObject product)
+        {
+            if (product == null) return;
+            // Hook: reserved for AchievementId.Paciente when added.
+            Debug.Log(LogPrefix + "Price complaint hook: '" + product.title + "'.");
+        }
+
+        /// <summary>
+        /// Call this when a customer successfully purchases a luxury-category product.
+        /// </summary>
+        public static void RegisterLuxuryProductSold(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            Debug.Log(LogPrefix + "Luxury product sold: '" +
+                      (product != null ? product.title : "?") + "'.");
+            Complete(AchievementId.LuxuryProductSold);
+        }
+
+        /// <summary>
+        /// Call this when a customer successfully purchases an appliance-category product.
+        /// </summary>
+        public static void RegisterApplianceProductSold(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            Debug.Log(LogPrefix + "Appliance product sold: '" +
+                      (product != null ? product.title : "?") + "'.");
+            Complete(AchievementId.ApplianceProductSold);
         }
 
 

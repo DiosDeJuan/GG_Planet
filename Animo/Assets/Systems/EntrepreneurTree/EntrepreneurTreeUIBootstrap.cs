@@ -85,6 +85,7 @@ namespace FLOBUK.StoreSimulator
                     EnsureEmployeeTab(helper, contentArea);
                     EnsureAchievementsTab(helper, contentArea);
                     EnsureOrdersTab(helper, contentArea);
+                    EnsurePricingTab(helper, contentArea);
                 }
             }
         }
@@ -639,6 +640,113 @@ namespace FLOBUK.StoreSimulator
         }
 
         private static void ConfigureOrdersButton(Button button, UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (button == null)
+                return;
+
+            ExpansionTabButtonLink link = button.GetComponent<ExpansionTabButtonLink>();
+            if (link == null)
+                link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
+            link.Configure(helper, panel);
+        }
+
+        // ── Pricing tab ───────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates the "Precios" panel in ContentArea, attaches PricingAppUIController,
+        /// and wires a tab button — mirrors EnsureOrdersTab.
+        /// </summary>
+        private static void EnsurePricingTab(UIShopCategoryHelper helper, Transform contentArea)
+        {
+            if (helper == null || contentArea == null)
+                return;
+
+            Transform pricingPanel = contentArea.Find("Precios");
+            if (pricingPanel == null)
+            {
+                GameObject panelObject = new GameObject("Precios", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panelObject.transform.SetParent(contentArea, false);
+                RectTransform panelRT = panelObject.GetComponent<RectTransform>();
+                panelRT.anchorMin = Vector2.zero;
+                panelRT.anchorMax = Vector2.one;
+                panelRT.offsetMin = Vector2.zero;
+                panelRT.offsetMax = Vector2.zero;
+                Image panelImage = panelObject.GetComponent<Image>();
+                panelImage.color = new Color(0.07f, 0.08f, 0.11f, 0.96f);
+
+                panelObject.SetActive(false);
+                pricingPanel = panelObject.transform;
+                Debug.Log("[Pricing] Pricing panel created.");
+            }
+
+            PricingAppUIController app = pricingPanel.GetComponent<PricingAppUIController>();
+            if (app == null)
+            {
+                app = pricingPanel.gameObject.AddComponent<PricingAppUIController>();
+                Debug.Log("[Pricing] PricingAppUIController attached to Precios panel.");
+            }
+
+            if (helper != null)
+                EnsurePricingButton(helper, pricingPanel.gameObject);
+        }
+
+        private static void EnsurePricingButton(UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (helper == null || panel == null)
+                return;
+
+            Transform root = helper.transform.parent != null ? helper.transform.parent : helper.transform;
+            Button[] buttons = root.GetComponentsInChildren<Button>(true);
+            Button template = null;
+            Button existing = null;
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Button button = buttons[i];
+                if (button == null)
+                    continue;
+
+                TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+                string text = label != null ? label.text.Trim().ToUpperInvariant() : string.Empty;
+                if (text == "PRECIOS")
+                {
+                    existing = button;
+                    break;
+                }
+
+                if ((text == "CUSTOMIZATION" || text == "BOOSTERS" || text == "EXPANDIR" ||
+                     text == "EMPLEADOS"     || text == "LOGROS"    || text == "COMPRA") && template == null)
+                    template = button;
+            }
+
+            if (existing != null)
+            {
+                ConfigurePricingButton(existing, helper, panel);
+                return;
+            }
+
+            if (template == null)
+                return;
+
+            Button newButton = Object.Instantiate(template, template.transform.parent, false);
+            newButton.name = "PreciosButton";
+            TMP_Text newLabel = newButton.GetComponentInChildren<TMP_Text>(true);
+            if (newLabel != null)
+            {
+                newLabel.text  = "PRECIOS";
+                newLabel.color = Color.white;
+            }
+
+            Image buttonImage = newButton.GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = new Color(0.60f, 0.35f, 0.10f, 0.95f);  // amber tint
+
+            newButton.onClick.RemoveAllListeners();
+            ConfigurePricingButton(newButton, helper, panel);
+            newButton.transform.SetAsLastSibling();
+            Debug.Log("[Pricing] Pricing tab button created.");
+        }
+
+        private static void ConfigurePricingButton(Button button, UIShopCategoryHelper helper, GameObject panel)
         {
             if (button == null)
                 return;
