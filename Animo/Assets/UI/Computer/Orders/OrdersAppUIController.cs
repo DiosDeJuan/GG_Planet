@@ -300,6 +300,7 @@ namespace FLOBUK.StoreSimulator
             {
                 row.buttonImage.color = ColorButtonNoMoney;
                 long deficit = totalCost - StoreDatabase.Instance.currentMoney;
+                row.buttonLabel.text  = "Faltan " + StoreDatabase.FromLongToStringMoney(deficit);
                 row.button.interactable = false;
             }
             else
