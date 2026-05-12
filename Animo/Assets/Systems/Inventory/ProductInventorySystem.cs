@@ -142,10 +142,11 @@ namespace FLOBUK.StoreSimulator
         public List<ProductScriptableObject> GetLowStockProducts(int lowThreshold = 3)
         {
             var result = new List<ProductScriptableObject>();
-            ProductScriptableObject[] all = ItemDatabase.GetAll<ProductScriptableObject>();
-            for (int i = 0; i < all.Length; i++)
+            List<PurchasableScriptableObject> all =
+                ItemDatabase.GetByType(typeof(ProductScriptableObject));
+            for (int i = 0; i < all.Count; i++)
             {
-                ProductScriptableObject product = all[i];
+                ProductScriptableObject product = all[i] as ProductScriptableObject;
                 if (product == null)
                     continue;
                 if (GetTotalStock(product) < lowThreshold && GetPendingUnits(product) == 0)

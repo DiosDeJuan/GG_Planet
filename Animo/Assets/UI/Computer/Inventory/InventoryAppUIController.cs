@@ -131,8 +131,12 @@ namespace FLOBUK.StoreSimulator
             scrollArea.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
 
             // Build rows for each product
+            List<PurchasableScriptableObject> rawProducts =
+                ItemDatabase.GetByType(typeof(ProductScriptableObject));
             ProductScriptableObject[] products =
-                ItemDatabase.GetAll<ProductScriptableObject>();
+                new ProductScriptableObject[rawProducts.Count];
+            for (int j = 0; j < rawProducts.Count; j++)
+                products[j] = rawProducts[j] as ProductScriptableObject;
             if (products == null || products.Length == 0)
             {
                 Debug.LogWarning(LogPrefix + "No ProductScriptableObject assets found. Inventory UI will be empty.");
