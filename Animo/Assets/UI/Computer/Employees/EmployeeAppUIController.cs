@@ -383,7 +383,7 @@ namespace FLOBUK.StoreSimulator
             detailStatus = CreateText("DetailStatus", detail.transform, "Estado:", 20, TextAlignmentOptions.Left);
             detailCost = CreateText("DetailCost", detail.transform, "Costo:", 18, TextAlignmentOptions.Left);
             detailHint = CreateText("DetailHint", detail.transform, "", 16, TextAlignmentOptions.TopLeft);
-            detailHint.enableWordWrapping = true;
+            detailHint.textWrappingMode = TextWrappingModes.Normal;
 
             hireButton = CreateActionButton(detail.transform, "HireButton", "Contratar", new Color(0.14f, 0.42f, 0.22f, 1f));
             cashierButton = CreateActionButton(detail.transform, "CashierButton", "Asignar Cajero", new Color(0.10f, 0.45f, 0.55f, 1f));
