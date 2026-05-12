@@ -17,11 +17,11 @@ namespace FLOBUK.StoreSimulator
     ///   Minimum sell price : $0.00 (0 cents).
     ///   Maximum sell price : 300% of marketPrice.
     ///   Purchase probability formula (k = 0.1 by default):
-    ///     If storePrice &lt;= marketPrice  → P = 1.0
-    ///     Else                           → P = clamp(1 - k * (delta/marketPrice), 0, 1)
+    ///     If storePrice &lt;= marketPrice  =&gt; P = 1.0
+    ///     Else                           =&gt; P = clamp(1 - k * (delta/marketPrice), 0, 1)
     ///   Extra-purchase probability:
-    ///     If storePrice &gt;= marketPrice  → Pextra = 0
-    ///     Else                          → Pextra = clamp((delta/marketPrice) * 0.10, 0, 1)
+    ///     If storePrice &gt;= marketPrice  =&gt; Pextra = 0
+    ///     Else                          =&gt; Pextra = clamp((delta/marketPrice) * 0.10, 0, 1)
     ///
     /// SCENE SETUP:
     ///   Add this component to any persistent GameObject (e.g. the same one as
@@ -162,8 +162,8 @@ namespace FLOBUK.StoreSimulator
 
         /// <summary>
         /// Probability [0..1] that a customer buys this product at the current price.
-        ///   &lt;= idealPrice → 1.0
-        ///   &gt;  idealPrice → 1 - slope * (over / ideal), clamped to [0, 1]
+        ///   currentPrice &lt;= idealPrice =&gt; 1.0
+        ///   currentPrice &gt;  idealPrice =&gt; 1 - slope * (over / ideal), clamped to [0, 1]
         /// </summary>
         public float GetPurchaseProbability(ProductScriptableObject product)
         {
@@ -178,8 +178,8 @@ namespace FLOBUK.StoreSimulator
 
         /// <summary>
         /// Extra purchase probability [0..1] when price is below ideal.
-        ///   &gt;= idealPrice → 0
-        ///   &lt;  idealPrice → (under / ideal) * 0.10, clamped to [0, 1]
+        ///   currentPrice &gt;= idealPrice =&gt; 0
+        ///   currentPrice &lt;  idealPrice =&gt; (under / ideal) * 0.10, clamped to [0, 1]
         /// </summary>
         public float GetExtraPurchaseProbability(ProductScriptableObject product)
         {

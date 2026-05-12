@@ -42,8 +42,9 @@ namespace FLOBUK.StoreSimulator
         private static readonly Color ColorGood         = new Color(0.25f, 0.75f, 0.30f, 1.00f);
 
         // Step sizes in cents ($0.10 = 10 cents, $0.50 = 50 cents)
-        private const long StepSmall = 10L;
-        private const long StepLarge = 50L;
+        private const long StepSmall       = 10L;
+        private const long StepLarge       = 50L;
+        private const long DeltaReset      = long.MinValue; // sentinel: means "reset to ideal"
 
         // ── Internal state ────────────────────────────────────────────────────────
 
@@ -218,7 +219,7 @@ namespace FLOBUK.StoreSimulator
             // Adjust buttons row (bottom-right)
             // [-$0.50][-$0.10][+$0.10][+$0.50][reset]
             string[] labels = { "-$0.50", "-$0.10", "+$0.10", "+$0.50", "↺" };
-            long[]   deltas = { -StepLarge, -StepSmall, StepSmall, StepLarge, long.MinValue /* reset */ };
+            long[]   deltas = { -StepLarge, -StepSmall, StepSmall, StepLarge, DeltaReset };
             Color[]  colors = { ColorDanger, ColorWarning, ColorGood, ColorGood, ColorBtnReset };
 
             float btnW = 0.09f;
@@ -241,7 +242,7 @@ namespace FLOBUK.StoreSimulator
                 ProductScriptableObject capturedProduct = product;
                 btn.onClick.AddListener(() =>
                 {
-                    if (capturedDelta == long.MinValue)
+                    if (capturedDelta == DeltaReset)
                         ApplyReset(capturedProduct);
                     else
                         ApplyDelta(capturedProduct, capturedDelta);
