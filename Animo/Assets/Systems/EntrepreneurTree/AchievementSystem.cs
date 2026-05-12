@@ -193,6 +193,20 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        /// <summary>
+        /// Called by OrdersAppUIController when a product is purchased via DeliverySystem.
+        /// Currently used as an extensibility hook; specific product-category achievements
+        /// (luxury_sale, appliance_sale) require a pricing/scanner API not yet available.
+        /// </summary>
+        public static void RegisterProductOrdered(ProductScriptableObject product)
+        {
+            // Hook: first order placed — no matching AchievementId yet, reserved for future.
+            // When a dedicated "first_order" achievement is added to AchievementId, complete it here.
+            if (product != null)
+                Debug.Log(LogPrefix + "Product ordered: " + product.title + " (hook registered).");
+        }
+
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public static void GrantPointForTesting()
         {

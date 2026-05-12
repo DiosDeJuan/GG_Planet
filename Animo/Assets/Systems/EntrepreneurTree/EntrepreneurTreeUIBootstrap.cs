@@ -84,6 +84,7 @@ namespace FLOBUK.StoreSimulator
                     EnsureExpansionTab(helper, contentArea);
                     EnsureEmployeeTab(helper, contentArea);
                     EnsureAchievementsTab(helper, contentArea);
+                    EnsureOrdersTab(helper, contentArea);
                 }
             }
         }
@@ -539,6 +540,113 @@ namespace FLOBUK.StoreSimulator
 #else
             return Object.FindObjectsOfType<EntrepreneurTreeManager>(true);
 #endif
+        }
+
+
+        // ── Orders tab (Compra / Pedidos) ──────────────────────────────────────
+
+        /// <summary>
+        /// Creates (or reuses) a dedicated "Compra" content panel inside contentArea,
+        /// attaches OrdersAppUIController to it, and wires a tab button — mirrors EnsureAchievementsTab.
+        /// </summary>
+        private static void EnsureOrdersTab(UIShopCategoryHelper helper, Transform contentArea)
+        {
+            if (helper == null || contentArea == null)
+                return;
+
+            Transform ordersPanel = contentArea.Find("Compra");
+            if (ordersPanel == null)
+            {
+                GameObject panelObject = new GameObject("Compra", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panelObject.transform.SetParent(contentArea, false);
+                RectTransform panelRT = panelObject.GetComponent<RectTransform>();
+                panelRT.anchorMin = Vector2.zero;
+                panelRT.anchorMax = Vector2.one;
+                panelRT.offsetMin = Vector2.zero;
+                panelRT.offsetMax = Vector2.zero;
+                Image panelImage = panelObject.GetComponent<Image>();
+                panelImage.color = new Color(0.07f, 0.08f, 0.11f, 0.96f);
+
+                panelObject.SetActive(false);
+                ordersPanel = panelObject.transform;
+                Debug.Log("[Orders] Orders panel created.");
+            }
+
+            OrdersAppUIController app = ordersPanel.GetComponent<OrdersAppUIController>();
+            if (app == null)
+            {
+                app = ordersPanel.gameObject.AddComponent<OrdersAppUIController>();
+                Debug.Log("[Orders] OrdersAppUIController attached to Compra panel.");
+            }
+
+            if (helper != null)
+                EnsureOrdersButton(helper, ordersPanel.gameObject);
+        }
+
+        private static void EnsureOrdersButton(UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (helper == null || panel == null)
+                return;
+
+            Transform root = helper.transform.parent != null ? helper.transform.parent : helper.transform;
+            Button[] buttons = root.GetComponentsInChildren<Button>(true);
+            Button template = null;
+            Button existing = null;
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Button button = buttons[i];
+                if (button == null)
+                    continue;
+
+                TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+                string text = label != null ? label.text.Trim().ToUpperInvariant() : string.Empty;
+                if (text == "COMPRA")
+                {
+                    existing = button;
+                    break;
+                }
+
+                if ((text == "CUSTOMIZATION" || text == "BOOSTERS" || text == "EXPANDIR" || text == "EMPLEADOS" || text == "LOGROS") && template == null)
+                    template = button;
+            }
+
+            if (existing != null)
+            {
+                ConfigureOrdersButton(existing, helper, panel);
+                return;
+            }
+
+            if (template == null)
+                return;
+
+            Button newButton = Object.Instantiate(template, template.transform.parent, false);
+            newButton.name = "CompraButton";
+            TMP_Text newLabel = newButton.GetComponentInChildren<TMP_Text>(true);
+            if (newLabel != null)
+            {
+                newLabel.text  = "COMPRA";
+                newLabel.color = Color.white;
+            }
+
+            Image buttonImage = newButton.GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = new Color(0.15f, 0.55f, 0.30f, 0.95f);  // green tint
+
+            newButton.onClick.RemoveAllListeners();
+            ConfigureOrdersButton(newButton, helper, panel);
+            newButton.transform.SetAsLastSibling();
+            Debug.Log("[Orders] Orders tab button created.");
+        }
+
+        private static void ConfigureOrdersButton(Button button, UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (button == null)
+                return;
+
+            ExpansionTabButtonLink link = button.GetComponent<ExpansionTabButtonLink>();
+            if (link == null)
+                link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
+            link.Configure(helper, panel);
         }
     }
 }
