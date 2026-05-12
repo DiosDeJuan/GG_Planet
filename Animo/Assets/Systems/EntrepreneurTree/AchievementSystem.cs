@@ -56,6 +56,9 @@ namespace FLOBUK.StoreSimulator
         Donador,             // Sold 5 products at $0.00 (generous pricing)
         LuxuryProductSold,   // Sold a luxury-category product
         ApplianceProductSold,// Sold an appliance-category product
+        // ── Inventory ────────────────────────────────────────────────────────────
+        FullStockDay,        // All products stocked on shelves at the same time
+        WrongPlacement,      // Placed a product in an incompatible furniture type
     }
 
 
@@ -261,6 +264,42 @@ namespace FLOBUK.StoreSimulator
             Debug.Log(LogPrefix + "Appliance product sold: '" +
                       (product != null ? product.title : "?") + "'.");
             Complete(AchievementId.ApplianceProductSold);
+        }
+
+        // ── Inventory hooks ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Hook: called when all products have shelf stock at the same time.
+        /// Completes <see cref="AchievementId.FullStockDay"/> on first occurrence.
+        /// </summary>
+        public static void RegisterFullStockDay()
+        {
+            if (Instance == null) return;
+            Debug.Log(LogPrefix + "Full stock day detected — completing FullStockDay achievement.");
+            Complete(AchievementId.FullStockDay);
+        }
+
+        /// <summary>
+        /// Hook: called when a product's total stock (boxes + shelf) reaches zero.
+        /// Prepared for future "out-of-stock penalty" achievement; no completion now.
+        /// </summary>
+        public static void RegisterProductOutOfStock(ProductScriptableObject product)
+        {
+            // Hook prepared. No achievement completion until a real event source is available.
+            Debug.Log(LogPrefix + "Product out of stock (hook): '" +
+                      (product != null ? product.title : "?") + "'.");
+        }
+
+        /// <summary>
+        /// Hook: called when a product is placed in an incompatible furniture type.
+        /// Completes <see cref="AchievementId.WrongPlacement"/> on first occurrence.
+        /// </summary>
+        public static void RegisterWrongPlacement(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            Debug.Log(LogPrefix + "Wrong placement detected for: '" +
+                      (product != null ? product.title : "?") + "' — completing WrongPlacement achievement.");
+            Complete(AchievementId.WrongPlacement);
         }
 
 

@@ -86,6 +86,7 @@ namespace FLOBUK.StoreSimulator
                     EnsureAchievementsTab(helper, contentArea);
                     EnsureOrdersTab(helper, contentArea);
                     EnsurePricingTab(helper, contentArea);
+                    EnsureInventoryTab(helper, contentArea);
                 }
             }
         }
@@ -114,6 +115,7 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<SupermarketExpansionSystem>();
                 systems.AddComponent<ExpansionCustomerDemandAdapter>();
                 systems.AddComponent<ExpansionStorageCapacityAdapter>();
+                systems.AddComponent<ProductInventorySystem>();
 
                 Debug.Log(LogPrefix + "Created runtime EntrepreneurTree systems GameObject.");
             }
@@ -168,6 +170,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ExpansionCustomerDemandAdapter>();
             if (systems.GetComponent<ExpansionStorageCapacityAdapter>() == null)
                 systems.AddComponent<ExpansionStorageCapacityAdapter>();
+            if (systems.GetComponent<ProductInventorySystem>() == null)
+                systems.AddComponent<ProductInventorySystem>();
         }
 
 
@@ -747,6 +751,121 @@ namespace FLOBUK.StoreSimulator
         }
 
         private static void ConfigurePricingButton(Button button, UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (button == null)
+                return;
+
+            ExpansionTabButtonLink link = button.GetComponent<ExpansionTabButtonLink>();
+            if (link == null)
+                link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
+            link.Configure(helper, panel);
+        }
+
+        // ── INVENTARIO tab ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates the "INVENTARIO" panel + tab button and attaches
+        /// <see cref="InventoryAppUIController"/> — mirrors EnsurePricingTab.
+        /// </summary>
+        private static void EnsureInventoryTab(UIShopCategoryHelper helper, Transform contentArea)
+        {
+            if (helper == null || contentArea == null)
+                return;
+
+            Transform panel = contentArea.Find("Inventario");
+            if (panel == null)
+            {
+                GameObject panelObject = new GameObject("Inventario",
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panelObject.transform.SetParent(contentArea, false);
+                RectTransform panelRT = panelObject.GetComponent<RectTransform>();
+                panelRT.anchorMin = Vector2.zero;
+                panelRT.anchorMax = Vector2.one;
+                panelRT.offsetMin = Vector2.zero;
+                panelRT.offsetMax = Vector2.zero;
+                panelObject.GetComponent<Image>().color = new Color(0.07f, 0.08f, 0.11f, 0.96f);
+                panelObject.SetActive(false);
+                panel = panelObject.transform;
+                Debug.Log("[Inventory] Inventory panel created.");
+            }
+
+            InventoryAppUIController app = panel.GetComponent<InventoryAppUIController>();
+            if (app == null)
+            {
+                app = panel.gameObject.AddComponent<InventoryAppUIController>();
+                Debug.Log("[Inventory] InventoryAppUIController attached to Inventario panel.");
+            }
+
+            if (helper != null)
+                EnsureInventoryButton(helper, panel.gameObject);
+        }
+
+        private static void EnsureInventoryButton(UIShopCategoryHelper helper, GameObject panel)
+        {
+            if (helper == null || panel == null)
+                return;
+
+            Transform root = helper.transform.parent != null
+                ? helper.transform.parent
+                : helper.transform;
+            Button[] buttons  = root.GetComponentsInChildren<Button>(true);
+            Button template   = null;
+            Button existing   = null;
+
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Button button = buttons[i];
+                if (button == null)
+                    continue;
+
+                TMP_Text label  = button.GetComponentInChildren<TMP_Text>(true);
+                string   text   = label != null
+                    ? label.text.Trim().ToUpperInvariant()
+                    : string.Empty;
+
+                if (text == "INVENTARIO")
+                {
+                    existing = button;
+                    break;
+                }
+
+                if ((text == "CUSTOMIZATION" || text == "BOOSTERS" || text == "EXPANDIR" ||
+                     text == "EMPLEADOS"     || text == "LOGROS"    || text == "COMPRA"  ||
+                     text == "PRECIOS") && template == null)
+                    template = button;
+            }
+
+            if (existing != null)
+            {
+                ConfigureInventoryButton(existing, helper, panel);
+                return;
+            }
+
+            if (template == null)
+                return;
+
+            Button newButton = Object.Instantiate(template, template.transform.parent, false);
+            newButton.name   = "InventarioButton";
+
+            TMP_Text newLabel = newButton.GetComponentInChildren<TMP_Text>(true);
+            if (newLabel != null)
+            {
+                newLabel.text  = "INVENTARIO";
+                newLabel.color = Color.white;
+            }
+
+            Image buttonImage = newButton.GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = new Color(0.10f, 0.45f, 0.60f, 0.95f);  // teal tint
+
+            newButton.onClick.RemoveAllListeners();
+            ConfigureInventoryButton(newButton, helper, panel);
+            newButton.transform.SetAsLastSibling();
+            Debug.Log("[Inventory] Inventory tab button created.");
+        }
+
+        private static void ConfigureInventoryButton(Button button,
+            UIShopCategoryHelper helper, GameObject panel)
         {
             if (button == null)
                 return;
