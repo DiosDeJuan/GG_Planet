@@ -41,6 +41,8 @@ namespace FLOBUK.StoreSimulator
 
         void OnEnable()
         {
+            // When the dedicated panel becomes active (tab selected), always show the app root.
+            ShowApp(true);
             RefreshAll();
         }
 

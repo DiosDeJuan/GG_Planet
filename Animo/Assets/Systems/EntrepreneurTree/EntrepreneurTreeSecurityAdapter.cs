@@ -1,16 +1,22 @@
+using System;
 using UnityEngine;
 
 namespace FLOBUK.StoreSimulator
 {
     /// <summary>
     /// Applies entrepreneur tree security progression to runtime gameplay values and optional visuals.
-    /// This adapter exposes security level and arrest probability for connection with a future real shoplifter system.
+    /// Exposes security level, arrest probability, and events for the shoplifter system.
     /// </summary>
     public class EntrepreneurTreeSecurityAdapter : MonoBehaviour
     {
-        // Este adapter expone nivel de seguridad y probabilidad de arresto para conectarse con el futuro sistema real de ladrones.
-        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string LogPrefix = "[Security] ";
         public static EntrepreneurTreeSecurityAdapter Instance { get; private set; }
+
+        /// <summary>Fired whenever the security level changes (0–3).</summary>
+        public static event Action<int> onSecurityLevelChanged;
+
+        /// <summary>Fired whenever the auto-arrest chance changes (0–0.99).</summary>
+        public static event Action<float> onAutoArrestChanceChanged;
 
         [Header("Optional visuals")]
         public GameObject securityLevel1Visual;
@@ -54,6 +60,20 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        /// <summary>Returns the auto-arrest chance (0–1). Alias for GetArrestChance().</summary>
+        public float GetAutoArrestChance()
+        {
+            return arrestChance;
+        }
+
+
+        /// <summary>Refreshes security level from the current tree state. Safe to call at any time.</summary>
+        public void RefreshFromTree()
+        {
+            RecalculateFromTree();
+        }
+
+
         public bool IsSecurityUnlocked(int level)
         {
             switch (level)
@@ -78,22 +98,32 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        /// <summary>Tries automatic arrest using current arrest chance. Agent parameter accepted for future use.</summary>
+        public bool TryAutoArrest(ShoplifterAgent agent)
+        {
+            return TryAutomaticArrest();
+        }
+
+
         private void OnSecurityNodeUnlocked(NodeData node)
         {
             RecalculateFromTree();
-            Debug.Log(LogPrefix + "Security gameplay unlock applied: " + node?.id);
+            Debug.Log(LogPrefix + "Security node unlocked: " + node?.id + " → level " + securityLevel + " / " + Mathf.RoundToInt(arrestChance * 100) + "%");
         }
 
 
         private void OnDataLoaded()
         {
             RecalculateFromTree();
-            Debug.Log(LogPrefix + "Security gameplay state reapplied after load.");
+            Debug.Log(LogPrefix + "Security level restored after load: " + securityLevel + " / " + Mathf.RoundToInt(arrestChance * 100) + "%");
         }
 
 
         private void RecalculateFromTree()
         {
+            int prevLevel = securityLevel;
+            float prevChance = arrestChance;
+
             int coverage = EntrepreneurTreeManager.GetSecurityCoveragePercent();
             if (coverage >= 99)
             {
@@ -115,6 +145,23 @@ namespace FLOBUK.StoreSimulator
                 securityLevel = 0;
                 arrestChance = 0f;
             }
+
+            Debug.Log(LogPrefix + "Security level refreshed from tree: " + securityLevel + " / " + Mathf.RoundToInt(arrestChance * 100) + "%");
+
+            bool levelChanged = securityLevel != prevLevel;
+            bool chanceChanged = !Mathf.Approximately(arrestChance, prevChance);
+
+            if (levelChanged)
+            {
+                onSecurityLevelChanged?.Invoke(securityLevel);
+                if (securityLevel > 0)
+                    UIGame.AddNotification(
+                        "Seguridad nivel " + securityLevel + " activa: " + Mathf.RoundToInt(arrestChance * 100) + "% de arresto automático.",
+                        otherColor: new Color(0.20f, 0.72f, 0.36f));
+            }
+
+            if (chanceChanged)
+                onAutoArrestChanceChanged?.Invoke(arrestChance);
 
             ApplyVisuals();
             if (securityLevel >= 3)

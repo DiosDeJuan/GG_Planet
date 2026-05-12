@@ -50,6 +50,15 @@ namespace FLOBUK.StoreSimulator
         Batman,              // Detain/capture first thief
         FirstEmployeeHiredReal, // First employee hired from employee app
         MaxEmployment,       // 18 employees hired and assigned
+        MaxSupermarket,      // All expansion zones purchased
+        MaxStorage,          // All storage expansion zones purchased
+        // ── Pricing ──────────────────────────────────────────────────────────────
+        Donador,             // Sold 5 products at $0.00 (generous pricing)
+        LuxuryProductSold,   // Sold a luxury-category product
+        ApplianceProductSold,// Sold an appliance-category product
+        // ── Inventory ────────────────────────────────────────────────────────────
+        FullStockDay,        // All products stocked on shelves at the same time
+        WrongPlacement,      // Placed a product in an incompatible furniture type
     }
 
 
@@ -66,7 +75,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class AchievementSystem : MonoBehaviour
     {
-        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string LogPrefix = "[Achievement] ";
         /// <summary>Singleton instance.</summary>
         public static AchievementSystem Instance { get; private set; }
 
@@ -111,7 +120,7 @@ namespace FLOBUK.StoreSimulator
             if (Instance != null && Instance != this)
             {
                 Debug.LogWarning(LogPrefix + "Duplicate AchievementSystem detected. Destroying duplicate instance.");
-                Destroy(gameObject);
+                Destroy(this);
                 return;
             }
 
@@ -124,6 +133,7 @@ namespace FLOBUK.StoreSimulator
             DayCycleSystem.onDayLoaded       += OnDayLoaded;
             DayCycleSystem.onDayFinished     += OnDayFinished;
             EntrepreneurTreeManager.onNodeUnlocked += OnNodeUnlocked;
+            SupermarketExpansionSystem.onZonePurchased += OnZonePurchased;
         }
 
 
@@ -187,6 +197,109 @@ namespace FLOBUK.StoreSimulator
         {
             if (allUnlocked)
                 Complete(AchievementId.TotalOptimization);
+        }
+
+
+        /// <summary>
+        /// Called by OrdersAppUIController when a product is purchased via DeliverySystem.
+        /// Currently used as an extensibility hook; specific product-category achievements
+        /// (luxury_sale, appliance_sale) require a pricing/scanner API not yet available.
+        /// </summary>
+        public static void RegisterProductOrdered(ProductScriptableObject product)
+        {
+            // Hook: first order placed — no matching AchievementId yet, reserved for future.
+            // When a dedicated "first_order" achievement is added to AchievementId, complete it here.
+            if (product != null)
+                Debug.Log(LogPrefix + "Product ordered: " + product.title + " (hook registered).");
+        }
+
+        // ── Pricing hooks ─────────────────────────────────────────────────────────
+
+        // Counter for products sold at $0.  Not persisted via EntrepreneurTreeSaveIntegration
+        // because it resets on each session — 5 free sales in one session earns the award.
+        private static int zeroSaleCount;
+
+        /// <summary>
+        /// Call this when a customer buys a product whose storePrice was $0.
+        /// After 5 such sales in the current session, completes AchievementId.Donador.
+        /// </summary>
+        public static void RegisterProductSoldAtZero(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            zeroSaleCount++;
+            Debug.Log(LogPrefix + "Free sale registered for '" +
+                      (product != null ? product.title : "?") + "' (" + zeroSaleCount + "/5).");
+            if (zeroSaleCount >= 5)
+                Complete(AchievementId.Donador);
+        }
+
+        /// <summary>
+        /// Call this when a customer complains that a product is too expensive.
+        /// Hook prepared — no dedicated AchievementId yet (Paciente achievement).
+        /// </summary>
+        public static void RegisterPriceComplaint(ProductScriptableObject product)
+        {
+            if (product == null) return;
+            // Hook: reserved for AchievementId.Paciente when added.
+            Debug.Log(LogPrefix + "Price complaint hook: '" + product.title + "'.");
+        }
+
+        /// <summary>
+        /// Call this when a customer successfully purchases a luxury-category product.
+        /// </summary>
+        public static void RegisterLuxuryProductSold(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            Debug.Log(LogPrefix + "Luxury product sold: '" +
+                      (product != null ? product.title : "?") + "'.");
+            Complete(AchievementId.LuxuryProductSold);
+        }
+
+        /// <summary>
+        /// Call this when a customer successfully purchases an appliance-category product.
+        /// </summary>
+        public static void RegisterApplianceProductSold(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            Debug.Log(LogPrefix + "Appliance product sold: '" +
+                      (product != null ? product.title : "?") + "'.");
+            Complete(AchievementId.ApplianceProductSold);
+        }
+
+        // ── Inventory hooks ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Hook: called when all products have shelf stock at the same time.
+        /// Completes <see cref="AchievementId.FullStockDay"/> on first occurrence.
+        /// </summary>
+        public static void RegisterFullStockDay()
+        {
+            if (Instance == null) return;
+            Debug.Log(LogPrefix + "Full stock day detected — completing FullStockDay achievement.");
+            Complete(AchievementId.FullStockDay);
+        }
+
+        /// <summary>
+        /// Hook: called when a product's total stock (boxes + shelf) reaches zero.
+        /// Prepared for future "out-of-stock penalty" achievement; no completion now.
+        /// </summary>
+        public static void RegisterProductOutOfStock(ProductScriptableObject product)
+        {
+            // Hook prepared. No achievement completion until a real event source is available.
+            Debug.Log(LogPrefix + "Product out of stock (hook): '" +
+                      (product != null ? product.title : "?") + "'.");
+        }
+
+        /// <summary>
+        /// Hook: called when a product is placed in an incompatible furniture type.
+        /// Completes <see cref="AchievementId.WrongPlacement"/> on first occurrence.
+        /// </summary>
+        public static void RegisterWrongPlacement(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            Debug.Log(LogPrefix + "Wrong placement detected for: '" +
+                      (product != null ? product.title : "?") + "' — completing WrongPlacement achievement.");
+            Complete(AchievementId.WrongPlacement);
         }
 
 
@@ -269,6 +382,33 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        // Zone purchased from SupermarketExpansionSystem: detect expansion milestones.
+        private void OnZonePurchased(ExpansionZoneData zone)
+        {
+            if (zone == null || SupermarketExpansionSystem.Instance == null)
+                return;
+
+            Complete(AchievementId.ExpandStore);
+
+            int purchasedCount = SupermarketExpansionSystem.Instance.GetPurchasedZonesCount();
+            int totalCount     = SupermarketExpansionSystem.Instance.Zones.Count;
+            if (totalCount > 0 && purchasedCount >= totalCount)
+                Complete(AchievementId.MaxSupermarket);
+
+            int storageCount    = SupermarketExpansionSystem.Instance.GetPurchasedStorageExpansionCount();
+            int storageExpTotal = 0;
+            IReadOnlyList<ExpansionZoneData> allZones = SupermarketExpansionSystem.Instance.Zones;
+            for (int i = 0; i < allZones.Count; i++)
+            {
+                ExpansionZoneData z = allZones[i];
+                if (z != null && z.type == ExpansionZoneType.Storage && z.price > 0)
+                    storageExpTotal++;
+            }
+            if (storageExpTotal > 0 && storageCount >= storageExpTotal)
+                Complete(AchievementId.MaxStorage);
+        }
+
+
         // Node unlocked in the tree: detect employee / product / full-tree milestones.
         private void OnNodeUnlocked(NodeData node)
         {
@@ -279,23 +419,23 @@ namespace FLOBUK.StoreSimulator
 
             // Count unlocked employees.
             int unlockedEmployees = allNodes.FindAll(
-                n => n.nodeType == TreeNodeType.Employee && n.isUnlocked).Count;
+                n => n != null && n.nodeType == TreeNodeType.Employee && n.isUnlocked).Count;
             if (unlockedEmployees >= 1)  Complete(AchievementId.HireFirstEmployee);
             if (unlockedEmployees >= 5)  Complete(AchievementId.Hire5Employees);
             if (unlockedEmployees >= 10) Complete(AchievementId.Hire10Employees);
 
             // All product nodes unlocked?
             bool allProducts = allNodes.TrueForAll(
-                n => n.nodeType != TreeNodeType.Product || n.isUnlocked);
+                n => n == null || n.nodeType != TreeNodeType.Product || n.isUnlocked);
             if (allProducts) Complete(AchievementId.UnlockAllProducts);
 
             // All improvement nodes unlocked?
             bool allImprovements = allNodes.TrueForAll(
-                n => n.nodeType != TreeNodeType.Improvement || n.isUnlocked);
+                n => n == null || n.nodeType != TreeNodeType.Improvement || n.isUnlocked);
             if (allImprovements) Complete(AchievementId.TotalOptimization);
 
             // Every single node unlocked?
-            bool allUnlocked = allNodes.TrueForAll(n => n.isUnlocked);
+            bool allUnlocked = allNodes.TrueForAll(n => n == null || n.isUnlocked);
             if (allUnlocked) Complete(AchievementId.UnlockAllTree);
 
             if (EntrepreneurTreeManager.IsNodeUnlocked("security_1") &&
@@ -370,6 +510,7 @@ namespace FLOBUK.StoreSimulator
             DayCycleSystem.onDayLoaded           -= OnDayLoaded;
             DayCycleSystem.onDayFinished         -= OnDayFinished;
             EntrepreneurTreeManager.onNodeUnlocked -= OnNodeUnlocked;
+            SupermarketExpansionSystem.onZonePurchased -= OnZonePurchased;
 
             if (Instance == this)
                 Instance = null;

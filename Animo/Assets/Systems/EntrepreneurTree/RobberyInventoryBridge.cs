@@ -28,7 +28,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class EntrepreneurTreeRobberyInventoryBridge : IRobberyInventoryBridge
     {
-        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string LogPrefix = "[Robbery] ";
 
         public bool TryReserveStolenItems(CustomerCart cart, ShoplifterType thiefType, long targetValue, List<RobbedItem> reservedItems, out long totalValue, out int totalCount)
         {
