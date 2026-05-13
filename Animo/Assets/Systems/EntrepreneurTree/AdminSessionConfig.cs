@@ -45,6 +45,21 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static bool prepareSalesTest;
 
+        /// <summary>Instantly complete all achievements (admin / test use).</summary>
+        public static bool completeAllAchievements;
+
+        /// <summary>Force the next customer that spawns to become a thief.</summary>
+        public static bool forceShoplifterSpawn;
+
+        /// <summary>Type of thief to force-spawn when forceShoplifterSpawn is true.</summary>
+        public static ShoplifterType forcedShoplifterType = ShoplifterType.Common;
+
+        /// <summary>Show the Monopoly Final overlay immediately after game starts (for testing).</summary>
+        public static bool triggerMonopolyTest;
+
+        /// <summary>Show the Bankruptcy Game Over overlay immediately after game starts (for testing).</summary>
+        public static bool triggerBankruptcyTest;
+
         /// <summary>
         /// Reset to safe defaults so accidental re-use doesn't bleed into a real session.
         /// Call this after applying the config in the Game scene.
@@ -61,6 +76,11 @@ namespace FLOBUK.StoreSimulator
             giveTestStock = false;
             buyTestExpansions = false;
             prepareSalesTest = false;
+            completeAllAchievements = false;
+            forceShoplifterSpawn = false;
+            forcedShoplifterType = ShoplifterType.Common;
+            triggerMonopolyTest = false;
+            triggerBankruptcyTest = false;
             UnityEngine.Debug.Log(LogPrefix + "AdminSessionConfig reset to defaults.");
         }
     }

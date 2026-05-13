@@ -21,7 +21,7 @@ namespace FLOBUK.StoreSimulator
 
         // ── Config card dimensions ────────────────────────────────────────────
         private const float CardWidth  = 480f;
-        private const float CardHeight = 660f;
+        private const float CardHeight = 820f;
 
         // ── Runtime-inject into every scene load ──────────────────────────────
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -122,6 +122,10 @@ namespace FLOBUK.StoreSimulator
             Toggle giveTestStockToggle    = CreateToggleRow(card.transform, "Stock de prueba (básicos)");
             Toggle buyExpansionsToggle    = CreateToggleRow(card.transform, "Comprar expansiones de prueba");
             Toggle prepareSalesTestToggle = CreateToggleRow(card.transform, "Prueba de ventas (dinero+stock+cajero)");
+            Toggle completeAchievementsToggle = CreateToggleRow(card.transform, "Completar todos los logros");
+            Toggle forceShoplifterToggle  = CreateToggleRow(card.transform, "Forzar ladrón (próximo cliente)");
+            Toggle triggerMonopolyToggle  = CreateToggleRow(card.transform, "Simular final de monopolio");
+            Toggle triggerBankruptcyToggle = CreateToggleRow(card.transform, "Simular bancarrota (Game Over)");
 
             // ── Buttons ───────────────────────────────────────────────────────
             GameObject buttonRow = CreateUIObject("ButtonRow", card.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
@@ -151,7 +155,11 @@ namespace FLOBUK.StoreSimulator
                     unlockAllTreeToggle,
                     giveTestStockToggle,
                     buyExpansionsToggle,
-                    prepareSalesTestToggle);
+                    prepareSalesTestToggle,
+                    completeAchievementsToggle,
+                    forceShoplifterToggle,
+                    triggerMonopolyToggle,
+                    triggerBankruptcyToggle);
             });
         }
 
@@ -166,7 +174,11 @@ namespace FLOBUK.StoreSimulator
             Toggle unlockAll,
             Toggle giveTestStock,
             Toggle buyExpansions,
-            Toggle prepareSalesTest)
+            Toggle prepareSalesTest,
+            Toggle completeAchievements,
+            Toggle forceShoplifter,
+            Toggle triggerMonopoly,
+            Toggle triggerBankruptcy)
         {
             Debug.Log(LogPrefix + "Starting admin session...");
 
@@ -197,6 +209,10 @@ namespace FLOBUK.StoreSimulator
             AdminSessionConfig.giveTestStock      = giveTestStock   != null && giveTestStock.isOn;
             AdminSessionConfig.buyTestExpansions  = buyExpansions   != null && buyExpansions.isOn;
             AdminSessionConfig.prepareSalesTest   = prepareSalesTest != null && prepareSalesTest.isOn;
+            AdminSessionConfig.completeAllAchievements = completeAchievements != null && completeAchievements.isOn;
+            AdminSessionConfig.forceShoplifterSpawn    = forceShoplifter != null && forceShoplifter.isOn;
+            AdminSessionConfig.triggerMonopolyTest     = triggerMonopoly != null && triggerMonopoly.isOn;
+            AdminSessionConfig.triggerBankruptcyTest   = triggerBankruptcy != null && triggerBankruptcy.isOn;
 
             // prepareSalesTest is a convenience preset — it implies unlockProducts + giveTestStock.
             if (AdminSessionConfig.prepareSalesTest)

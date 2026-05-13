@@ -1008,9 +1008,39 @@ namespace FLOBUK.StoreSimulator
             if (AdminSessionConfig.prepareSalesTest)
                 Debug.Log("[AdminMode] Applied sales test setup — products unlocked, stock delivered, employees unlocked.");
 
+            // ── Complete all achievements ─────────────────────────────────────
+            if (AdminSessionConfig.completeAllAchievements)
+            {
+                AchievementSystem.AdminCompleteAllAchievements();
+                Debug.Log("[AdminMode] Completed achievement: all achievements granted.");
+            }
+
+            // ── Force shoplifter spawn ────────────────────────────────────────
+            if (AdminSessionConfig.forceShoplifterSpawn)
+            {
+                ShoplifterSystem.AdminForceNextSpawn(AdminSessionConfig.forcedShoplifterType);
+                Debug.Log("[AdminMode] Forced shoplifter spawn: type=" + AdminSessionConfig.forcedShoplifterType);
+            }
+
             if (UIGame.Instance != null)
                 UIGame.AddNotification("[AdminMode] Sesión de prueba iniciada.", otherColor: new Color(1f, 0.7f, 0.1f));
+
+            // ── Game ending tests (deferred one frame so scene is fully loaded) ──
+            bool doMonopoly    = AdminSessionConfig.triggerMonopolyTest;
+            bool doBankruptcy  = AdminSessionConfig.triggerBankruptcyTest;
             AdminSessionConfig.Reset();
+
+            if (doMonopoly)
+            {
+                // Defer to next frame so UI and game systems are ready.
+                var host = new GameObject("AdminGameEndTestHost");
+                host.AddComponent<AdminDeferredGameEndTest>().Setup(monopoly: true);
+            }
+            else if (doBankruptcy)
+            {
+                var host = new GameObject("AdminGameEndTestHost");
+                host.AddComponent<AdminDeferredGameEndTest>().Setup(monopoly: false);
+            }
         }
 
         /// <summary>

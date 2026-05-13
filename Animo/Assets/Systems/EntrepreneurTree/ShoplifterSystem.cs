@@ -52,6 +52,10 @@ namespace FLOBUK.StoreSimulator
         private int cumulativeAutoCaptures;
         private int cumulativeEscapes;
 
+        // Admin: force the next spawned customer to become a thief of this type.
+        private static bool adminForceNextThief;
+        private static ShoplifterType adminForcedType;
+
         void Awake()
         {
             if (Instance != null && Instance != this)
@@ -76,19 +80,24 @@ namespace FLOBUK.StoreSimulator
             if (activeAgents.ContainsKey(id))
                 return;
 
-            if (!ShouldBecomeThief())
+            bool isForced = adminForceNextThief;
+            ShoplifterType forcedType = adminForcedType;
+            if (isForced) adminForceNextThief = false;
+
+            if (!isForced && !ShouldBecomeThief())
                 return;
 
             ShoplifterAgent agent = customer.GetComponent<ShoplifterAgent>();
             if (agent == null)
                 agent = customer.gameObject.AddComponent<ShoplifterAgent>();
 
-            ShoplifterType type = ChooseThiefType();
+            ShoplifterType type = isForced ? forcedType : ChooseThiefType();
             agent.Initialize(this, customer, type);
             activeAgents[id] = agent;
             StatsDatabase.RegisterThiefAppeared();
-            UIGame.AddNotification("Un ladrón está actuando en la tienda.", otherColor: new Color(0.92f, 0.16f, 0.16f));
-            Debug.Log(LogPrefix + "Assigned thief type " + type + " to customer " + id);
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("Un ladrón está actuando en la tienda.", otherColor: new Color(0.92f, 0.16f, 0.16f));
+            Debug.Log(LogPrefix + (isForced ? "[AdminMode] " : "") + "Assigned thief type " + type + " to customer " + id);
         }
 
 
@@ -346,8 +355,20 @@ namespace FLOBUK.StoreSimulator
         private void OnDayFinished()
         {
             string summary = StatsDatabase.GetDailyRobberySummary();
-            if (!string.IsNullOrEmpty(summary))
+            if (!string.IsNullOrEmpty(summary) && UIGame.Instance != null)
                 UIGame.AddNotification(summary, otherColor: new Color(0.98f, 0.88f, 0.28f));
+        }
+
+
+        /// <summary>
+        /// Admin helper: force the next spawned customer to become a thief of the specified type.
+        /// Safe to call at any time; the flag is consumed on the next RegisterCustomer call.
+        /// </summary>
+        public static void AdminForceNextSpawn(ShoplifterType type = ShoplifterType.Common)
+        {
+            adminForceNextThief = true;
+            adminForcedType = type;
+            Debug.Log("[AdminMode] Forced shoplifter spawn scheduled: type=" + type + ". Affects next customer to enter.");
         }
 
 
