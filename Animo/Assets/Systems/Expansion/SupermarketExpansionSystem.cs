@@ -46,9 +46,9 @@ namespace FLOBUK.StoreSimulator
         // ── Gameplay constants ────────────────────────────────────────────────
         /// <summary>
         /// Customer spawn-rate bonus granted per purchased sales-expansion zone.
-        /// 0.10 = +10 % per zone. Adjust here to tune difficulty.
+        /// 0.15 = +15 % per zone (RQF22).
         /// </summary>
-        public const float SalesExpansionCustomerBonusPercent = 0.10f;
+        public const float SalesExpansionCustomerBonusPercent = 0.15f;
 
         /// <summary>
         /// Storage capacity bonus granted per purchased storage-expansion zone.
@@ -432,7 +432,7 @@ namespace FLOBUK.StoreSimulator
                 data["purchased"] = purchased;
                 data["version"] = 2;
 
-                string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
+                string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
                 File.WriteAllBytes(path, Encoding.UTF8.GetBytes(data.ToString()));
                 Debug.Log(LogPrefix + "Expansion data saved (" + purchasedZoneIds.Count + " zones).");
             }
@@ -447,7 +447,7 @@ namespace FLOBUK.StoreSimulator
             try
             {
                 ResetToDefaults();
-                string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
+                string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
 
                 if (!File.Exists(path))
                 {

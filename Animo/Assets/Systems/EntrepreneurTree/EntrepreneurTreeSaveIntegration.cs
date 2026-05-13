@@ -56,7 +56,7 @@ namespace FLOBUK.StoreSimulator
                 data["ShoplifterSystem"] = ShoplifterSystem.Instance.SaveToJSON();
 
             byte[] bytes = Encoding.ASCII.GetBytes(data.ToString());
-            string path  = Application.persistentDataPath + "/" + fileName + SaveGameSystem.fileExt;
+            string path  = Path.Combine(Application.persistentDataPath, fileName + SaveGameSystem.fileExt);
 
             try { File.WriteAllBytes(path, bytes); }
             catch (Exception e)
@@ -66,6 +66,8 @@ namespace FLOBUK.StoreSimulator
             }
 
             Debug.Log(LogPrefix + "Progress saved: " + path);
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("Partida guardada correctamente.", otherColor: new Color(0.25f, 0.80f, 0.40f));
         }
 
 
@@ -73,7 +75,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnLoad()
         {
-            string path = Application.persistentDataPath + "/" + fileName + SaveGameSystem.fileExt;
+            string path = Path.Combine(Application.persistentDataPath, fileName + SaveGameSystem.fileExt);
 
             if (!File.Exists(path))
             {
@@ -149,7 +151,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static JSONNode ReadComponentData(string component)
         {
-            string path = Application.persistentDataPath + "/" + fileName + SaveGameSystem.fileExt;
+            string path = Path.Combine(Application.persistentDataPath, fileName + SaveGameSystem.fileExt);
             if (!File.Exists(path))
                 return new JSONObject();
 

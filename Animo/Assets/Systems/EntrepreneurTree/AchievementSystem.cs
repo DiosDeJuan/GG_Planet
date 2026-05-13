@@ -59,6 +59,10 @@ namespace FLOBUK.StoreSimulator
         // ── Inventory ────────────────────────────────────────────────────────────
         FullStockDay,        // All products stocked on shelves at the same time
         WrongPlacement,      // Placed a product in an incompatible furniture type
+        // ── Security / customer service ──────────────────────────────────────────
+        Paciente,            // First price complaint received from a customer
+        PrecioPerfecto,      // 7 consecutive days without a price complaint
+        HuevoDorado,         // Secret: complete the entire Entrepreneur Tree
     }
 
 
@@ -113,6 +117,10 @@ namespace FLOBUK.StoreSimulator
 
         // Revenue earned in the current day (in cents) — reset on day load, used for GoldenEgg.
         private long dailyRevenue = 0;
+
+        // Consecutive days without a price complaint — used for PrecioPerfecto.
+        private int daysWithoutPriceComplaint = 0;
+        private bool hadComplaintThisDay = false;
 
 
         void Awake()
@@ -234,14 +242,26 @@ namespace FLOBUK.StoreSimulator
         }
 
         /// <summary>
+        /// Call this when a customer leaves unhappy (no specific product known).
+        /// Completes AchievementId.Paciente on first price complaint.
+        /// </summary>
+        public static void RegisterPriceComplaint()
+        {
+            RegisterPriceComplaint(null);
+        }
+
+        /// <summary>
         /// Call this when a customer complains that a product is too expensive.
-        /// Hook prepared — no dedicated AchievementId yet (Paciente achievement).
+        /// Completes AchievementId.Paciente on first occurrence.
         /// </summary>
         public static void RegisterPriceComplaint(ProductScriptableObject product)
         {
-            if (product == null) return;
-            // Hook: reserved for AchievementId.Paciente when added.
-            Debug.Log(LogPrefix + "Price complaint hook: '" + product.title + "'.");
+            if (Instance == null) return;
+            Instance.hadComplaintThisDay = true;
+            Instance.daysWithoutPriceComplaint = 0;
+            Complete(AchievementId.Paciente);
+            if (product != null)
+                Debug.Log(LogPrefix + "Price complaint registered for '" + product.title + "'.");
         }
 
         /// <summary>
@@ -317,6 +337,18 @@ namespace FLOBUK.StoreSimulator
         }
 #endif
 
+        /// <summary>Admin helper: instantly complete every defined achievement (for testing/demo).</summary>
+        public static void AdminCompleteAllAchievements()
+        {
+            System.Array ids = System.Enum.GetValues(typeof(AchievementId));
+            for (int i = 0; i < ids.Length; i++)
+            {
+                AchievementId id = (AchievementId)ids.GetValue(i);
+                Complete(id);
+            }
+            Debug.Log(LogPrefix + "[AdminMode] All achievements completed.");
+        }
+
 
         // ── Event handlers — auto-detection ──────────────────────────────────────
 
@@ -361,6 +393,7 @@ namespace FLOBUK.StoreSimulator
         private void OnDayLoaded()
         {
             dailyRevenue = 0;
+            hadComplaintThisDay = false;
         }
 
 
@@ -372,6 +405,14 @@ namespace FLOBUK.StoreSimulator
             if (daysPlayed >= 5)  Complete(AchievementId.Play5Days);
             if (daysPlayed >= 7)  Complete(AchievementId.Play7Days);
             if (daysPlayed >= 30) Complete(AchievementId.Play30Days);
+
+            // PrecioPerfecto: 7 consecutive days with no complaints.
+            if (!hadComplaintThisDay)
+            {
+                daysWithoutPriceComplaint++;
+                if (daysWithoutPriceComplaint >= 7)
+                    Complete(AchievementId.PrecioPerfecto);
+            }
         }
 
 
@@ -436,7 +477,11 @@ namespace FLOBUK.StoreSimulator
 
             // Every single node unlocked?
             bool allUnlocked = allNodes.TrueForAll(n => n == null || n.isUnlocked);
-            if (allUnlocked) Complete(AchievementId.UnlockAllTree);
+            if (allUnlocked)
+            {
+                Complete(AchievementId.UnlockAllTree);
+                Complete(AchievementId.HuevoDorado);
+            }
 
             if (EntrepreneurTreeManager.IsNodeUnlocked("security_1") &&
                 EntrepreneurTreeManager.IsNodeUnlocked("security_2") &&
@@ -453,6 +498,7 @@ namespace FLOBUK.StoreSimulator
             JSONNode data = new JSONObject();
             data["lifetimeMoneyEarned"] = lifetimeMoneyEarnedCents;
             data["daysPlayed"]          = daysPlayed;
+            data["daysWithoutComplaint"] = daysWithoutPriceComplaint;
 
             JSONArray arr = new JSONArray();
             foreach (AchievementId id in completedAchievements)
@@ -469,12 +515,15 @@ namespace FLOBUK.StoreSimulator
             completedAchievements.Clear();
             lifetimeMoneyEarnedCents = 0;
             daysPlayed          = 0;
+            daysWithoutPriceComplaint = 0;
+            hadComplaintThisDay = false;
 
             if (data == null || data.Count == 0)
                 return;
 
             lifetimeMoneyEarnedCents = data["lifetimeMoneyEarned"].AsLong;
             daysPlayed          = data["daysPlayed"].AsInt;
+            daysWithoutPriceComplaint = data["daysWithoutComplaint"].AsInt;
 
             JSONArray arr = data["completed"].AsArray;
             for (int i = 0; i < arr.Count; i++)

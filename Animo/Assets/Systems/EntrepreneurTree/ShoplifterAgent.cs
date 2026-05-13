@@ -18,6 +18,13 @@ namespace FLOBUK.StoreSimulator
     public class ShoplifterAgent : MonoBehaviour
     {
         private const float FastThiefSpeedMultiplier = 1.25f;
+        /// <summary>Height above the character root at which the floating indicator is spawned.</summary>
+        private const float IndicatorHeightOffset = 2.2f;
+        /// <summary>Uniform scale applied to the floating indicator sphere.</summary>
+        private const float IndicatorScale = 0.28f;
+
+        // Cached once to avoid repeated Shader.Find() calls on each thief spawn.
+        private static Shader standardShader;
 
         private readonly List<RobbedItem> reservedItems = new List<RobbedItem>();
         private IRobberyInventoryBridge inventoryBridge;
@@ -35,6 +42,8 @@ namespace FLOBUK.StoreSimulator
         private bool initialized;
         private bool theftStarted;
         private float baseSpeed;
+        // Material created for the floating indicator — destroyed with this component.
+        private Material indicatorMaterial;
 
         public void Initialize(ShoplifterSystem sourceSystem, Customer customer, ShoplifterType type)
         {
@@ -180,15 +189,68 @@ namespace FLOBUK.StoreSimulator
         private void ApplyVisualMarker()
         {
             Color markerColor = system.GetVisualColor(thiefType);
+
+            // Apply a stronger tint using MaterialPropertyBlock to avoid instantiating
+            // per-renderer materials, which would create untracked material leaks.
+            var block = new MaterialPropertyBlock();
             Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < renderers.Length; i++)
             {
                 Renderer renderer = renderers[i];
-                if (renderer == null || renderer.material == null)
+                if (renderer == null)
                     continue;
 
-                renderer.material.color = Color.Lerp(renderer.material.color, markerColor, 0.45f);
+                renderer.GetPropertyBlock(block);
+                // sharedMaterial.color is a read-only access to the asset colour — intentional;
+                // we never write to sharedMaterial, so the shared asset is never modified.
+                Color baseColor = renderer.sharedMaterial != null
+                    ? renderer.sharedMaterial.color
+                    : Color.white;
+                block.SetColor("_Color", Color.Lerp(baseColor, markerColor, 0.75f));
+                renderer.SetPropertyBlock(block);
             }
+
+            // Spawn a small floating sphere above the thief as a clear world-space warning indicator.
+            indicatorMaterial = SpawnFloatingIndicator(markerColor);
+        }
+
+
+        private Material SpawnFloatingIndicator(Color color)
+        {
+            // Position the indicator slightly above the character's head.
+            Vector3 offset = Vector3.up * IndicatorHeightOffset;
+
+            GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            indicator.name = "ThiefIndicator";
+            indicator.transform.SetParent(transform, false);
+            indicator.transform.localPosition = offset;
+            indicator.transform.localScale    = new Vector3(IndicatorScale, IndicatorScale, IndicatorScale);
+
+            // Remove physics — purely visual.
+            Collider col = indicator.GetComponent<Collider>();
+            if (col != null)
+                Object.Destroy(col);
+
+            // Use a single material instance tied to this indicator's lifetime; it is
+            // destroyed together with the indicator GameObject when the thief leaves.
+            Material mat = null;
+            Renderer rend = indicator.GetComponent<Renderer>();
+            if (rend != null)
+            {
+                if (standardShader == null)
+                    standardShader = Shader.Find("Standard");
+                mat = new Material(standardShader);
+                mat.color = color;
+                mat.SetFloat("_Metallic",   0f);
+                mat.SetFloat("_Smoothness", 0.4f);
+                rend.material = mat;
+            }
+
+            // Attach a simple bob animation.
+            IndicatorBobber bobber = indicator.AddComponent<IndicatorBobber>();
+            bobber.baseLocalY = offset.y;
+
+            return mat; // caller may cache to destroy explicitly if needed
         }
 
 
@@ -227,6 +289,14 @@ namespace FLOBUK.StoreSimulator
             var native = agent.GetNative();
             if (native != null)
                 native.speed = speed;
+        }
+
+
+        void OnDestroy()
+        {
+            // Destroy the indicator material to prevent memory leaks.
+            if (indicatorMaterial != null)
+                Object.Destroy(indicatorMaterial);
         }
     }
 }

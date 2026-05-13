@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: Product_A
   m_EditorClassIdentifier: 
   id: 0
-  category: category a
-  title: Product A
+  category: básicos
+  title: Leche
   icon: {fileID: 21300000, guid: 8e375f9a54670f54ca85f19035aae6fe, type: 3}
   requiredLevel: 0
-  buyPrice: 100
+  buyPrice: 70
   prefab: {fileID: 3012567701624562874, guid: e91440b6337418647b4959f3f57f12c1, type: 3}
   storageType: 0
   packageCount: 9
-  storePrice: 150
-  marketPrice: 150
+  storePrice: 100
+  marketPrice: 100
   requiredLicense: 

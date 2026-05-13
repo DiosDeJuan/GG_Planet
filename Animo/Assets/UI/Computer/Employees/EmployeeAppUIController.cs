@@ -426,8 +426,10 @@ namespace FLOBUK.StoreSimulator
                 Button button = cardObj.AddComponent<Button>();
                 button.targetGraphic = bg;
 
-                TMP_Text title = CreateText("Title", cardObj.transform, "Empleado #" + employeeId, 18, TextAlignmentOptions.Left, new Vector2(14f, 0f), new Vector2(-140f, 0f));
-                TMP_Text state = CreateText("State", cardObj.transform, "", 16, TextAlignmentOptions.Right, new Vector2(140f, 0f), new Vector2(-14f, 0f));
+                TMP_Text title = CreateText("Title", cardObj.transform, "Empleado #" + employeeId, 18, TextAlignmentOptions.Left,
+                    new Vector2(0f, 0f), new Vector2(0.58f, 1f), new Vector2(14f, 4f), new Vector2(-6f, -4f));
+                TMP_Text state = CreateText("State", cardObj.transform, "", 15, TextAlignmentOptions.Right,
+                    new Vector2(0.58f, 0f), new Vector2(1f, 1f), new Vector2(4f, 4f), new Vector2(-12f, -4f));
 
                 int capturedId = employeeId;
                 button.onClick.AddListener(() => SelectEmployee(capturedId));
@@ -463,19 +465,28 @@ namespace FLOBUK.StoreSimulator
 
         private static TMP_Text CreateText(string name, Transform parent, string text, float fontSize, TextAlignmentOptions alignment, Vector2 offsetMin, Vector2 offsetMax)
         {
+            return CreateText(name, parent, text, fontSize, alignment, Vector2.zero, Vector2.one, offsetMin, offsetMax);
+        }
+
+
+        private static TMP_Text CreateText(string name, Transform parent, string text, float fontSize, TextAlignmentOptions alignment,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)
+        {
             GameObject go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
             RectTransform rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, 0f);
-            rt.anchorMax = new Vector2(1f, 1f);
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
             rt.offsetMin = offsetMin;
             rt.offsetMax = offsetMax;
 
             TextMeshProUGUI label = go.GetComponent<TextMeshProUGUI>();
-            label.text = text;
-            label.fontSize = fontSize;
-            label.color = Color.white;
+            label.text      = text;
+            label.fontSize  = fontSize;
+            label.color     = Color.white;
             label.alignment = alignment;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.overflowMode     = TextOverflowModes.Ellipsis;
             return label;
         }
 

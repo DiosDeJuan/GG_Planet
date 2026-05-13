@@ -43,7 +43,8 @@ namespace FLOBUK.StoreSimulator
             if (!canInteract || agent == null || !agent.CanBeCaptured())
                 return;
 
-            UIGame.AddAction(CaptureHintKey, CaptureHintActionLabel);
+            if (UIGame.Instance != null)
+                UIGame.AddAction(CaptureHintKey, CaptureHintActionLabel);
             UIGame.Instance?.ShowMessage(CaptureHintPrompt);
         }
 
@@ -73,7 +74,8 @@ namespace FLOBUK.StoreSimulator
 
         public override void OnLostFocus()
         {
-            UIGame.RemoveAction(CaptureHintKey);
+            if (UIGame.Instance != null)
+                UIGame.RemoveAction(CaptureHintKey);
         }
     }
 }

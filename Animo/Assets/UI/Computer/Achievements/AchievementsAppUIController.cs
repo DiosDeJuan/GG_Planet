@@ -79,6 +79,17 @@ namespace FLOBUK.StoreSimulator
             // Seguridad
             { AchievementId.Batman,               new AchievementMeta("Batman",                "Arresta a tu primer ladrón.",                          "Seguridad") },
             { AchievementId.RedSeguridad,         new AchievementMeta("Red de Seguridad",      "Desbloquea los 3 niveles de seguridad.",               "Seguridad") },
+            // Precios / servicio
+            { AchievementId.Donador,              new AchievementMeta("Donador",               "Vende 5 productos a $0.00.",                           "Precios") },
+            { AchievementId.LuxuryProductSold,    new AchievementMeta("Cliente de Lujo",       "Vende un producto de lujo.",                           "Precios") },
+            { AchievementId.ApplianceProductSold, new AchievementMeta("Lindo Hogar",           "Vende un electrodoméstico.",                           "Precios") },
+            { AchievementId.Paciente,             new AchievementMeta("Paciente",              "Un cliente se quejó del precio.",                     "Precios") },
+            { AchievementId.PrecioPerfecto,       new AchievementMeta("Precio Perfecto",       "7 días consecutivos sin quejas de precio.",           "Precios") },
+            // Inventario
+            { AchievementId.FullStockDay,         new AchievementMeta("Stock Completo",        "Todos los productos en anaqueles a la vez.",          "Inventario") },
+            { AchievementId.WrongPlacement,       new AchievementMeta("Colocación Incorrecta", "Colocaste un producto en un mueble incompatible.",    "Inventario") },
+            // Secreto
+            { AchievementId.HuevoDorado,          new AchievementMeta("Huevo Dorado (Secreto)","???",                                                 "Secreto") },
         };
 
         // ── Runtime fields ─────────────────────────────────────────────────────

@@ -154,7 +154,7 @@ namespace FLOBUK.StoreSimulator
             if (levelChanged)
             {
                 onSecurityLevelChanged?.Invoke(securityLevel);
-                if (securityLevel > 0)
+                if (securityLevel > 0 && UIGame.Instance != null)
                     UIGame.AddNotification(
                         "Seguridad nivel " + securityLevel + " activa: " + Mathf.RoundToInt(arrestChance * 100) + "% de arresto automático.",
                         otherColor: new Color(0.20f, 0.72f, 0.36f));

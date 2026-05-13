@@ -52,14 +52,16 @@ namespace FLOBUK.StoreSimulator
 
         private void OnEnable()
         {
-            DeliverySystem.onProductPurchase += OnProductPurchased;
-            SaveGameSystem.dataLoadEvent     += OnDataLoaded;
+            DeliverySystem.onProductPurchase    += OnProductPurchased;
+            SaveGameSystem.dataLoadEvent        += OnDataLoaded;
+            ShelfProductSlotSystem.onSlotsChanged += OnSlotsChanged;
         }
 
         private void OnDisable()
         {
-            DeliverySystem.onProductPurchase -= OnProductPurchased;
-            SaveGameSystem.dataLoadEvent     -= OnDataLoaded;
+            DeliverySystem.onProductPurchase    -= OnProductPurchased;
+            SaveGameSystem.dataLoadEvent        -= OnDataLoaded;
+            ShelfProductSlotSystem.onSlotsChanged -= OnSlotsChanged;
         }
 
         private void OnDestroy()
@@ -231,5 +233,7 @@ namespace FLOBUK.StoreSimulator
             _pendingOrderUnits.Clear();
             onInventoryChanged?.Invoke();
         }
+
+        private void OnSlotsChanged() => onInventoryChanged?.Invoke();
     }
 }

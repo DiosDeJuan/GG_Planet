@@ -24,13 +24,13 @@ namespace FLOBUK.StoreSimulator
         /// <summary>
         /// Hard cap on the customer spawn rate after expansion scaling.
         /// Set to 0 to disable the cap.
-        /// With 14 purchasable Sales zones at the default 10% bonus each,
-        /// the multiplier tops out at 1 + 14×0.10 = 2.4×.
-        /// A default base rate of ~50 customers/min × 2.4 = 120 → this cap
+        /// With 14 purchasable Sales zones at the default 15% bonus each,
+        /// the multiplier tops out at 1 + 14×0.15 = 3.1×.
+        /// A default base rate of ~50 customers/min × 3.1 = 155 → this cap
         /// prevents runaway values if baseRate is set higher in the Inspector.
         /// </summary>
         [Tooltip("Maximum customer spawn rate after expansion scaling (0 = no cap).")]
-        public int maxSpawnRate = 120;
+        public int maxSpawnRate = 200;
 
         private int baseSpawnRate = -1;
         private bool warnedOnce;

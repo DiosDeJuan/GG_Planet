@@ -136,6 +136,8 @@ namespace FLOBUK.StoreSimulator
             PlacementObject[] placements = FindAllPlacements();
             PlacementObject bestTarget = null;
             float bestFillRatio = 1f;
+            bool anySlotAssigned = ShelfProductSlotSystem.Instance != null
+                && ShelfProductSlotSystem.Instance.HasAnySlotAssigned();
 
             for (int i = 0; i < placements.Length; i++)
             {
@@ -146,7 +148,38 @@ namespace FLOBUK.StoreSimulator
                 PackageObject packageCandidate;
                 ProductScriptableObject productCandidate;
 
-                if (placement.product != null)
+                // If ShelfProductSlotSystem has an assignment for this placement, respect it.
+                if (ShelfProductSlotSystem.Instance != null)
+                {
+                    ProductScriptableObject slotProduct =
+                        ShelfProductSlotSystem.Instance.GetAssignedProduct(placement);
+                    if (slotProduct != null)
+                    {
+                        productCandidate = slotProduct;
+                        packageCandidate = FindPackageWithProduct(productCandidate);
+                        if (packageCandidate == null)
+                        {
+                            Debug.Log(LogPrefix + "Restock: assigned product '"
+                                + productCandidate.title + "' for '" + placement.name
+                                + "' — no stock available.");
+                            if (UIGame.Instance != null)
+                                UIGame.AddNotification(
+                                    "Sin stock de " + productCandidate.title + " para surtir " + placement.name + ".",
+                                    otherColor: new Color(1f, 0.65f, 0.18f));
+                            continue;
+                        }
+                    }
+                    else if (placement.product != null)
+                    {
+                        productCandidate = placement.product;
+                        packageCandidate = FindPackageWithProduct(productCandidate);
+                    }
+                    else
+                    {
+                        packageCandidate = FindPackageForStorageType(placement.storageType, out productCandidate);
+                    }
+                }
+                else if (placement.product != null)
                 {
                     productCandidate = placement.product;
                     packageCandidate = FindPackageWithProduct(productCandidate);
@@ -158,7 +191,8 @@ namespace FLOBUK.StoreSimulator
 
                 if (packageCandidate == null || productCandidate == null)
                     continue;
-                if (productCandidate.storageType != placement.storageType)
+                if (productCandidate.storageType != placement.storageType
+                    && productCandidate.storageType != StorageType.Default)
                     continue;
                 if (!placement.IsPlaceable(productCandidate))
                     continue;
@@ -177,6 +211,18 @@ namespace FLOBUK.StoreSimulator
                 bestTarget = placement;
                 sourcePackage = packageCandidate;
                 sourceProduct = productCandidate;
+            }
+
+            if (bestTarget != null)
+            {
+                Debug.Log(LogPrefix + "Restock: found missing product '"
+                    + (sourceProduct != null ? sourceProduct.title : "?")
+                    + "' → '" + bestTarget.name + "'. fill=" + bestFillRatio.ToString("F2")
+                    + (anySlotAssigned ? " [slot-assigned]" : " [unassigned]"));
+            }
+            else if (!anySlotAssigned && ShelfProductSlotSystem.Instance != null)
+            {
+                Debug.Log(LogPrefix + "Restock: no assigned shelf slots — restocking by storage type only.");
             }
 
             return bestTarget;

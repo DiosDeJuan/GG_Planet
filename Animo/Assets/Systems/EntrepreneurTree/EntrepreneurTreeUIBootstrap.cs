@@ -16,6 +16,12 @@ namespace FLOBUK.StoreSimulator
 #if UNITY_EDITOR
         private const string EditorTreePath = "Assets/Data/EntrepreneurTree/EntrepreneurTreeData.asset";
 #endif
+        /// <summary>Preferred pixel width for each custom tab button we inject.</summary>
+        private const float TabButtonPreferredWidth = 120f;
+        /// <summary>Minimum pixel width a custom tab button may shrink to.</summary>
+        private const float TabButtonMinWidth = 80f;
+        /// <summary>Maximum expansion zones purchased automatically during an admin test session.</summary>
+        private const int AdminTestExpansionMaxZones = 3;
 
         private static bool initialized;
         private static TreeData runtimeFallbackTree;
@@ -50,6 +56,10 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             EnsureTreeSystems();
+
+            // Apply admin-mode configuration the first time the Game scene loads.
+            if (AdminSessionConfig.isActive)
+                RegisterAdminApply();
 
             GameObject[] roots = scene.GetRootGameObjects();
             for (int i = 0; i < roots.Length; i++)
@@ -116,8 +126,7 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ExpansionCustomerDemandAdapter>();
                 systems.AddComponent<ExpansionStorageCapacityAdapter>();
                 systems.AddComponent<ProductInventorySystem>();
-
-                Debug.Log(LogPrefix + "Created runtime EntrepreneurTree systems GameObject.");
+                systems.AddComponent<ShelfProductSlotSystem>();
             }
             else
             {
@@ -172,6 +181,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ExpansionStorageCapacityAdapter>();
             if (systems.GetComponent<ProductInventorySystem>() == null)
                 systems.AddComponent<ProductInventorySystem>();
+            if (systems.GetComponent<ShelfProductSlotSystem>() == null)
+                systems.AddComponent<ShelfProductSlotSystem>();
         }
 
 
@@ -310,6 +321,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureExpansionButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[ExpansionApp] Expansion tab created.");
         }
@@ -416,6 +428,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureEmployeeButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Employees] Employee tab button created.");
         }
@@ -523,6 +536,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureAchievementsButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Achievements] Achievements tab button created.");
         }
@@ -639,6 +653,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureOrdersButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Orders] Orders tab button created.");
         }
@@ -746,6 +761,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigurePricingButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Pricing] Pricing tab button created.");
         }
@@ -860,6 +876,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureInventoryButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Inventory] Inventory tab button created.");
         }
@@ -874,6 +891,230 @@ namespace FLOBUK.StoreSimulator
             if (link == null)
                 link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
             link.Configure(helper, panel);
+        }
+
+        // ── Tab-bar compact styling ───────────────────────────────────────────
+
+        /// <summary>
+        /// Sets auto-sizing on the label of a newly created tab button so that all our
+        /// extra tabs stay within a reasonable width even on smaller screens.
+        /// Also constrains the button's RectTransform preferred width.
+        /// </summary>
+        private static void ApplyTabButtonCompact(Button btn)
+        {
+            if (btn == null) return;
+
+            TMP_Text lbl = btn.GetComponentInChildren<TMP_Text>(true);
+            if (lbl != null)
+            {
+                lbl.enableAutoSizing   = true;
+                lbl.fontSizeMin        = 9f;
+                lbl.fontSizeMax        = 13f;
+                lbl.fontStyle          = TMPro.FontStyles.Bold;
+            }
+
+            // Narrow the button so the row fits without scrolling on common resolutions.
+            RectTransform rt = btn.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                Vector2 sd = rt.sizeDelta;
+                if (sd.x > TabButtonPreferredWidth)
+                    rt.sizeDelta = new Vector2(TabButtonPreferredWidth, sd.y);
+            }
+
+            LayoutElement le = btn.GetComponent<LayoutElement>();
+            if (le == null)
+                le = btn.gameObject.AddComponent<LayoutElement>();
+            le.preferredWidth = TabButtonPreferredWidth;
+            le.minWidth       = TabButtonMinWidth;
+        }
+
+        // ── Admin Mode application ────────────────────────────────────────────
+
+        private static bool adminApplyRegistered;
+
+        private static void RegisterAdminApply()
+        {
+            if (adminApplyRegistered)
+                return;
+
+            adminApplyRegistered = true;
+            SaveGameSystem.dataLoadEvent += ApplyAdminConfig;
+            Debug.Log("[AdminMode] Admin config will be applied after data load.");
+        }
+
+
+        private static void ApplyAdminConfig()
+        {
+            SaveGameSystem.dataLoadEvent -= ApplyAdminConfig;
+            adminApplyRegistered = false;
+
+            if (!AdminSessionConfig.isActive)
+                return;
+
+            Debug.Log("[AdminMode] Applying admin session configuration...");
+
+            // ── Money ─────────────────────────────────────────────────────────
+            if (AdminSessionConfig.startMoney > 0 && StoreDatabase.Instance != null)
+            {
+                long current = StoreDatabase.Instance.currentMoney;
+                long delta   = AdminSessionConfig.startMoney - current;
+                if (delta != 0)
+                    StoreDatabase.AddRemoveMoney(delta);
+                Debug.Log("[AdminMode] Money set to: " + StoreDatabase.GetMoneyString());
+            }
+
+            // ── Tree points ───────────────────────────────────────────────────
+            if (AdminSessionConfig.treePoints > 0)
+            {
+                EntrepreneurTreeManager.SetPoints(AdminSessionConfig.treePoints);
+                Debug.Log("[AdminMode] Tree points set to: " + AdminSessionConfig.treePoints);
+            }
+
+            // ── Node unlocks ──────────────────────────────────────────────────
+            if (AdminSessionConfig.unlockEntireTree)
+            {
+                EntrepreneurTreeManager.AdminUnlockAll();
+                Debug.Log("[AdminMode] All tree nodes force-unlocked.");
+            }
+            else
+            {
+                if (AdminSessionConfig.unlockAllProducts)
+                {
+                    EntrepreneurTreeManager.AdminUnlockByType(TreeNodeType.Product);
+                    Debug.Log("[AdminMode] All product nodes force-unlocked.");
+                }
+                if (AdminSessionConfig.unlockAllEmployees)
+                {
+                    EntrepreneurTreeManager.AdminUnlockByType(TreeNodeType.Employee);
+                    Debug.Log("[AdminMode] All employee nodes force-unlocked.");
+                }
+                if (AdminSessionConfig.unlockAllSecurity)
+                {
+                    EntrepreneurTreeManager.AdminUnlockByType(TreeNodeType.Security);
+                    Debug.Log("[AdminMode] All security nodes force-unlocked.");
+                }
+            }
+
+            // ── Test stock ────────────────────────────────────────────────────
+            if (AdminSessionConfig.giveTestStock)
+                ApplyAdminTestStock();
+
+            // ── Test expansions ───────────────────────────────────────────────
+            if (AdminSessionConfig.buyTestExpansions)
+                ApplyAdminTestExpansions();
+
+            // ── Sales test preset log ─────────────────────────────────────────
+            if (AdminSessionConfig.prepareSalesTest)
+                Debug.Log("[AdminMode] Applied sales test setup — products unlocked, stock delivered, employees unlocked.");
+
+            // ── Complete all achievements ─────────────────────────────────────
+            if (AdminSessionConfig.completeAllAchievements)
+            {
+                AchievementSystem.AdminCompleteAllAchievements();
+                Debug.Log("[AdminMode] Completed achievement: all achievements granted.");
+            }
+
+            // ── Force shoplifter spawn ────────────────────────────────────────
+            if (AdminSessionConfig.forceShoplifterSpawn)
+            {
+                ShoplifterSystem.AdminForceNextSpawn(AdminSessionConfig.forcedShoplifterType);
+                Debug.Log("[AdminMode] Forced shoplifter spawn: type=" + AdminSessionConfig.forcedShoplifterType);
+            }
+
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("[AdminMode] Sesión de prueba iniciada.", otherColor: new Color(1f, 0.7f, 0.1f));
+
+            // ── Game ending tests (deferred one frame so scene is fully loaded) ──
+            bool doMonopoly    = AdminSessionConfig.triggerMonopolyTest;
+            bool doBankruptcy  = AdminSessionConfig.triggerBankruptcyTest;
+            AdminSessionConfig.Reset();
+
+            if (doMonopoly || doBankruptcy)
+            {
+                // Defer to next frame so UI and game systems are ready.
+                var host = new GameObject("AdminGameEndTestHost");
+                host.AddComponent<AdminDeferredGameEndTest>().Setup(monopoly: doMonopoly);
+            }
+        }
+
+        /// <summary>
+        /// Delivers one package of every unlocked product for quick gameplay testing.
+        /// Uses DeliverySystem.Purchase() (which handles spawning) but bypasses the
+        /// money check by using the already-elevated admin wallet.
+        /// </summary>
+        private static void ApplyAdminTestStock()
+        {
+            if (DeliverySystem.Instance == null)
+            {
+                Debug.LogWarning("[AdminMode] Test stock skipped: DeliverySystem.Instance is null.");
+                return;
+            }
+
+            var allProducts = ItemDatabase.GetByType(typeof(ProductScriptableObject));
+            if (allProducts == null || allProducts.Count == 0)
+            {
+                Debug.LogWarning("[AdminMode] Test stock skipped: no products found in ItemDatabase.");
+                return;
+            }
+
+            int given = 0;
+            for (int i = 0; i < allProducts.Count; i++)
+            {
+                ProductScriptableObject product = allProducts[i] as ProductScriptableObject;
+                if (product == null)
+                    continue;
+
+                // Only give stock for products the tree says are unlocked.
+                EntrepreneurTreeGameplayBridge bridge = EntrepreneurTreeGameplayBridge.Instance;
+                if (bridge != null && !bridge.IsProductUnlocked(product))
+                    continue;
+
+                // Ensure we can afford it (the admin wallet should cover this).
+                long cost = (long)product.buyPrice * product.packageCount;
+                if (!StoreDatabase.CanPurchase(cost))
+                    continue;
+
+                DeliverySystem.Purchase(product);
+                given++;
+            }
+
+            Debug.Log("[AdminMode] Applied test inventory: " + given + " product packages delivered.");
+        }
+
+        /// <summary>
+        /// Purchases the first batch of available (non-initial, non-blocked) expansion zones
+        /// so the tester can immediately exercise the expansion system.
+        /// Skips zones the player can't afford.
+        /// </summary>
+        private static void ApplyAdminTestExpansions()
+        {
+            if (SupermarketExpansionSystem.Instance == null)
+            {
+                Debug.LogWarning("[AdminMode] Test expansions skipped: SupermarketExpansionSystem.Instance is null.");
+                return;
+            }
+
+            int purchased = 0;
+
+            var zones = SupermarketExpansionSystem.Instance.Zones;
+            for (int i = 0; i < zones.Count && purchased < AdminTestExpansionMaxZones; i++)
+            {
+                ExpansionZoneData zone = zones[i];
+                if (zone == null || zone.price <= 0)
+                    continue; // skip initial/free zones
+                if (zone.state != ExpansionZoneState.Available)
+                    continue;
+
+                long missing;
+                string reason;
+                if (SupermarketExpansionSystem.Instance.TryPurchaseZone(zone.id, out missing, out reason))
+                    purchased++;
+                else
+                    Debug.Log("[AdminMode] Test expansion skipped zone '" + zone.id + "': " + reason);
+            }
+
+            Debug.Log("[AdminMode] Applied test expansion: " + purchased + " zones purchased.");
         }
     }
 }
