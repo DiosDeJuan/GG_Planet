@@ -20,6 +20,8 @@ namespace FLOBUK.StoreSimulator
         private const float TabButtonPreferredWidth = 120f;
         /// <summary>Minimum pixel width a custom tab button may shrink to.</summary>
         private const float TabButtonMinWidth = 80f;
+        /// <summary>Maximum expansion zones purchased automatically during an admin test session.</summary>
+        private const int AdminTestExpansionMaxZones = 3;
 
         private static bool initialized;
         private static TreeData runtimeFallbackTree;
@@ -986,11 +988,103 @@ namespace FLOBUK.StoreSimulator
                     EntrepreneurTreeManager.AdminUnlockByType(TreeNodeType.Employee);
                     Debug.Log("[AdminMode] All employee nodes force-unlocked.");
                 }
+                if (AdminSessionConfig.unlockAllSecurity)
+                {
+                    EntrepreneurTreeManager.AdminUnlockByType(TreeNodeType.Security);
+                    Debug.Log("[AdminMode] All security nodes force-unlocked.");
+                }
             }
+
+            // ── Test stock ────────────────────────────────────────────────────
+            if (AdminSessionConfig.giveTestStock)
+                ApplyAdminTestStock();
+
+            // ── Test expansions ───────────────────────────────────────────────
+            if (AdminSessionConfig.buyTestExpansions)
+                ApplyAdminTestExpansions();
 
             if (UIGame.Instance != null)
                 UIGame.AddNotification("[AdminMode] Sesión de prueba iniciada.", otherColor: new Color(1f, 0.7f, 0.1f));
             AdminSessionConfig.Reset();
+        }
+
+        /// <summary>
+        /// Delivers one package of every unlocked product for quick gameplay testing.
+        /// Uses DeliverySystem.Purchase() (which handles spawning) but bypasses the
+        /// money check by using the already-elevated admin wallet.
+        /// </summary>
+        private static void ApplyAdminTestStock()
+        {
+            if (DeliverySystem.Instance == null)
+            {
+                Debug.LogWarning("[AdminMode] Test stock skipped: DeliverySystem.Instance is null.");
+                return;
+            }
+
+            var allProducts = ItemDatabase.GetByType(typeof(ProductScriptableObject));
+            if (allProducts == null || allProducts.Count == 0)
+            {
+                Debug.LogWarning("[AdminMode] Test stock skipped: no products found in ItemDatabase.");
+                return;
+            }
+
+            int given = 0;
+            for (int i = 0; i < allProducts.Count; i++)
+            {
+                ProductScriptableObject product = allProducts[i] as ProductScriptableObject;
+                if (product == null)
+                    continue;
+
+                // Only give stock for products the tree says are unlocked.
+                EntrepreneurTreeGameplayBridge bridge = EntrepreneurTreeGameplayBridge.Instance;
+                if (bridge != null && !bridge.IsProductUnlocked(product))
+                    continue;
+
+                // Ensure we can afford it (the admin wallet should cover this).
+                long cost = (long)product.buyPrice * product.packageCount;
+                if (!StoreDatabase.CanPurchase(cost))
+                    continue;
+
+                DeliverySystem.Purchase(product);
+                given++;
+            }
+
+            Debug.Log("[AdminMode] Applied test inventory: " + given + " product packages delivered.");
+        }
+
+        /// <summary>
+        /// Purchases the first batch of available (non-initial, non-blocked) expansion zones
+        /// so the tester can immediately exercise the expansion system.
+        /// Skips zones the player can't afford.
+        /// </summary>
+        private static void ApplyAdminTestExpansions()
+        {
+            if (SupermarketExpansionSystem.Instance == null)
+            {
+                Debug.LogWarning("[AdminMode] Test expansions skipped: SupermarketExpansionSystem.Instance is null.");
+                return;
+            }
+
+            int purchased = 0;
+
+            var zones = SupermarketExpansionSystem.Instance.Zones;
+            for (int i = 0; i < zones.Count && purchased < AdminTestExpansionMaxZones; i++)
+            {
+                ExpansionZoneData zone = zones[i];
+                if (zone == null || zone.price <= 0)
+                    continue; // skip initial/free zones
+                if (zone.state != ExpansionZoneState.Available)
+                    continue;
+
+                long missing;
+                string reason;
+                if (SupermarketExpansionSystem.Instance.TryPurchaseZone(zone.id, out missing, out reason))
+                    purchased++;
+                else
+                    Debug.Log("[AdminMode] Test expansion skipped zone '" + zone.id + "': " + reason);
+            }
+
+            Debug.Log("[AdminMode] Applied test expansion: " + purchased + " zones purchased.");
         }
     }
 }

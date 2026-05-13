@@ -30,6 +30,15 @@ namespace FLOBUK.StoreSimulator
         /// <summary>Unlock every node in the Entrepreneur Tree (overrides the above).</summary>
         public static bool unlockEntireTree;
 
+        /// <summary>Unlock every security node in the Entrepreneur Tree.</summary>
+        public static bool unlockAllSecurity;
+
+        /// <summary>Give a test stock batch of all unlocked products (one package each).</summary>
+        public static bool giveTestStock;
+
+        /// <summary>Automatically purchase the first available expansion zones for testing.</summary>
+        public static bool buyTestExpansions;
+
         /// <summary>
         /// Reset to safe defaults so accidental re-use doesn't bleed into a real session.
         /// Call this after applying the config in the Game scene.
@@ -42,6 +51,9 @@ namespace FLOBUK.StoreSimulator
             unlockAllProducts = false;
             unlockAllEmployees = false;
             unlockEntireTree = false;
+            unlockAllSecurity = false;
+            giveTestStock = false;
+            buyTestExpansions = false;
             UnityEngine.Debug.Log(LogPrefix + "AdminSessionConfig reset to defaults.");
         }
     }

@@ -23,6 +23,9 @@ namespace FLOBUK.StoreSimulator
         /// <summary>Uniform scale applied to the floating indicator sphere.</summary>
         private const float IndicatorScale = 0.28f;
 
+        // Cached once to avoid repeated Shader.Find() calls on each thief spawn.
+        private static Shader standardShader;
+
         private readonly List<RobbedItem> reservedItems = new List<RobbedItem>();
         private IRobberyInventoryBridge inventoryBridge;
 
@@ -225,7 +228,9 @@ namespace FLOBUK.StoreSimulator
             Renderer rend = indicator.GetComponent<Renderer>();
             if (rend != null)
             {
-                mat = new Material(Shader.Find("Standard"));
+                if (standardShader == null)
+                    standardShader = Shader.Find("Standard");
+                mat = new Material(standardShader);
                 mat.color = color;
                 mat.SetFloat("_Metallic",   0f);
                 mat.SetFloat("_Smoothness", 0.4f);

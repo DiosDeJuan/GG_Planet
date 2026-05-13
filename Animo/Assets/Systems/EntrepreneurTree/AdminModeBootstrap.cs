@@ -19,6 +19,10 @@ namespace FLOBUK.StoreSimulator
         private const string LogPrefix = "[AdminMode] ";
         private static bool sceneHandlerRegistered;
 
+        // ── Config card dimensions ────────────────────────────────────────────
+        private const float CardWidth  = 480f;
+        private const float CardHeight = 660f;
+
         // ── Runtime-inject into every scene load ──────────────────────────────
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()
@@ -91,7 +95,7 @@ namespace FLOBUK.StoreSimulator
             GameObject card = CreateUIObject("Card", overlay.transform,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             RectTransform cardRT = card.GetComponent<RectTransform>();
-            cardRT.sizeDelta = new Vector2(480f, 540f);
+            cardRT.sizeDelta = new Vector2(CardWidth, CardHeight);
             Image cardBg = card.AddComponent<Image>();
             cardBg.color = new Color(0.07f, 0.09f, 0.12f, 0.98f);
 
@@ -113,7 +117,10 @@ namespace FLOBUK.StoreSimulator
             // ── Toggle rows ───────────────────────────────────────────────────
             Toggle unlockProductsToggle   = CreateToggleRow(card.transform, "Desbloquear todos los productos");
             Toggle unlockEmployeesToggle  = CreateToggleRow(card.transform, "Desbloquear todos los empleados");
+            Toggle unlockSecurityToggle   = CreateToggleRow(card.transform, "Desbloquear toda la seguridad");
             Toggle unlockAllTreeToggle    = CreateToggleRow(card.transform, "Desbloquear todo el Árbol");
+            Toggle giveTestStockToggle    = CreateToggleRow(card.transform, "Stock de prueba (básicos)");
+            Toggle buyExpansionsToggle    = CreateToggleRow(card.transform, "Comprar expansiones de prueba");
 
             // ── Buttons ───────────────────────────────────────────────────────
             GameObject buttonRow = CreateUIObject("ButtonRow", card.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
@@ -139,7 +146,10 @@ namespace FLOBUK.StoreSimulator
                     pointsInput,
                     unlockProductsToggle,
                     unlockEmployeesToggle,
-                    unlockAllTreeToggle);
+                    unlockSecurityToggle,
+                    unlockAllTreeToggle,
+                    giveTestStockToggle,
+                    buyExpansionsToggle);
             });
         }
 
@@ -150,15 +160,21 @@ namespace FLOBUK.StoreSimulator
             TMP_InputField pointsInput,
             Toggle unlockProducts,
             Toggle unlockEmployees,
-            Toggle unlockAll)
+            Toggle unlockSecurity,
+            Toggle unlockAll,
+            Toggle giveTestStock,
+            Toggle buyExpansions)
         {
             Debug.Log(LogPrefix + "Starting admin session...");
 
-            // Parse money (convert dollars to cents).
+            // Parse money (convert dollars to cents). Cap to avoid overflow on × 100.
             long moneyDollars = 5000;
             if (moneyInput != null && !string.IsNullOrEmpty(moneyInput.text))
                 long.TryParse(moneyInput.text, out moneyDollars);
             if (moneyDollars < 0) moneyDollars = 0;
+            // long.MaxValue / 100 ≈ 92_233_720_368_547_758 — cap at a sane game maximum.
+            const long MaxMoneyDollars = 9_999_999L;
+            if (moneyDollars > MaxMoneyDollars) moneyDollars = MaxMoneyDollars;
 
             // Parse tree points.
             int pts = 0;
@@ -171,12 +187,18 @@ namespace FLOBUK.StoreSimulator
             AdminSessionConfig.treePoints         = pts;
             AdminSessionConfig.unlockAllProducts  = unlockProducts  != null && unlockProducts.isOn;
             AdminSessionConfig.unlockAllEmployees = unlockEmployees != null && unlockEmployees.isOn;
+            AdminSessionConfig.unlockAllSecurity  = unlockSecurity  != null && unlockSecurity.isOn;
             AdminSessionConfig.unlockEntireTree   = unlockAll       != null && unlockAll.isOn;
+            AdminSessionConfig.giveTestStock      = giveTestStock   != null && giveTestStock.isOn;
+            AdminSessionConfig.buyTestExpansions  = buyExpansions   != null && buyExpansions.isOn;
 
             Debug.Log(LogPrefix + $"Config — money: ${moneyDollars}, points: {pts}, " +
                       $"products: {AdminSessionConfig.unlockAllProducts}, " +
                       $"employees: {AdminSessionConfig.unlockAllEmployees}, " +
-                      $"allTree: {AdminSessionConfig.unlockEntireTree}");
+                      $"security: {AdminSessionConfig.unlockAllSecurity}, " +
+                      $"allTree: {AdminSessionConfig.unlockEntireTree}, " +
+                      $"testStock: {AdminSessionConfig.giveTestStock}, " +
+                      $"testExpansions: {AdminSessionConfig.buyTestExpansions}");
 
             // Start a fresh game (same flow as clicking "New Game").
             UIIntro intro = Object.FindAnyObjectByType<UIIntro>();

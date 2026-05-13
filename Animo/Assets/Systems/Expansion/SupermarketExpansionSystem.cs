@@ -46,9 +46,9 @@ namespace FLOBUK.StoreSimulator
         // ── Gameplay constants ────────────────────────────────────────────────
         /// <summary>
         /// Customer spawn-rate bonus granted per purchased sales-expansion zone.
-        /// 0.10 = +10 % per zone. Adjust here to tune difficulty.
+        /// 0.15 = +15 % per zone (RQF22).
         /// </summary>
-        public const float SalesExpansionCustomerBonusPercent = 0.10f;
+        public const float SalesExpansionCustomerBonusPercent = 0.15f;
 
         /// <summary>
         /// Storage capacity bonus granted per purchased storage-expansion zone.
