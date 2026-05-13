@@ -29,6 +29,9 @@ namespace FLOBUK.StoreSimulator
     {
         private const string LogPrefix = "[GameEnd] ";
 
+        // Scene indices (must match ProjectSettings/EditorBuildSettings.asset: 0=Intro, 1=Game, 2=Stats)
+        private const int IntroSceneIndex = 0;
+
         public static GameEndSystem Instance { get; private set; }
 
         // ── State ─────────────────────────────────────────────────────────────────
@@ -164,7 +167,7 @@ namespace FLOBUK.StoreSimulator
             BuildButton(card, "Terminar partida", new Color(0.40f, 0.15f, 0.15f), () =>
             {
                 SaveGameSystem.Save();
-                SceneManager.LoadScene(0); // Back to Intro
+                SceneManager.LoadScene(IntroSceneIndex);
             });
 
             Debug.Log(LogPrefix + "Monopoly Final overlay shown.");
@@ -192,7 +195,7 @@ namespace FLOBUK.StoreSimulator
 
             BuildButton(card, "Volver al menú", new Color(0.30f, 0.12f, 0.12f), () =>
             {
-                SceneManager.LoadScene(0); // Back to Intro
+                SceneManager.LoadScene(IntroSceneIndex);
             });
 
             Debug.Log(LogPrefix + "Bankruptcy Game Over overlay shown.");
