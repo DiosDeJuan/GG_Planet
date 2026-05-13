@@ -25,8 +25,14 @@ namespace FLOBUK.StoreSimulator
         private const int GameSceneIndex  = 1;
 
         // ── Config card dimensions ────────────────────────────────────────────
-        private const float CardWidth  = 480f;
-        private const float CardHeight = 820f;
+        private const float CardWidth      = 480f;
+        // Fixed outer card height — toggle area scrolls inside so buttons stay visible.
+        private const float CardHeight     = 680f;
+        private const float CardHeaderH    = 40f;   // title row
+        private const float CardInputRowH  = 50f;   // each input row
+        private const float CardButtonRowH = 52f;   // Start/Cancel row
+        // Height of the scrollable toggle viewport (card minus fixed regions and padding/spacing).
+        private const float CardScrollH    = 300f;
 
         // ── Runtime-inject into every scene load ──────────────────────────────
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -96,7 +102,7 @@ namespace FLOBUK.StoreSimulator
             overlayBg.color = new Color(0f, 0f, 0f, 0.72f);
             overlay.SetActive(false);
 
-            // ── Config card ───────────────────────────────────────────────────
+            // ── Config card (fixed height — toggle area scrolls inside) ──────
             GameObject card = CreateUIObject("Card", overlay.transform,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             RectTransform cardRT = card.GetComponent<RectTransform>();
@@ -104,42 +110,82 @@ namespace FLOBUK.StoreSimulator
             Image cardBg = card.AddComponent<Image>();
             cardBg.color = new Color(0.07f, 0.09f, 0.12f, 0.98f);
 
+            // Outer vertical layout: title + inputs on top, scroll in middle, buttons at bottom.
             VerticalLayoutGroup vlg = card.AddComponent<VerticalLayoutGroup>();
             vlg.padding = new RectOffset(28, 28, 24, 24);
-            vlg.spacing = 14f;
-            vlg.childControlWidth = true;
-            vlg.childForceExpandWidth = true;
+            vlg.spacing = 12f;
+            vlg.childControlWidth  = true;
+            vlg.childForceExpandWidth  = true;
             vlg.childControlHeight = false;
             vlg.childForceExpandHeight = false;
 
             // Title
-            CreateLabel("Title", card.transform, "⚙  MODO ADMIN  ⚙", 26f, new Color(1f, 0.82f, 0.2f), 40f, TextAlignmentOptions.Center);
+            CreateLabel("Title", card.transform, "⚙  MODO ADMIN  ⚙", 26f, new Color(1f, 0.82f, 0.2f), CardHeaderH, TextAlignmentOptions.Center);
 
-            // ── Input rows ────────────────────────────────────────────────────
-            TMP_InputField moneyInput    = CreateInputRow(card.transform, "Dinero inicial ($):",  "5000");
-            TMP_InputField pointsInput   = CreateInputRow(card.transform, "Puntos Árbol:",        "0");
+            // ── Input rows (fixed, outside scroll) ───────────────────────────
+            TMP_InputField moneyInput  = CreateInputRow(card.transform, "Dinero inicial ($):", "5000");
+            TMP_InputField pointsInput = CreateInputRow(card.transform, "Puntos Árbol:",       "0");
 
-            // ── Toggle rows ───────────────────────────────────────────────────
-            Toggle unlockProductsToggle   = CreateToggleRow(card.transform, "Desbloquear todos los productos");
-            Toggle unlockEmployeesToggle  = CreateToggleRow(card.transform, "Desbloquear todos los empleados");
-            Toggle unlockSecurityToggle   = CreateToggleRow(card.transform, "Desbloquear toda la seguridad");
-            Toggle unlockAllTreeToggle    = CreateToggleRow(card.transform, "Desbloquear todo el Árbol");
-            Toggle giveTestStockToggle    = CreateToggleRow(card.transform, "Stock de prueba (básicos)");
-            Toggle buyExpansionsToggle    = CreateToggleRow(card.transform, "Comprar expansiones de prueba");
-            Toggle prepareSalesTestToggle = CreateToggleRow(card.transform, "Prueba de ventas (dinero+stock+cajero)");
-            Toggle completeAchievementsToggle = CreateToggleRow(card.transform, "Completar todos los logros");
-            Toggle forceShoplifterToggle  = CreateToggleRow(card.transform, "Forzar ladrón (próximo cliente)");
-            Toggle triggerMonopolyToggle  = CreateToggleRow(card.transform, "Simular final de monopolio");
-            Toggle triggerBankruptcyToggle = CreateToggleRow(card.transform, "Simular bancarrota (Game Over)");
+            // ── Scrollable toggle area ────────────────────────────────────────
+            // Viewport: a clipped region of fixed height that masks the scroll content.
+            GameObject scrollViewGO = CreateUIObject("ScrollView", card.transform,
+                Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
+            RectTransform scrollViewRT = scrollViewGO.GetComponent<RectTransform>();
+            scrollViewRT.sizeDelta = new Vector2(0f, CardScrollH);
+            LayoutElement scrollLE = scrollViewGO.AddComponent<LayoutElement>();
+            scrollLE.preferredHeight = CardScrollH;
 
-            // ── Buttons ───────────────────────────────────────────────────────
+            // ScrollRect component on the viewport container.
+            ScrollRect scrollRect = scrollViewGO.AddComponent<ScrollRect>();
+            scrollRect.horizontal = false;
+            scrollRect.vertical   = true;
+            scrollRect.scrollSensitivity = 30f;
+
+            // Viewport mask.
+            scrollViewGO.AddComponent<RectMask2D>();
+
+            // Content panel (grows with toggles).
+            GameObject scrollContent = CreateUIObject("Content", scrollViewGO.transform,
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f));
+            RectTransform contentRT = scrollContent.GetComponent<RectTransform>();
+            contentRT.offsetMin = Vector2.zero;
+            contentRT.offsetMax = Vector2.zero;
+            VerticalLayoutGroup contentVLG = scrollContent.AddComponent<VerticalLayoutGroup>();
+            contentVLG.spacing = 8f;
+            contentVLG.childControlWidth      = true;
+            contentVLG.childForceExpandWidth  = true;
+            contentVLG.childControlHeight     = false;
+            contentVLG.childForceExpandHeight = false;
+            ContentSizeFitter contentCSF = scrollContent.AddComponent<ContentSizeFitter>();
+            contentCSF.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // Wire ScrollRect.
+            scrollRect.content  = contentRT;
+            scrollRect.viewport = scrollViewRT;
+
+            // ── Toggle rows (inside the scroll content) ───────────────────────
+            Toggle unlockProductsToggle       = CreateToggleRow(scrollContent.transform, "Desbloquear todos los productos");
+            Toggle unlockEmployeesToggle      = CreateToggleRow(scrollContent.transform, "Desbloquear todos los empleados");
+            Toggle unlockSecurityToggle       = CreateToggleRow(scrollContent.transform, "Desbloquear toda la seguridad");
+            Toggle unlockAllTreeToggle        = CreateToggleRow(scrollContent.transform, "Desbloquear todo el Árbol");
+            Toggle giveTestStockToggle        = CreateToggleRow(scrollContent.transform, "Stock de prueba (básicos)");
+            Toggle buyExpansionsToggle        = CreateToggleRow(scrollContent.transform, "Comprar expansiones de prueba");
+            Toggle prepareSalesTestToggle     = CreateToggleRow(scrollContent.transform, "Prueba de ventas (dinero+stock+cajero)");
+            Toggle completeAchievementsToggle = CreateToggleRow(scrollContent.transform, "Completar todos los logros");
+            Toggle forceShoplifterToggle      = CreateToggleRow(scrollContent.transform, "Forzar ladrón (próximo cliente)");
+            Toggle triggerMonopolyToggle      = CreateToggleRow(scrollContent.transform, "Simular final de monopolio");
+            Toggle triggerBankruptcyToggle    = CreateToggleRow(scrollContent.transform, "Simular bancarrota (Game Over)");
+
+            // ── Buttons (fixed at bottom, outside scroll) ────────────────────
             GameObject buttonRow = CreateUIObject("ButtonRow", card.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
-            buttonRow.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, 52f);
+            buttonRow.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, CardButtonRowH);
+            LayoutElement btnRowLE = buttonRow.AddComponent<LayoutElement>();
+            btnRowLE.preferredHeight = CardButtonRowH;
             HorizontalLayoutGroup hlg = buttonRow.AddComponent<HorizontalLayoutGroup>();
             hlg.spacing = 16f;
-            hlg.childControlWidth = true;
-            hlg.childForceExpandWidth = true;
-            hlg.childControlHeight = true;
+            hlg.childControlWidth      = true;
+            hlg.childForceExpandWidth  = true;
+            hlg.childControlHeight     = true;
             hlg.childForceExpandHeight = true;
 
             Button cancelBtn = CreateCardButton("CancelButton", buttonRow.transform, "Cancelar",  new Color(0.38f, 0.22f, 0.22f, 1f));
