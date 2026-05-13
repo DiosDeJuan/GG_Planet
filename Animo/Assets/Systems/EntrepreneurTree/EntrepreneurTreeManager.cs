@@ -390,6 +390,57 @@ namespace FLOBUK.StoreSimulator
             }
         }
 
+        /// <summary>
+        /// Directly set the progress-point balance (admin / debug use only).
+        /// </summary>
+        public static void SetPoints(int amount)
+        {
+            if (Instance == null) return;
+            int delta = amount - Instance.currentPoints;
+            Instance.currentPoints = amount;
+            onPointsChanged?.Invoke(Instance.currentPoints, delta);
+        }
+
+
+        /// <summary>
+        /// Unlock every node of a given type without spending points (admin / debug use only).
+        /// Fires all appropriate typed events so adapters stay in sync.
+        /// </summary>
+        public static void AdminUnlockByType(TreeNodeType type)
+        {
+            if (Instance == null || Instance.treeData == null) return;
+            for (int i = 0; i < Instance.treeData.nodes.Count; i++)
+            {
+                NodeData node = Instance.treeData.nodes[i];
+                if (node == null || node.nodeType != type || node.isUnlocked) continue;
+                node.isUnlocked = true;
+                Instance.unlockedNodeIds.Add(node.id);
+                onNodeUnlocked?.Invoke(node);
+                Instance.DispatchTypedNodeUnlocked(node);
+                Debug.Log(LogPrefix + "[AdminMode] Force-unlocked node: " + node.id);
+            }
+        }
+
+
+        /// <summary>
+        /// Unlock every node in the tree without spending points (admin / debug use only).
+        /// </summary>
+        public static void AdminUnlockAll()
+        {
+            if (Instance == null || Instance.treeData == null) return;
+            for (int i = 0; i < Instance.treeData.nodes.Count; i++)
+            {
+                NodeData node = Instance.treeData.nodes[i];
+                if (node == null || node.isUnlocked) continue;
+                node.isUnlocked = true;
+                Instance.unlockedNodeIds.Add(node.id);
+                onNodeUnlocked?.Invoke(node);
+                Instance.DispatchTypedNodeUnlocked(node);
+                Debug.Log(LogPrefix + "[AdminMode] Force-unlocked node: " + node.id);
+            }
+        }
+
+
         void OnDestroy()
         {
             // Reset ScriptableObject runtime flags when leaving play mode in the editor

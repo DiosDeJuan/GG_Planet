@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Product_D
   m_EditorClassIdentifier: 
   id: 3
-  category: category a
-  title: Product D
+  category: básicos
+  title: Pasta
   icon: {fileID: 21300000, guid: 6b38fc22d2f7e7041a9b1f2a41a168bb, type: 3}
   requiredLevel: 0
   buyPrice: 80

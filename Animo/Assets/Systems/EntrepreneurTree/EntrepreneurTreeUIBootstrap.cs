@@ -51,6 +51,10 @@ namespace FLOBUK.StoreSimulator
 
             EnsureTreeSystems();
 
+            // Apply admin-mode configuration the first time the Game scene loads.
+            if (AdminSessionConfig.isActive)
+                RegisterAdminApply();
+
             GameObject[] roots = scene.GetRootGameObjects();
             for (int i = 0; i < roots.Length; i++)
             {
@@ -310,6 +314,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureExpansionButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[ExpansionApp] Expansion tab created.");
         }
@@ -416,6 +421,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureEmployeeButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Employees] Employee tab button created.");
         }
@@ -523,6 +529,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureAchievementsButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Achievements] Achievements tab button created.");
         }
@@ -639,6 +646,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureOrdersButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Orders] Orders tab button created.");
         }
@@ -746,6 +754,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigurePricingButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Pricing] Pricing tab button created.");
         }
@@ -860,6 +869,7 @@ namespace FLOBUK.StoreSimulator
 
             newButton.onClick.RemoveAllListeners();
             ConfigureInventoryButton(newButton, helper, panel);
+            ApplyTabButtonCompact(newButton);
             newButton.transform.SetAsLastSibling();
             Debug.Log("[Inventory] Inventory tab button created.");
         }
@@ -874,6 +884,108 @@ namespace FLOBUK.StoreSimulator
             if (link == null)
                 link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
             link.Configure(helper, panel);
+        }
+
+        // ── Tab-bar compact styling ───────────────────────────────────────────
+
+        /// <summary>
+        /// Sets auto-sizing on the label of a newly created tab button so that all our
+        /// extra tabs stay within a reasonable width even on smaller screens.
+        /// Also constrains the button's RectTransform preferred width.
+        /// </summary>
+        private static void ApplyTabButtonCompact(Button btn)
+        {
+            if (btn == null) return;
+
+            TMP_Text lbl = btn.GetComponentInChildren<TMP_Text>(true);
+            if (lbl != null)
+            {
+                lbl.enableAutoSizing   = true;
+                lbl.fontSizeMin        = 9f;
+                lbl.fontSizeMax        = 13f;
+                lbl.fontStyle          = TMPro.FontStyles.Bold;
+            }
+
+            // Narrow the button so the row fits without scrolling on common resolutions.
+            RectTransform rt = btn.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                Vector2 sd = rt.sizeDelta;
+                if (sd.x > 120f)
+                    rt.sizeDelta = new Vector2(120f, sd.y);
+            }
+
+            LayoutElement le = btn.GetComponent<LayoutElement>();
+            if (le == null)
+                le = btn.gameObject.AddComponent<LayoutElement>();
+            le.preferredWidth = 120f;
+            le.minWidth       = 80f;
+        }
+
+        // ── Admin Mode application ────────────────────────────────────────────
+
+        private static bool adminApplyRegistered;
+
+        private static void RegisterAdminApply()
+        {
+            if (adminApplyRegistered)
+                return;
+
+            adminApplyRegistered = true;
+            SaveGameSystem.dataLoadEvent += ApplyAdminConfig;
+            Debug.Log("[AdminMode] Admin config will be applied after data load.");
+        }
+
+
+        private static void ApplyAdminConfig()
+        {
+            SaveGameSystem.dataLoadEvent -= ApplyAdminConfig;
+            adminApplyRegistered = false;
+
+            if (!AdminSessionConfig.isActive)
+                return;
+
+            Debug.Log("[AdminMode] Applying admin session configuration...");
+
+            // ── Money ─────────────────────────────────────────────────────────
+            if (AdminSessionConfig.startMoney > 0 && StoreDatabase.Instance != null)
+            {
+                long current = StoreDatabase.Instance.currentMoney;
+                long delta   = AdminSessionConfig.startMoney - current;
+                if (delta != 0)
+                    StoreDatabase.AddRemoveMoney(delta);
+                Debug.Log("[AdminMode] Money set to: " + StoreDatabase.GetMoneyString());
+            }
+
+            // ── Tree points ───────────────────────────────────────────────────
+            if (AdminSessionConfig.treePoints > 0)
+            {
+                EntrepreneurTreeManager.SetPoints(AdminSessionConfig.treePoints);
+                Debug.Log("[AdminMode] Tree points set to: " + AdminSessionConfig.treePoints);
+            }
+
+            // ── Node unlocks ──────────────────────────────────────────────────
+            if (AdminSessionConfig.unlockEntireTree)
+            {
+                EntrepreneurTreeManager.AdminUnlockAll();
+                Debug.Log("[AdminMode] All tree nodes force-unlocked.");
+            }
+            else
+            {
+                if (AdminSessionConfig.unlockAllProducts)
+                {
+                    EntrepreneurTreeManager.AdminUnlockByType(TreeNodeType.Product);
+                    Debug.Log("[AdminMode] All product nodes force-unlocked.");
+                }
+                if (AdminSessionConfig.unlockAllEmployees)
+                {
+                    EntrepreneurTreeManager.AdminUnlockByType(TreeNodeType.Employee);
+                    Debug.Log("[AdminMode] All employee nodes force-unlocked.");
+                }
+            }
+
+            UIGame.AddNotification("[AdminMode] Sesión de prueba iniciada.", otherColor: new Color(1f, 0.7f, 0.1f));
+            AdminSessionConfig.Reset();
         }
     }
 }

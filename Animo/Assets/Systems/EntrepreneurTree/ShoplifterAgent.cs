@@ -180,6 +180,8 @@ namespace FLOBUK.StoreSimulator
         private void ApplyVisualMarker()
         {
             Color markerColor = system.GetVisualColor(thiefType);
+
+            // Apply a stronger tint so thieves are clearly distinguishable from normal customers.
             Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < renderers.Length; i++)
             {
@@ -187,7 +189,48 @@ namespace FLOBUK.StoreSimulator
                 if (renderer == null || renderer.material == null)
                     continue;
 
-                renderer.material.color = Color.Lerp(renderer.material.color, markerColor, 0.45f);
+                renderer.material.color = Color.Lerp(renderer.material.color, markerColor, 0.75f);
+            }
+
+            // Spawn a small floating sphere above the thief as a clear world-space warning indicator.
+            SpawnFloatingIndicator(markerColor);
+        }
+
+
+        private void SpawnFloatingIndicator(Color color)
+        {
+            try
+            {
+                // Position the indicator slightly above the character's head.
+                Vector3 offset = Vector3.up * 2.2f;
+
+                GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                indicator.name = "ThiefIndicator";
+                indicator.transform.SetParent(transform, false);
+                indicator.transform.localPosition = offset;
+                indicator.transform.localScale    = new Vector3(0.28f, 0.28f, 0.28f);
+
+                // Remove physics — purely visual.
+                Collider col = indicator.GetComponent<Collider>();
+                if (col != null)
+                    Object.Destroy(col);
+
+                Renderer rend = indicator.GetComponent<Renderer>();
+                if (rend != null)
+                {
+                    rend.material = new Material(Shader.Find("Standard"));
+                    rend.material.color     = color;
+                    rend.material.SetFloat("_Metallic",    0f);
+                    rend.material.SetFloat("_Smoothness",  0.4f);
+                }
+
+                // Attach a simple bob animation via a lightweight MonoBehaviour.
+                IndicatorBobber bobber = indicator.AddComponent<IndicatorBobber>();
+                bobber.baseLocalY = offset.y;
+            }
+            catch (System.Exception e)
+            {
+                UnityEngine.Debug.LogWarning("[Shoplifter] Could not spawn indicator: " + e.Message);
             }
         }
 
