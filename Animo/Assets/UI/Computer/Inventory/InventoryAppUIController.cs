@@ -232,16 +232,21 @@ namespace FLOBUK.StoreSimulator
                 int boxes   = sys.GetPackageStock(row.Product);
                 int shelf   = sys.GetShelfStock(row.Product);
                 int pending = sys.GetPendingUnits(row.Product);
+                int slots   = ShelfProductSlotSystem.Instance != null
+                    ? ShelfProductSlotSystem.Instance.GetAssignedCount(row.Product)
+                    : 0;
 
                 string boxText   = pending > 0 ? $"{boxes} (+{pending})" : boxes.ToString();
                 string shelfText = shelf.ToString();
 
                 string status;
                 Color  statusCol;
+                // Localised slot suffix: "1 ranura" / "N ranuras"
+                string slotSuffix = slots == 1 ? " (1 ranura)" : (slots > 1 ? " (" + slots + " ranuras)" : string.Empty);
 
                 if (boxes == 0 && shelf == 0 && pending == 0)
                 {
-                    status    = "Sin stock";
+                    status    = slots > 0 ? "Sin stock" + slotSuffix : "Sin stock/ranura";
                     statusCol = ColBad;
                     allStocked = false;
                     AchievementSystem.RegisterProductOutOfStock(row.Product);
@@ -253,18 +258,18 @@ namespace FLOBUK.StoreSimulator
                 }
                 else if (shelf == 0 && boxes > 0)
                 {
-                    status    = "En bodega";
+                    status    = "En bodega" + slotSuffix;
                     statusCol = ColWarn;
                     allStocked = false;
                 }
                 else if (shelf > 0 && boxes == 0)
                 {
-                    status    = "Solo estante";
+                    status    = "Solo estante" + slotSuffix;
                     statusCol = ColWarn;
                 }
                 else
                 {
-                    status    = "Correcto";
+                    status    = slots > 0 ? "Correcto" + slotSuffix : "Correcto";
                     statusCol = ColGood;
                 }
 

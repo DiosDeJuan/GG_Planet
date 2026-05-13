@@ -173,6 +173,8 @@ namespace FLOBUK.StoreSimulator
                 long.TryParse(moneyInput.text, out moneyDollars);
             if (moneyDollars < 0) moneyDollars = 0;
             // long.MaxValue / 100 ≈ 92_233_720_368_547_758 — cap at a sane game maximum.
+            // 9,999,999 dollars = $9.9M which is more than any realistic game session needs,
+            // while safely fitting in a long after × 100 (cents) and UI rendering.
             const long MaxMoneyDollars = 9_999_999L;
             if (moneyDollars > MaxMoneyDollars) moneyDollars = MaxMoneyDollars;
 
