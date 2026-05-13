@@ -29,10 +29,14 @@ namespace FLOBUK.StoreSimulator
         // Fixed outer card height — toggle area scrolls inside so buttons stay visible.
         private const float CardHeight     = 680f;
         private const float CardHeaderH    = 40f;   // title row
-        private const float CardInputRowH  = 50f;   // each input row
         private const float CardButtonRowH = 52f;   // Start/Cancel row
         // Height of the scrollable toggle viewport (card minus fixed regions and padding/spacing).
         private const float CardScrollH    = 300f;
+        /// <summary>
+        /// Max dollar input accepted by Admin Mode.
+        /// Capped to avoid overflow when converting dollars to cents (×100).
+        /// </summary>
+        private const long MaxMoneyDollars = 9_999_999L;
 
         // ── Runtime-inject into every scene load ──────────────────────────────
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -239,11 +243,6 @@ namespace FLOBUK.StoreSimulator
                 long.TryParse(moneyInput.text, out moneyDollars);
             if (moneyDollars < 0) moneyDollars = 0;
             // long.MaxValue / 100 ≈ 92_233_720_368_547_758 — cap at a sane game maximum.
-            /// <remarks>
-            /// 9,999,999 dollars = $9.9M which is more than any realistic game session needs,
-            /// while safely fitting in a long after × 100 (cents) and UI rendering.
-            /// </remarks>
-            const long MaxMoneyDollars = 9_999_999L;
             if (moneyDollars > MaxMoneyDollars) moneyDollars = MaxMoneyDollars;
 
             // Parse tree points.
