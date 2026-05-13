@@ -17,12 +17,17 @@ namespace FLOBUK.StoreSimulator
     public static class AdminModeBootstrap
     {
         private const string LogPrefix = "[AdminMode] ";
+        private static bool sceneHandlerRegistered;
 
         // ── Runtime-inject into every scene load ──────────────────────────────
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()
         {
-            SceneManager.sceneLoaded += OnSceneLoaded;
+            if (!sceneHandlerRegistered)
+            {
+                SceneManager.sceneLoaded += OnSceneLoaded;
+                sceneHandlerRegistered = true;
+            }
             OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
         }
 

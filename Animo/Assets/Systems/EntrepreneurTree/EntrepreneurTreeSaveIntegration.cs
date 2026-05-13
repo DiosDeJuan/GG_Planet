@@ -66,7 +66,8 @@ namespace FLOBUK.StoreSimulator
             }
 
             Debug.Log(LogPrefix + "Progress saved: " + path);
-            UIGame.AddNotification("Partida guardada correctamente.", otherColor: new Color(0.25f, 0.80f, 0.40f));
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("Partida guardada correctamente.", otherColor: new Color(0.25f, 0.80f, 0.40f));
         }
 
 

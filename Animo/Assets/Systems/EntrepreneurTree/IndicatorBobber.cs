@@ -15,6 +15,8 @@ namespace FLOBUK.StoreSimulator
 
         private const float Amplitude = 0.14f;
         private const float Frequency = 1.8f;
+        // 2π — full circle in radians (6.2831853...)
+        private const float TwoPi = 6.2831853f;
 
         private float timeOffset;
         // Cached position struct to avoid re-querying localPosition each frame.
@@ -23,7 +25,7 @@ namespace FLOBUK.StoreSimulator
         void Start()
         {
             // Randomise phase so multiple thieves don't bob in unison.
-            timeOffset = Random.Range(0f, Mathf.PI * 2f);
+            timeOffset = Random.Range(0f, TwoPi);
             cachedPos  = transform.localPosition;
         }
 

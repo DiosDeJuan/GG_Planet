@@ -988,7 +988,8 @@ namespace FLOBUK.StoreSimulator
                 }
             }
 
-            UIGame.AddNotification("[AdminMode] Sesión de prueba iniciada.", otherColor: new Color(1f, 0.7f, 0.1f));
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("[AdminMode] Sesión de prueba iniciada.", otherColor: new Color(1f, 0.7f, 0.1f));
             AdminSessionConfig.Reset();
         }
     }

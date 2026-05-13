@@ -18,6 +18,10 @@ namespace FLOBUK.StoreSimulator
     public class ShoplifterAgent : MonoBehaviour
     {
         private const float FastThiefSpeedMultiplier = 1.25f;
+        /// <summary>Height above the character root at which the floating indicator is spawned.</summary>
+        private const float IndicatorHeightOffset = 2.2f;
+        /// <summary>Uniform scale applied to the floating indicator sphere.</summary>
+        private const float IndicatorScale = 0.28f;
 
         private readonly List<RobbedItem> reservedItems = new List<RobbedItem>();
         private IRobberyInventoryBridge inventoryBridge;
@@ -202,13 +206,13 @@ namespace FLOBUK.StoreSimulator
         private Material SpawnFloatingIndicator(Color color)
         {
             // Position the indicator slightly above the character's head.
-            Vector3 offset = Vector3.up * 2.2f;
+            Vector3 offset = Vector3.up * IndicatorHeightOffset;
 
             GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             indicator.name = "ThiefIndicator";
             indicator.transform.SetParent(transform, false);
             indicator.transform.localPosition = offset;
-            indicator.transform.localScale    = new Vector3(0.28f, 0.28f, 0.28f);
+            indicator.transform.localScale    = new Vector3(IndicatorScale, IndicatorScale, IndicatorScale);
 
             // Remove physics — purely visual.
             Collider col = indicator.GetComponent<Collider>();
