@@ -15,8 +15,8 @@ namespace FLOBUK.StoreSimulator
 
         private const float Amplitude = 0.14f;
         private const float Frequency = 1.8f;
-        // 2π — full circle in radians (6.2831853...)
-        private const float TwoPi = 6.2831853f;
+        // 2π — full circle in radians. Cannot be const because Mathf.PI is not a compile-time constant.
+        private static readonly float TwoPi = Mathf.PI * 2f;
 
         private float timeOffset;
         // Cached position struct to avoid re-querying localPosition each frame.

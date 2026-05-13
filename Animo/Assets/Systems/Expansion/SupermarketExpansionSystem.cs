@@ -432,7 +432,7 @@ namespace FLOBUK.StoreSimulator
                 data["purchased"] = purchased;
                 data["version"] = 2;
 
-                string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
+                string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
                 File.WriteAllBytes(path, Encoding.UTF8.GetBytes(data.ToString()));
                 Debug.Log(LogPrefix + "Expansion data saved (" + purchasedZoneIds.Count + " zones).");
             }
@@ -447,7 +447,7 @@ namespace FLOBUK.StoreSimulator
             try
             {
                 ResetToDefaults();
-                string path = Application.persistentDataPath + "/" + SaveFileName + SaveGameSystem.fileExt;
+                string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
 
                 if (!File.Exists(path))
                 {

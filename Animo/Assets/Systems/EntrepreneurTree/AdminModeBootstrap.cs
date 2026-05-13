@@ -19,6 +19,11 @@ namespace FLOBUK.StoreSimulator
         private const string LogPrefix = "[AdminMode] ";
         private static bool sceneHandlerRegistered;
 
+        // ── Scene indices (must match ProjectSettings/EditorBuildSettings.asset) ─
+        // 0 = Intro, 1 = Game, 2 = Stats
+        private const int IntroSceneIndex = 0;
+        private const int GameSceneIndex  = 1;
+
         // ── Config card dimensions ────────────────────────────────────────────
         private const float CardWidth  = 480f;
         private const float CardHeight = 820f;
@@ -241,7 +246,7 @@ namespace FLOBUK.StoreSimulator
             {
                 // Fallback: load directly.
                 SaveGameSystem.New();
-                SceneManager.LoadScene(1);
+                SceneManager.LoadScene(GameSceneIndex);
             }
         }
 
@@ -250,7 +255,7 @@ namespace FLOBUK.StoreSimulator
         private static bool IsIntroScene(Scene scene)
         {
             string nameLower = scene.name.ToLowerInvariant();
-            return nameLower.Contains("intro") || scene.buildIndex == 0;
+            return nameLower.Contains("intro") || scene.buildIndex == IntroSceneIndex;
         }
 
         private static GameObject CreateUIObject(string name, Transform parent,

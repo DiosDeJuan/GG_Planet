@@ -260,8 +260,7 @@ namespace FLOBUK.StoreSimulator
             }
             root["slots"] = arr;
 
-            string path = Application.persistentDataPath
-                        + "/" + SaveFileName + SaveGameSystem.fileExt;
+            string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
             try
             {
                 File.WriteAllText(path, root.ToString());
@@ -277,8 +276,7 @@ namespace FLOBUK.StoreSimulator
         {
             _assignments.Clear();
 
-            string path = Application.persistentDataPath
-                        + "/" + SaveFileName + SaveGameSystem.fileExt;
+            string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
             if (!File.Exists(path))
             {
                 Debug.Log(LogPrefix + "No saved slot file found — starting fresh.");

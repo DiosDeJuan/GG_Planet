@@ -190,15 +190,22 @@ namespace FLOBUK.StoreSimulator
         {
             Color markerColor = system.GetVisualColor(thiefType);
 
-            // Apply a stronger tint so thieves are clearly distinguishable from normal customers.
+            // Apply a stronger tint using MaterialPropertyBlock to avoid instantiating
+            // per-renderer materials, which would create untracked material leaks.
+            var block = new MaterialPropertyBlock();
             Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < renderers.Length; i++)
             {
                 Renderer renderer = renderers[i];
-                if (renderer == null || renderer.material == null)
+                if (renderer == null)
                     continue;
 
-                renderer.material.color = Color.Lerp(renderer.material.color, markerColor, 0.75f);
+                renderer.GetPropertyBlock(block);
+                Color baseColor = renderer.sharedMaterial != null
+                    ? renderer.sharedMaterial.color
+                    : Color.white;
+                block.SetColor("_Color", Color.Lerp(baseColor, markerColor, 0.75f));
+                renderer.SetPropertyBlock(block);
             }
 
             // Spawn a small floating sphere above the thief as a clear world-space warning indicator.
