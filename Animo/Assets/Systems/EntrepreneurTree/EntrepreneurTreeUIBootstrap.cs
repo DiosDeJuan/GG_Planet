@@ -16,6 +16,10 @@ namespace FLOBUK.StoreSimulator
 #if UNITY_EDITOR
         private const string EditorTreePath = "Assets/Data/EntrepreneurTree/EntrepreneurTreeData.asset";
 #endif
+        /// <summary>Preferred pixel width for each custom tab button we inject.</summary>
+        private const float TabButtonPreferredWidth = 120f;
+        /// <summary>Minimum pixel width a custom tab button may shrink to.</summary>
+        private const float TabButtonMinWidth = 80f;
 
         private static bool initialized;
         private static TreeData runtimeFallbackTree;
@@ -911,15 +915,15 @@ namespace FLOBUK.StoreSimulator
             if (rt != null)
             {
                 Vector2 sd = rt.sizeDelta;
-                if (sd.x > 120f)
-                    rt.sizeDelta = new Vector2(120f, sd.y);
+                if (sd.x > TabButtonPreferredWidth)
+                    rt.sizeDelta = new Vector2(TabButtonPreferredWidth, sd.y);
             }
 
             LayoutElement le = btn.GetComponent<LayoutElement>();
             if (le == null)
                 le = btn.gameObject.AddComponent<LayoutElement>();
-            le.preferredWidth = 120f;
-            le.minWidth       = 80f;
+            le.preferredWidth = TabButtonPreferredWidth;
+            le.minWidth       = TabButtonMinWidth;
         }
 
         // ── Admin Mode application ────────────────────────────────────────────

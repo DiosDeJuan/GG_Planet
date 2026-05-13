@@ -17,18 +17,20 @@ namespace FLOBUK.StoreSimulator
         private const float Frequency = 1.8f;
 
         private float timeOffset;
+        // Cached position struct to avoid re-querying localPosition each frame.
+        private Vector3 cachedPos;
 
         void Start()
         {
             // Randomise phase so multiple thieves don't bob in unison.
             timeOffset = Random.Range(0f, Mathf.PI * 2f);
+            cachedPos  = transform.localPosition;
         }
 
         void Update()
         {
-            Vector3 pos = transform.localPosition;
-            pos.y = baseLocalY + Mathf.Sin((Time.time * Frequency) + timeOffset) * Amplitude;
-            transform.localPosition = pos;
+            cachedPos.y = baseLocalY + Mathf.Sin((Time.time * Frequency) + timeOffset) * Amplitude;
+            transform.localPosition = cachedPos;
         }
     }
 }

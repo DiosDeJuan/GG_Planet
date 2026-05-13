@@ -35,6 +35,8 @@ namespace FLOBUK.StoreSimulator
         private bool initialized;
         private bool theftStarted;
         private float baseSpeed;
+        // Material created for the floating indicator — destroyed with this component.
+        private Material indicatorMaterial;
 
         public void Initialize(ShoplifterSystem sourceSystem, Customer customer, ShoplifterType type)
         {
@@ -193,45 +195,44 @@ namespace FLOBUK.StoreSimulator
             }
 
             // Spawn a small floating sphere above the thief as a clear world-space warning indicator.
-            SpawnFloatingIndicator(markerColor);
+            indicatorMaterial = SpawnFloatingIndicator(markerColor);
         }
 
 
-        private void SpawnFloatingIndicator(Color color)
+        private Material SpawnFloatingIndicator(Color color)
         {
-            try
+            // Position the indicator slightly above the character's head.
+            Vector3 offset = Vector3.up * 2.2f;
+
+            GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            indicator.name = "ThiefIndicator";
+            indicator.transform.SetParent(transform, false);
+            indicator.transform.localPosition = offset;
+            indicator.transform.localScale    = new Vector3(0.28f, 0.28f, 0.28f);
+
+            // Remove physics — purely visual.
+            Collider col = indicator.GetComponent<Collider>();
+            if (col != null)
+                Object.Destroy(col);
+
+            // Use a single material instance tied to this indicator's lifetime; it is
+            // destroyed together with the indicator GameObject when the thief leaves.
+            Material mat = null;
+            Renderer rend = indicator.GetComponent<Renderer>();
+            if (rend != null)
             {
-                // Position the indicator slightly above the character's head.
-                Vector3 offset = Vector3.up * 2.2f;
-
-                GameObject indicator = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                indicator.name = "ThiefIndicator";
-                indicator.transform.SetParent(transform, false);
-                indicator.transform.localPosition = offset;
-                indicator.transform.localScale    = new Vector3(0.28f, 0.28f, 0.28f);
-
-                // Remove physics — purely visual.
-                Collider col = indicator.GetComponent<Collider>();
-                if (col != null)
-                    Object.Destroy(col);
-
-                Renderer rend = indicator.GetComponent<Renderer>();
-                if (rend != null)
-                {
-                    rend.material = new Material(Shader.Find("Standard"));
-                    rend.material.color     = color;
-                    rend.material.SetFloat("_Metallic",    0f);
-                    rend.material.SetFloat("_Smoothness",  0.4f);
-                }
-
-                // Attach a simple bob animation via a lightweight MonoBehaviour.
-                IndicatorBobber bobber = indicator.AddComponent<IndicatorBobber>();
-                bobber.baseLocalY = offset.y;
+                mat = new Material(Shader.Find("Standard"));
+                mat.color = color;
+                mat.SetFloat("_Metallic",   0f);
+                mat.SetFloat("_Smoothness", 0.4f);
+                rend.material = mat;
             }
-            catch (System.Exception e)
-            {
-                UnityEngine.Debug.LogWarning("[Shoplifter] Could not spawn indicator: " + e.Message);
-            }
+
+            // Attach a simple bob animation.
+            IndicatorBobber bobber = indicator.AddComponent<IndicatorBobber>();
+            bobber.baseLocalY = offset.y;
+
+            return mat; // caller may cache to destroy explicitly if needed
         }
 
 
@@ -270,6 +271,14 @@ namespace FLOBUK.StoreSimulator
             var native = agent.GetNative();
             if (native != null)
                 native.speed = speed;
+        }
+
+
+        void OnDestroy()
+        {
+            // Destroy the indicator material to prevent memory leaks.
+            if (indicatorMaterial != null)
+                Object.Destroy(indicatorMaterial);
         }
     }
 }
