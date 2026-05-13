@@ -201,6 +201,8 @@ namespace FLOBUK.StoreSimulator
                     continue;
 
                 renderer.GetPropertyBlock(block);
+                // sharedMaterial.color is a read-only access to the asset colour — intentional;
+                // we never write to sharedMaterial, so the shared asset is never modified.
                 Color baseColor = renderer.sharedMaterial != null
                     ? renderer.sharedMaterial.color
                     : Color.white;

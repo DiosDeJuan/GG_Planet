@@ -242,7 +242,7 @@ namespace FLOBUK.StoreSimulator
                 string status;
                 Color  statusCol;
                 // Localised slot suffix: "1 ranura" / "N ranuras"
-                string slotSuffix = slots == 1 ? " (1 ranura)" : (slots > 1 ? " (" + slots + " ranuras)" : string.Empty);
+                string slotSuffix = slots == 1 ? " (1 ranura)" : (slots > 1 ? $" ({slots} ranuras)" : string.Empty);
 
                 if (boxes == 0 && shelf == 0 && pending == 0)
                 {

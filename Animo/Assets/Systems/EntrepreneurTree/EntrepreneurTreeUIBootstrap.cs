@@ -1030,16 +1030,11 @@ namespace FLOBUK.StoreSimulator
             bool doBankruptcy  = AdminSessionConfig.triggerBankruptcyTest;
             AdminSessionConfig.Reset();
 
-            if (doMonopoly)
+            if (doMonopoly || doBankruptcy)
             {
                 // Defer to next frame so UI and game systems are ready.
                 var host = new GameObject("AdminGameEndTestHost");
-                host.AddComponent<AdminDeferredGameEndTest>().Setup(monopoly: true);
-            }
-            else if (doBankruptcy)
-            {
-                var host = new GameObject("AdminGameEndTestHost");
-                host.AddComponent<AdminDeferredGameEndTest>().Setup(monopoly: false);
+                host.AddComponent<AdminDeferredGameEndTest>().Setup(monopoly: doMonopoly);
             }
         }
 
