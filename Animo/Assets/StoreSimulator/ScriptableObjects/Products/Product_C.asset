@@ -17,10 +17,10 @@ MonoBehaviour:
   title: Agua
   icon: {fileID: 21300000, guid: 5a0e8282209dfe2458bf6a635fdbc4ba, type: 3}
   requiredLevel: 0
-  buyPrice: 65
+  buyPrice: 35
   prefab: {fileID: 7197882021692412654, guid: dc2531e85b5ebf9428a92fd5efb88e73, type: 3}
   storageType: 0
   packageCount: 9
-  storePrice: 120
-  marketPrice: 120
+  storePrice: 50
+  marketPrice: 50
   requiredLicense: 

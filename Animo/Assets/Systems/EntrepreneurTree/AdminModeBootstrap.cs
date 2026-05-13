@@ -121,6 +121,7 @@ namespace FLOBUK.StoreSimulator
             Toggle unlockAllTreeToggle    = CreateToggleRow(card.transform, "Desbloquear todo el Árbol");
             Toggle giveTestStockToggle    = CreateToggleRow(card.transform, "Stock de prueba (básicos)");
             Toggle buyExpansionsToggle    = CreateToggleRow(card.transform, "Comprar expansiones de prueba");
+            Toggle prepareSalesTestToggle = CreateToggleRow(card.transform, "Prueba de ventas (dinero+stock+cajero)");
 
             // ── Buttons ───────────────────────────────────────────────────────
             GameObject buttonRow = CreateUIObject("ButtonRow", card.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
@@ -149,7 +150,8 @@ namespace FLOBUK.StoreSimulator
                     unlockSecurityToggle,
                     unlockAllTreeToggle,
                     giveTestStockToggle,
-                    buyExpansionsToggle);
+                    buyExpansionsToggle,
+                    prepareSalesTestToggle);
             });
         }
 
@@ -163,7 +165,8 @@ namespace FLOBUK.StoreSimulator
             Toggle unlockSecurity,
             Toggle unlockAll,
             Toggle giveTestStock,
-            Toggle buyExpansions)
+            Toggle buyExpansions,
+            Toggle prepareSalesTest)
         {
             Debug.Log(LogPrefix + "Starting admin session...");
 
@@ -193,6 +196,17 @@ namespace FLOBUK.StoreSimulator
             AdminSessionConfig.unlockEntireTree   = unlockAll       != null && unlockAll.isOn;
             AdminSessionConfig.giveTestStock      = giveTestStock   != null && giveTestStock.isOn;
             AdminSessionConfig.buyTestExpansions  = buyExpansions   != null && buyExpansions.isOn;
+            AdminSessionConfig.prepareSalesTest   = prepareSalesTest != null && prepareSalesTest.isOn;
+
+            // prepareSalesTest is a convenience preset — it implies unlockProducts + giveTestStock.
+            if (AdminSessionConfig.prepareSalesTest)
+            {
+                AdminSessionConfig.unlockAllProducts  = true;
+                AdminSessionConfig.unlockAllEmployees = true;
+                AdminSessionConfig.giveTestStock      = true;
+                if (AdminSessionConfig.startMoney < 500000L)
+                    AdminSessionConfig.startMoney = 500000L; // ensure at least $5,000
+            }
 
             Debug.Log(LogPrefix + $"Config — money: ${moneyDollars}, points: {pts}, " +
                       $"products: {AdminSessionConfig.unlockAllProducts}, " +
@@ -200,7 +214,8 @@ namespace FLOBUK.StoreSimulator
                       $"security: {AdminSessionConfig.unlockAllSecurity}, " +
                       $"allTree: {AdminSessionConfig.unlockEntireTree}, " +
                       $"testStock: {AdminSessionConfig.giveTestStock}, " +
-                      $"testExpansions: {AdminSessionConfig.buyTestExpansions}");
+                      $"testExpansions: {AdminSessionConfig.buyTestExpansions}, " +
+                      $"salesTest: {AdminSessionConfig.prepareSalesTest}");
 
             // Start a fresh game (same flow as clicking "New Game").
             UIIntro intro = Object.FindAnyObjectByType<UIIntro>();

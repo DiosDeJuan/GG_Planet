@@ -17,10 +17,10 @@ MonoBehaviour:
   title: Sal
   icon: {fileID: 21300000, guid: 2c9e41322bb95054ca30175531ed207f, type: 3}
   requiredLevel: 0
-  buyPrice: 50
+  buyPrice: 35
   prefab: {fileID: 1354088481545106975, guid: 1777fb26e3b7d644a8fbd91882c2f213, type: 3}
   storageType: 0
   packageCount: 9
-  storePrice: 80
-  marketPrice: 80
+  storePrice: 50
+  marketPrice: 50
   requiredLicense: 

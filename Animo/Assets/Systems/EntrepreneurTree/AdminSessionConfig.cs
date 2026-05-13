@@ -40,6 +40,12 @@ namespace FLOBUK.StoreSimulator
         public static bool buyTestExpansions;
 
         /// <summary>
+        /// Sales test preset: give high money, unlock products, give stock, and unlock a cashier employee.
+        /// Useful for testing pricing, checkout, and the daily financial report in one step.
+        /// </summary>
+        public static bool prepareSalesTest;
+
+        /// <summary>
         /// Reset to safe defaults so accidental re-use doesn't bleed into a real session.
         /// Call this after applying the config in the Game scene.
         /// </summary>
@@ -54,6 +60,7 @@ namespace FLOBUK.StoreSimulator
             unlockAllSecurity = false;
             giveTestStock = false;
             buyTestExpansions = false;
+            prepareSalesTest = false;
             UnityEngine.Debug.Log(LogPrefix + "AdminSessionConfig reset to defaults.");
         }
     }

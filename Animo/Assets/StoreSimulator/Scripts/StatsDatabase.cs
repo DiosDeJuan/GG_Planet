@@ -137,7 +137,11 @@ namespace FLOBUK.StoreSimulator
         private void OnCustomerLeft(bool wasHappy)
         {
             if (wasHappy) customersHappy++;
-            else customersUnhappy++;
+            else
+            {
+                customersUnhappy++;
+                AchievementSystem.RegisterPriceComplaint();
+            }
         }
 
 
@@ -234,6 +238,12 @@ namespace FLOBUK.StoreSimulator
             if (data == null || data.Count == 0)
                 return string.Empty;
 
+            long moneyIn         = data["moneyEarned"].AsLong;
+            long moneyOut        = data["moneySpent"].AsLong;
+            long robberyLost     = data["robberyMoneyLost"].AsLong;
+            int  customersHappyD = data["customersHappy"].AsInt;
+            int  customersUnhappyD = data["customersUnhappy"].AsInt;
+
             int zonesToday       = data["expansionZonesPurchasedToday"].AsInt;
             int zonesTotalBought = data["expansionTotalZones"].AsInt;
             int salesAreaM2      = data["expansionSalesAreaM2"].AsInt;
@@ -245,7 +255,24 @@ namespace FLOBUK.StoreSimulator
 
             var sb = new StringBuilder();
 
-            sb.Append("Expansión:\n");
+            // ── Financial summary ──────────────────────────────────────────────
+            // moneyOut is persisted as a negative long (all withdrawals are negative in StoreDatabase).
+            // Net profit = revenue - |expenses|, which equals moneyIn + moneyOut since moneyOut < 0.
+            long netProfit = moneyIn - System.Math.Abs(moneyOut);
+            sb.Append("Finanzas del día:\n");
+            sb.Append("- Ingresos: ").Append(StoreDatabase.FromLongToStringMoney(moneyIn)).Append('\n');
+            sb.Append("- Gastos: ").Append(StoreDatabase.FromLongToStringMoney(-System.Math.Abs(moneyOut))).Append('\n');
+            if (robberyLost < 0)
+                sb.Append("- Pérdidas por robo: ").Append(StoreDatabase.FromLongToStringMoney(-robberyLost)).Append('\n');
+            sb.Append("- Ganancia neta: ").Append(StoreDatabase.FromLongToStringMoney(netProfit)).Append('\n');
+
+            // ── Customer summary ───────────────────────────────────────────────
+            sb.Append("\nClientes:\n");
+            sb.Append("- Atendidos: ").Append(customersHappyD + customersUnhappyD).Append('\n');
+            sb.Append("- Satisfechos: ").Append(customersHappyD).Append('\n');
+            sb.Append("- Inconformes: ").Append(customersUnhappyD).Append('\n');
+
+            sb.Append("\nExpansión:\n");
             sb.Append("- Zonas totales: ").Append(zonesTotalBought).Append('\n');
             sb.Append("- Área de ventas: ").Append(salesAreaM2).Append(" m²\n");
             sb.Append("- Área de almacén: ").Append(storageAreaM2).Append(" m²\n");

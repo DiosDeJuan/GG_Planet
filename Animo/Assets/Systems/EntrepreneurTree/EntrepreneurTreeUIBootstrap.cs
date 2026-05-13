@@ -1004,6 +1004,10 @@ namespace FLOBUK.StoreSimulator
             if (AdminSessionConfig.buyTestExpansions)
                 ApplyAdminTestExpansions();
 
+            // ── Sales test preset log ─────────────────────────────────────────
+            if (AdminSessionConfig.prepareSalesTest)
+                Debug.Log("[AdminMode] Applied sales test setup — products unlocked, stock delivered, employees unlocked.");
+
             if (UIGame.Instance != null)
                 UIGame.AddNotification("[AdminMode] Sesión de prueba iniciada.", otherColor: new Color(1f, 0.7f, 0.1f));
             AdminSessionConfig.Reset();
