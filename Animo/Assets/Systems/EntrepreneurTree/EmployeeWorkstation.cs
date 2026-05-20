@@ -115,13 +115,15 @@ namespace FLOBUK.StoreSimulator
         // ── Editor gizmo ──────────────────────────────────────────────────────────
 
 #if UNITY_EDITOR
+        private const float GizmoSphereRadius = 0.35f;
+
         void OnDrawGizmos()
         {
             Color c = workstationType == EmployeeWorkstationType.Cashier   ? new Color(0.25f, 0.55f, 1.00f, 0.85f)
                     : workstationType == EmployeeWorkstationType.Restocker ? new Color(0.25f, 0.80f, 0.30f, 0.85f)
                     :                                                         new Color(0.90f, 0.30f, 0.20f, 0.85f);
             Gizmos.color = c;
-            Gizmos.DrawWireSphere(transform.position, 0.35f);
+            Gizmos.DrawWireSphere(transform.position, GizmoSphereRadius);
             if (lookTarget != null)
             {
                 Gizmos.color = new Color(c.r, c.g, c.b, 0.45f);

@@ -15,8 +15,8 @@ namespace FLOBUK.StoreSimulator
     {
         private const string LogPrefix = "[EmployeeApp] ";
         private const int MaxEmployees = EntrepreneurEmployeeSystem.MaxEmployees;
-        private const string CashierDescription     = "Cajero: Atiende clientes en cajas registradoras, procesa pagos automaticamente y reduce abandono por espera.";
-        private const string RestockerDescription   = "Surtidor: Reabastece muebles de venta usando productos disponibles en almacen cuando existan espacios asignados.";
+        private const string CashierDescription     = "Cajero: Atiende clientes en cajas registradoras, procesa pagos automáticamente y reduce abandono por espera.";
+        private const string RestockerDescription   = "Surtidor: Reabastece muebles de venta usando productos disponibles en almacén cuando existan espacios asignados.";
 
         // ── State labels (ASCII-only, compatible with all TMP fonts) ──────────────
         private const string LabelBlocked    = "[BLOQ]";
@@ -24,6 +24,8 @@ namespace FLOBUK.StoreSimulator
         private const string LabelHired      = "[OK]";
         private const string LabelNoStation  = "[SIN PUESTO]";
         private const string LabelWorking    = "[TRABAJANDO]";
+        private const string NoStationText   = "Sin puesto";
+        private const string NoStationDash   = "—";
 
         private static readonly Color ColBlocked   = new Color(0.40f, 0.40f, 0.42f, 1f);
         private static readonly Color ColAvailable = new Color(0.80f, 0.65f, 0.10f, 1f);
@@ -241,7 +243,7 @@ namespace FLOBUK.StoreSimulator
             if (detailCost != null)
                 detailCost.text = status.isHired
                     ? "Costo: ya contratado"
-                    : "Costo contratacion: " + StoreDatabase.FromLongToStringMoney(status.hireCost);
+                    : "Costo contratación: " + StoreDatabase.FromLongToStringMoney(status.hireCost);
 
             if (detailWorkstation != null)
                 detailWorkstation.text = "Puesto: " + status.workstationLabel;
@@ -272,8 +274,8 @@ namespace FLOBUK.StoreSimulator
                 assignStationButton.gameObject.SetActive(status.isHired);
                 // Enable the button when the employee has no workstation assigned yet.
                 bool noStation = string.IsNullOrEmpty(status.workstationLabel)
-                              || status.workstationLabel == "—"
-                              || status.workstationLabel == "Sin puesto";
+                              || status.workstationLabel == NoStationDash
+                              || status.workstationLabel == NoStationText;
                 assignStationButton.interactable = status.isHired && noStation;
             }
         }
@@ -289,9 +291,9 @@ namespace FLOBUK.StoreSimulator
                 role = EmployeeRole.None,
                 stateLabel = LabelBlocked,
                 stateColor = ColBlocked,
-                hint = "Desbloquea este empleado en el Arbol del Emprendedor",
+                hint = "Desbloquea este empleado en el Árbol del Emprendedor",
                 canHire = false,
-                workstationLabel = "—"
+                workstationLabel = NoStationDash
             };
 
             if (EntrepreneurEmployeeSystem.Instance == null)
@@ -307,7 +309,7 @@ namespace FLOBUK.StoreSimulator
             {
                 status.stateLabel = LabelBlocked;
                 status.stateColor = ColBlocked;
-                status.hint = "Desbloquea este empleado en el Arbol del Emprendedor.";
+                status.hint = "Desbloquea este empleado en el Árbol del Emprendedor.";
                 return status;
             }
 
@@ -336,7 +338,7 @@ namespace FLOBUK.StoreSimulator
                 status.stateLabel = LabelNoStation;
                 status.stateColor = ColNoStation;
                 status.hint = "Contratado. Asigna un puesto de trabajo.";
-                status.workstationLabel = "Sin puesto";
+                status.workstationLabel = NoStationText;
             }
             else
             {

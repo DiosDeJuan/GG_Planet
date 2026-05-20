@@ -17,6 +17,13 @@ namespace FLOBUK.StoreSimulator
     {
         private const string LogPrefix = "[WorkstationReg] ";
 
+        // Distance threshold for checking whether a cashier station already covers a cash desk.
+        private const float CashierCoverageRadius = 3f;
+        // Local position offset for fallback cashier station (behind the cash desk).
+        private const float CashierStationBackOffset = -0.8f;
+        // World-space offset for the fallback restocker station when none is defined in the scene.
+        private static readonly Vector3 RestockerFallbackOffset = new Vector3(2f, 0f, 2f);
+
         public static EmployeeWorkstationRegistry Instance { get; private set; }
 
         // All workstations discovered in the current scene, keyed by stable workstationId.
@@ -271,7 +278,7 @@ namespace FLOBUK.StoreSimulator
                 {
                     if (existing != null
                         && existing.workstationType == EmployeeWorkstationType.Cashier
-                        && Vector3.Distance(existing.StandPosition, desk.transform.position) < 3f)
+                        && Vector3.Distance(existing.StandPosition, desk.transform.position) < CashierCoverageRadius)
                     {
                         hasCashierNearby = true;
                         break;
@@ -285,7 +292,7 @@ namespace FLOBUK.StoreSimulator
                 GameObject stationGo = new GameObject("CashierStation_" + i);
                 stationGo.transform.SetParent(desk.transform, false);
                 // Stand slightly behind the desk, facing forward.
-                stationGo.transform.localPosition = new Vector3(0f, 0f, -0.8f);
+                stationGo.transform.localPosition = new Vector3(0f, 0f, CashierStationBackOffset);
                 stationGo.transform.localRotation = Quaternion.identity;
 
                 EmployeeWorkstation ws = stationGo.AddComponent<EmployeeWorkstation>();
@@ -301,7 +308,7 @@ namespace FLOBUK.StoreSimulator
             {
                 GameObject restockGo = new GameObject("RestockerStation_0");
                 restockGo.transform.SetParent(transform, false);
-                restockGo.transform.position = transform.position + new Vector3(2f, 0f, 2f);
+                restockGo.transform.position = transform.position + RestockerFallbackOffset;
 
                 EmployeeWorkstation ws = restockGo.AddComponent<EmployeeWorkstation>();
                 ws.workstationId   = "restocker_station_0";
