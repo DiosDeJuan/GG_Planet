@@ -131,6 +131,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ProductPricingSystem>();
                 systems.AddComponent<ProductPurchaseProbabilityAdapter>();
                 systems.AddComponent<EmployeeCashierCoordinator>();
+                systems.AddComponent<EmployeeNPCSpawner>();
+                systems.AddComponent<EmployeeWorkstationRegistry>();
             }
             else
             {
@@ -197,6 +199,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EmployeeCashierCoordinator>();
             if (systems.GetComponent<EmployeeNPCSpawner>() == null)
                 systems.AddComponent<EmployeeNPCSpawner>();
+            if (systems.GetComponent<EmployeeWorkstationRegistry>() == null)
+                systems.AddComponent<EmployeeWorkstationRegistry>();
         }
 
 

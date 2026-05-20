@@ -53,7 +53,7 @@ namespace FLOBUK.StoreSimulator
         // employeeId → spawned NPC GameObject
         private readonly Dictionary<int, GameObject> spawnedNPCs = new Dictionary<int, GameObject>();
 
-        private readonly MaterialPropertyBlock _mpb = new MaterialPropertyBlock();
+        private MaterialPropertyBlock _mpb;
 
         public static EmployeeNPCSpawner Instance { get; private set; }
 
@@ -61,6 +61,7 @@ namespace FLOBUK.StoreSimulator
 
         void Awake()
         {
+            _mpb = new MaterialPropertyBlock();
             if (Instance != null && Instance != this)
             {
                 Destroy(this);
@@ -99,6 +100,16 @@ namespace FLOBUK.StoreSimulator
             return spawnedNPCs.TryGetValue(employeeId, out npc) ? npc : null;
         }
 
+        /// <summary>
+        /// Moves the NPC for <paramref name="employeeId"/> to its currently assigned workstation.
+        /// Safe to call even when no workstation is assigned (no-op).
+        /// Called by EmployeeAppUIController after assigning a workstation from the UI.
+        /// </summary>
+        public void RefreshNPCPosition(int employeeId)
+        {
+            MoveNPCToWorkstation(employeeId);
+        }
+
         // ── Private helpers ───────────────────────────────────────────────────────
 
         private void OnEmployeeHired(int employeeId)
@@ -109,6 +120,7 @@ namespace FLOBUK.StoreSimulator
         private void OnRoleChanged(int employeeId, EmployeeRole role)
         {
             ApplyRoleTint(employeeId, role);
+            MoveNPCToWorkstation(employeeId);
         }
 
         private void OnDataLoaded()
@@ -173,10 +185,21 @@ namespace FLOBUK.StoreSimulator
                 ? employeeSpawnPoint.position
                 : transform.position;
 
-            // Spread employees so they don't all stack on the same point.
+            // If a workstation is assigned, spawn the NPC there instead of the generic spawn point.
             Vector3 position = basePos + spawnOffset * (spawnedNPCs.Count);
+            Quaternion rotation = Quaternion.identity;
 
-            GameObject npc = Instantiate(prefab, position, Quaternion.identity);
+            if (EmployeeWorkstationRegistry.Instance != null)
+            {
+                EmployeeWorkstation ws = EmployeeWorkstationRegistry.Instance.GetAssignedStation(employeeId);
+                if (ws != null)
+                {
+                    position = ws.StandPosition;
+                    rotation = ws.StandRotation;
+                }
+            }
+
+            GameObject npc = Instantiate(prefab, position, rotation);
             npc.name = "Employee_" + employeeId + "_NPC";
 
             // Disable shopping AI — keep visual/locomotion alive.
@@ -221,6 +244,28 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             ApplyTintToNPC(npc, role);
+        }
+
+        /// <summary>
+        /// Moves an already-spawned NPC to the position/rotation of its current workstation.
+        /// Safe to call even if no workstation is assigned (NPC stays where it is).
+        /// </summary>
+        private void MoveNPCToWorkstation(int employeeId)
+        {
+            if (!spawnedNPCs.TryGetValue(employeeId, out GameObject npc) || npc == null)
+                return;
+
+            if (EmployeeWorkstationRegistry.Instance == null)
+                return;
+
+            EmployeeWorkstation ws = EmployeeWorkstationRegistry.Instance.GetAssignedStation(employeeId);
+            if (ws == null)
+                return;
+
+            npc.transform.position = ws.StandPosition;
+            npc.transform.rotation = ws.StandRotation;
+            Debug.Log(LogPrefix + "Moved NPC for employee #" + employeeId
+                + " to workstation '" + ws.workstationId + "' at " + ws.StandPosition + ".");
         }
 
         private void ApplyTintToNPC(GameObject npc, EmployeeRole role)

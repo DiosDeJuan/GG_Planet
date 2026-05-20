@@ -284,7 +284,7 @@ namespace FLOBUK.StoreSimulator
             // Category / lock label
             row.categoryLabel.text = unlocked
                 ? GetCategoryText(row.product)
-                : "🔒 " + GetLockReason(row.product);
+                : "[BLOQ] " + GetLockReason(row.product);
             row.categoryLabel.color = unlocked
                 ? new Color(0.55f, 0.65f, 0.75f)
                 : ColorLocked;

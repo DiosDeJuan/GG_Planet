@@ -114,84 +114,95 @@ namespace FLOBUK.StoreSimulator
             if (panelRoot == null)
                 return;
 
-            // ── Header strip (top 10%) ──────────────────────────────────────
+            // ── Header strip (top ~8%) ──────────────────────────────────────
             RectTransform header = CreatePanel("HeaderStrip", panelRoot,
-                new Vector2(0f, 0.90f), new Vector2(1f, 1f),
-                new Color(0.08f, 0.09f, 0.12f, 0.98f), 4f, 2f);
+                new Vector2(0f, 0.92f), new Vector2(1f, 1f),
+                ComputerUITheme.HeaderBg, 4f, 2f);
 
-            CreateLabel("TitleLabel", header, "🗺  Mapa del Terreno", 20,
+            TMP_Text titleLabel = CreateLabel("TitleLabel", header, "Expandir - Mapa del Terreno", ComputerUITheme.FontTitle,
                 TextAlignmentOptions.MidlineLeft,
                 new Vector2(0f, 0f), new Vector2(0.30f, 1f));
+            titleLabel.color = ComputerUITheme.TextPrimary;
 
-            moneyLabel = CreateLabel("MoneyLabel", header, "Dinero: —", 17,
+            moneyLabel = CreateLabel("MoneyLabel", header, "Dinero: —", ComputerUITheme.FontSmall,
                 TextAlignmentOptions.Midline,
                 new Vector2(0.30f, 0f), new Vector2(0.55f, 1f));
+            moneyLabel.color = ComputerUITheme.TextWarning;
 
-            salesAreaLabel = CreateLabel("SalesAreaLabel", header, "Venta: —", 17,
+            salesAreaLabel = CreateLabel("SalesAreaLabel", header, "Venta: —", ComputerUITheme.FontSmall,
                 TextAlignmentOptions.Midline,
                 new Vector2(0.55f, 0f), new Vector2(0.77f, 1f));
+            salesAreaLabel.color = ComputerUITheme.TextSecondary;
 
-            storageAreaLabel = CreateLabel("StorageAreaLabel", header, "Almacén: —", 17,
+            storageAreaLabel = CreateLabel("StorageAreaLabel", header, "Almacén: —", ComputerUITheme.FontSmall,
                 TextAlignmentOptions.Midline,
                 new Vector2(0.77f, 0f), new Vector2(1f, 1f));
+            storageAreaLabel.color = ComputerUITheme.TextSecondary;
 
-            // ── Map panel (left 62%, rows 0–90%) ────────────────────────────
+            // ── Map panel (left 62%, rows 0–92%) ────────────────────────────
             mapRoot = CreatePanel("MapPanel", panelRoot,
-                new Vector2(0f, 0f), new Vector2(0.62f, 0.89f),
-                new Color(0.11f, 0.13f, 0.17f, 0.97f), 8f, 8f);
+                new Vector2(0f, 0f), new Vector2(0.62f, 0.91f),
+                ComputerUITheme.CardBg, 8f, 8f);
 
             // Map legend (tiny strip at top of map)
             RectTransform mapLegend = CreatePanel("MapLegend", mapRoot,
                 new Vector2(0f, 0.94f), new Vector2(1f, 1f),
-                new Color(0.07f, 0.08f, 0.11f, 0.96f), 2f, 2f);
-            CreateLabel("LegendText", mapLegend,
-                "V=Venta   A=Almacén   O=Oficina   ✓Comprado  +Disponible  ✗Bloqueado",
-                10, TextAlignmentOptions.MidlineLeft,
+                ComputerUITheme.PanelDarkBg, 2f, 2f);
+            TMP_Text legendTxt = CreateLabel("LegendText", mapLegend,
+                "V=Venta   A=Almacén   O=Oficina   [OK]=Comprado   +=Disponible   [NO]=Bloqueado",
+                ComputerUITheme.FontCaption, TextAlignmentOptions.MidlineLeft,
                 Vector2.zero, Vector2.one);
+            legendTxt.color = ComputerUITheme.TextMuted;
 
             // Actual map content area (below legend)
             RectTransform mapContent = CreatePanel("MapContent", mapRoot,
                 new Vector2(0f, 0f), new Vector2(1f, 0.93f),
-                new Color(0.10f, 0.12f, 0.16f, 0.94f), 4f, 4f);
+                ComputerUITheme.RootBg, 4f, 4f);
 
-            // ── Details panel (right 38%, rows 0–90%) ───────────────────────
+            // ── Details panel (right 38%, rows 0–92%) ───────────────────────
             RectTransform details = CreatePanel("DetailsPanel", panelRoot,
-                new Vector2(0.62f, 0f), new Vector2(1f, 0.89f),
-                new Color(0.07f, 0.08f, 0.12f, 0.97f), 8f, 8f);
+                new Vector2(0.62f, 0f), new Vector2(1f, 0.91f),
+                ComputerUITheme.PanelDarkBg, 8f, 8f);
 
-            CreateLabel("DetailsTitle", details, "DETALLE DE ZONA", 18,
+            TMP_Text detailsTitle = CreateLabel("DetailsTitle", details, "DETALLE DE ZONA", ComputerUITheme.FontHeader,
                 TextAlignmentOptions.Center,
                 new Vector2(0f, 0.88f), new Vector2(1f, 1f));
+            detailsTitle.color = ComputerUITheme.TextPrimary;
 
-            zoneNameText = CreateLabel("ZoneName", details, "Selecciona una zona del mapa.", 17,
+            zoneNameText = CreateLabel("ZoneName", details, "Selecciona una zona del mapa.", ComputerUITheme.FontBody,
                 TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0.74f), new Vector2(1f, 0.87f));
+            zoneNameText.color = ComputerUITheme.TextPrimary;
 
-            zoneTypeText = CreateLabel("ZoneType", details, string.Empty, 15,
+            zoneTypeText = CreateLabel("ZoneType", details, string.Empty, ComputerUITheme.FontSmall,
                 TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0.62f), new Vector2(1f, 0.73f));
+            zoneTypeText.color = ComputerUITheme.TextSecondary;
 
-            zonePriceText = CreateLabel("ZonePrice", details, string.Empty, 15,
+            zonePriceText = CreateLabel("ZonePrice", details, string.Empty, ComputerUITheme.FontSmall,
                 TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0.52f), new Vector2(1f, 0.61f));
+            zonePriceText.color = ComputerUITheme.TextSecondary;
 
-            zoneStateText = CreateLabel("ZoneState", details, string.Empty, 15,
+            zoneStateText = CreateLabel("ZoneState", details, string.Empty, ComputerUITheme.FontSmall,
                 TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0.38f), new Vector2(1f, 0.51f));
+            zoneStateText.color = ComputerUITheme.TextPrimary;
 
-            zoneBenefitText = CreateLabel("ZoneBenefit", details, string.Empty, 14,
+            zoneBenefitText = CreateLabel("ZoneBenefit", details, string.Empty, ComputerUITheme.FontSmall,
                 TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0.24f), new Vector2(1f, 0.37f));
+            zoneBenefitText.color = ComputerUITheme.TextMuted;
 
-            messageText = CreateLabel("MessageText", details, string.Empty, 14,
+            messageText = CreateLabel("MessageText", details, string.Empty, ComputerUITheme.FontSmall,
                 TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0.13f), new Vector2(1f, 0.23f));
-            messageText.color = new Color(1f, 0.85f, 0.25f);
+            messageText.color = ComputerUITheme.TextWarning;
 
-            // Buy button
+            // Buy button — brand fucsia
             buyButton = CreateButton("BuyButton", details,
                 new Vector2(0.05f, 0.02f), new Vector2(0.95f, 0.12f),
-                "Comprar Expansión", new Color(0.87f, 0.26f, 0.56f, 1f));
+                "Comprar Expansión", ComputerUITheme.ButtonPrimary);
 
             // Attach map renderer to the content area (not the whole mapRoot so legend is unaffected)
             mapRenderer = mapContent.GetComponent<ExpansionMapRenderer>();
@@ -406,6 +417,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnZonesChanged()
         {
+            if (this == null) return;
             if (!isActiveAndEnabled)
                 return;
 
@@ -418,6 +430,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnZonesReset()
         {
+            if (this == null) return;
             // Full data reset (load from file): force map rebuild on next show.
             mapBuilt = false;
             selectedZoneId = null;
@@ -427,6 +440,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnMoneyUpdate(string current, string change)
         {
+            if (this == null) return;
             if (!isActiveAndEnabled)
                 return;
 
@@ -523,9 +537,9 @@ namespace FLOBUK.StoreSimulator
         {
             switch (state)
             {
-                case ExpansionZoneState.Purchased: return "Comprada ✓";
-                case ExpansionZoneState.Available: return "Disponible";
-                default:                           return "Bloqueada ✗";
+                case ExpansionZoneState.Purchased: return ComputerUITheme.LabelPurchased + " Comprada";
+                case ExpansionZoneState.Available: return ComputerUITheme.LabelReady     + " Disponible";
+                default:                           return ComputerUITheme.LabelBlocked   + " Bloqueada";
             }
         }
     }

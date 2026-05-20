@@ -19,6 +19,8 @@ namespace FLOBUK.StoreSimulator
         public bool isHired;
         public EmployeeRole role;
         public long hireCost;
+        /// <summary>ID of the EmployeeWorkstation currently assigned to this employee. Empty = unassigned.</summary>
+        public string workstationId = string.Empty;
     }
 
     /// <summary>
@@ -269,6 +271,7 @@ namespace FLOBUK.StoreSimulator
                 row["isHired"] = assignment.isHired;
                 row["role"] = (int)assignment.role;
                 row["hireCost"] = assignment.hireCost;
+                row["workstationId"] = assignment.workstationId ?? string.Empty;
                 array.Add(row);
             }
 
@@ -306,6 +309,7 @@ namespace FLOBUK.StoreSimulator
                 assignment.isHired = row["isHired"].AsBool;
                 assignment.role = SanitizeRole(row["role"].AsInt);
                 assignment.hireCost = Math.Max(0L, row["hireCost"].AsLong);
+                assignment.workstationId = row["workstationId"].Value ?? string.Empty;
             }
 
             Debug.Log(LogPrefix + "Employee roster loaded. hired=" + GetHiredCount()

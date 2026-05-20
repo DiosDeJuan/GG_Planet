@@ -138,19 +138,23 @@ namespace FLOBUK.StoreSimulator
 
         private void ApplyState(bool unlocked, bool available)
         {
-            Color typeColor = GetTypeColor(data != null ? data.nodeType : TreeNodeType.Product);
-            Color fillColor = ColorLocked;
+            Color accent    = ComputerUITheme.GetNodeAccent(data != null ? data.nodeType : TreeNodeType.Product);
+            Color fillColor = ComputerUITheme.NodeLockedBg;
             if (unlocked)
-                fillColor = data != null && data.id == EntrepreneurTreeDefinition.DefaultUnlockedNodeId ? RootHighlight : typeColor;
+                fillColor = data != null && data.id == EntrepreneurTreeDefinition.DefaultUnlockedNodeId
+                    ? new Color(0.95f, 0.82f, 0.20f, 1f)
+                    : accent;
             else if (available)
-                fillColor = Color.Lerp(typeColor, Color.white, 0.28f);
+                fillColor = Color.Lerp(accent, ComputerUITheme.NodeReadyBg, 0.40f);
 
             if (background) background.color = fillColor;
             if (titleLabel)
             {
-                string statusPrefix = unlocked ? "[OK] " : available ? "[LISTO] " : "[BLOQ] ";
-                titleLabel.text = (data != null ? statusPrefix + data.title : titleLabel.text);
-                titleLabel.color = unlocked || available ? Color.white : new Color(0.85f, 0.85f, 0.85f, 0.85f);
+                string statusPrefix = unlocked ? ComputerUITheme.LabelOk + " "
+                                    : available ? ComputerUITheme.LabelReady + " "
+                                    : ComputerUITheme.LabelBlocked + " ";
+                titleLabel.text  = data != null ? statusPrefix + data.title : titleLabel.text;
+                titleLabel.color = unlocked || available ? ComputerUITheme.TextPrimary : ComputerUITheme.TextMuted;
             }
 
             // Hide the icon when the node is locked so it stays mysterious.
@@ -159,19 +163,7 @@ namespace FLOBUK.StoreSimulator
 
         private static Color GetTypeColor(TreeNodeType type)
         {
-            switch (type)
-            {
-                case TreeNodeType.Product:
-                    return new Color(0.13f, 0.63f, 0.52f, 1f);
-                case TreeNodeType.Employee:
-                    return new Color(0.19f, 0.42f, 0.80f, 1f);
-                case TreeNodeType.Security:
-                    return new Color(0.82f, 0.37f, 0.16f, 1f);
-                case TreeNodeType.Improvement:
-                    return new Color(0.55f, 0.30f, 0.75f, 1f);
-                default:
-                    return new Color(0.45f, 0.45f, 0.45f, 1f);
-            }
+            return ComputerUITheme.GetNodeAccent(type);
         }
 
 

@@ -55,6 +55,9 @@ namespace FLOBUK.StoreSimulator
             if (ShoplifterSystem.Instance != null)
                 data["ShoplifterSystem"] = ShoplifterSystem.Instance.SaveToJSON();
 
+            if (EmployeeWorkstationRegistry.Instance != null)
+                data["EmployeeWorkstationRegistry"] = EmployeeWorkstationRegistry.Instance.SaveToJSON();
+
             byte[] bytes = Encoding.UTF8.GetBytes(data.ToString());
             string path  = Path.Combine(Application.persistentDataPath, fileName + SaveGameSystem.fileExt);
 
@@ -134,6 +137,7 @@ namespace FLOBUK.StoreSimulator
             AchievementSystem.Instance?.LoadFromJSON(data["AchievementSystem"]);
             EntrepreneurEmployeeSystem.Instance?.LoadFromJSON(data["EntrepreneurEmployeeSystem"]);
             ShoplifterSystem.Instance?.LoadFromJSON(data["ShoplifterSystem"]);
+            EmployeeWorkstationRegistry.Instance?.LoadFromJSON(data["EmployeeWorkstationRegistry"]);
             Debug.Log(LogPrefix + "Progress loaded successfully.");
         }
 
