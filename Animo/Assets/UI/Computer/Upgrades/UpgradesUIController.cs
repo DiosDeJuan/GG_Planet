@@ -196,24 +196,47 @@ namespace FLOBUK.StoreSimulator
 
             currentInfoNode = node;
 
-            if (infoTitle) infoTitle.text = node.title;
+            if (infoTitle)
+            {
+                infoTitle.text  = node.title;
+                infoTitle.color = ComputerUITheme.GetNodeAccent(node.nodeType);
+            }
+
             if (infoDescription)
             {
                 string typeLabel = "Tipo: " + GetNodeTypeLabel(node.nodeType);
+
+                // For employee nodes, append hire status from EntrepreneurEmployeeSystem.
+                string employeeStatus = BuildEmployeeStatusLine(node);
+                string body = typeLabel;
+                if (!string.IsNullOrEmpty(employeeStatus))
+                    body += "\n" + employeeStatus;
                 if (!string.IsNullOrEmpty(node.description))
-                    infoDescription.text = typeLabel + "\n" + node.description;
-                else
-                    infoDescription.text = typeLabel;
+                    body += "\n" + node.description;
+
+                infoDescription.text = body;
             }
-            if (infoCost) infoCost.text = node.isUnlocked
-                ? "Estado: Desbloqueado"
-                : "Costo: " + node.cost + " punto" + (node.cost != 1 ? "s" : "");
+
+            if (infoCost)
+            {
+                if (node.isUnlocked)
+                {
+                    infoCost.text  = "Estado: " + ComputerUITheme.LabelOk + " Desbloqueado";
+                    infoCost.color = ComputerUITheme.TextSuccess;
+                }
+                else
+                {
+                    infoCost.text  = "Costo: " + node.cost + " punto" + (node.cost != 1 ? "s" : "");
+                    infoCost.color = ComputerUITheme.TextPrimary;
+                }
+            }
 
             if (infoRequirements)
             {
                 if (node.requiredNodeIds == null || node.requiredNodeIds.Count == 0)
                 {
-                    infoRequirements.text = "Sin requisitos";
+                    infoRequirements.text  = "Sin requisitos";
+                    infoRequirements.color = ComputerUITheme.TextMuted;
                 }
                 else
                 {
@@ -225,13 +248,16 @@ namespace FLOBUK.StoreSimulator
                             ? EntrepreneurTreeManager.Instance.treeData.GetNodeById(reqId)
                             : null;
 
-                        string title = reqNode != null ? reqNode.title : reqId;
-                        bool unlocked = reqNode != null && reqNode.isUnlocked;
-                        sb.Append(title).Append(unlocked ? " [OK]" : " [NO]");
+                        string title   = reqNode != null ? reqNode.title : reqId;
+                        bool   unlocked = reqNode != null && reqNode.isUnlocked;
+                        sb.Append(unlocked ? ComputerUITheme.LabelOk : "[NO]")
+                          .Append(" ")
+                          .Append(title);
                         if (i < node.requiredNodeIds.Count - 1)
                             sb.AppendLine();
                     }
-                    infoRequirements.text = sb.ToString();
+                    infoRequirements.text  = sb.ToString();
+                    infoRequirements.color = ComputerUITheme.TextSecondary;
                 }
             }
 
@@ -243,10 +269,55 @@ namespace FLOBUK.StoreSimulator
 
                 Image buttonImage = infoUnlockButton.targetGraphic as Image;
                 if (buttonImage != null)
-                    buttonImage.color = canUnlock ? new Color(0.15f, 0.45f, 0.2f, 1f) : new Color(0.25f, 0.25f, 0.25f, 1f);
+                    buttonImage.color = canUnlock
+                        ? ComputerUITheme.ButtonPositive
+                        : ComputerUITheme.ButtonDisabled;
             }
 
             infoPanel.SetActive(true);
+        }
+
+
+        /// <summary>
+        /// For Employee-type nodes, returns a short status line showing whether the
+        /// employee linked to this node is hired, has a role, and has a workstation.
+        /// Returns null or empty for non-employee nodes.
+        /// </summary>
+        private static string BuildEmployeeStatusLine(NodeData node)
+        {
+            if (node == null || node.nodeType != TreeNodeType.Employee)
+                return string.Empty;
+
+            // Extract employee index from node id: "employee_3" → 3
+            int empId = -1;
+            if (node.id != null && node.id.StartsWith("employee_"))
+            {
+                int.TryParse(node.id.Substring("employee_".Length), out empId);
+            }
+
+            if (empId < 1 || EntrepreneurEmployeeSystem.Instance == null)
+                return string.Empty;
+
+            EmployeeAssignment assignment = EntrepreneurEmployeeSystem.Instance.GetAssignment(empId);
+            bool isUnlocked = EntrepreneurEmployeeSystem.Instance.IsEmployeeUnlocked(empId);
+
+            if (!isUnlocked)
+                return "Empleado: " + ComputerUITheme.LabelBlocked;
+
+            if (assignment == null || !assignment.isHired)
+                return "Empleado: " + ComputerUITheme.LabelReady + " (disponible para contratar)";
+
+            string roleText = assignment.role == EmployeeRole.Cashier   ? "Cajero"
+                            : assignment.role == EmployeeRole.Restocker ? "Surtidor"
+                            : "Sin rol";
+
+            string wsText = !string.IsNullOrEmpty(assignment.workstationId)
+                ? assignment.workstationId
+                : ComputerUITheme.LabelNoStation;
+
+            return "Empleado: " + ComputerUITheme.LabelOk
+                + " Contratado  |  Rol: " + roleText
+                + "  |  Puesto: " + wsText;
         }
 
 
@@ -455,7 +526,7 @@ namespace FLOBUK.StoreSimulator
         {
             GameObject rootObj = CreateUIObject("EntrepreneurTreeRoot", transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
             Image rootBg = rootObj.AddComponent<Image>();
-            rootBg.color = new Color(0.05f, 0.07f, 0.1f, 0.92f);
+            rootBg.color = ComputerUITheme.RootBg;
 
             RectTransform rootRT = rootObj.GetComponent<RectTransform>();
             rootRT.offsetMin = Vector2.zero;
@@ -463,34 +534,37 @@ namespace FLOBUK.StoreSimulator
 
             GameObject header = CreateUIObject("Header", rootObj.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f));
             RectTransform headerRT = header.GetComponent<RectTransform>();
-            headerRT.sizeDelta = new Vector2(0f, 72f);
+            headerRT.sizeDelta = new Vector2(0f, ComputerUITheme.HeaderHeight);
             Image headerBg = header.AddComponent<Image>();
-            headerBg.color = new Color(0.1f, 0.12f, 0.16f, 0.96f);
+            headerBg.color = ComputerUITheme.HeaderBg;
 
-            CreateTextObject("Title", header.transform, "Árbol del Emprendedor", 30, TextAlignmentOptions.Left,
-                new Vector2(0f, 0f), new Vector2(0.7f, 1f), new Vector2(0f, 0.5f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
+            TMP_Text titleTmp = CreateTextObject("Title", header.transform, "Árbol del Emprendedor", ComputerUITheme.FontTitle, TextAlignmentOptions.Left,
+                new Vector2(0f, 0f), new Vector2(0.6f, 1f), new Vector2(0f, 0.5f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
+            titleTmp.color = ComputerUITheme.TextPrimary;
 
-            pointsLabel = CreateTextObject("PointsText", header.transform, "Puntos disponibles: 0", 26, TextAlignmentOptions.Right,
-                new Vector2(0.7f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-20f, 0f), new Vector2(-20f, 0f));
+            pointsLabel = CreateTextObject("PointsText", header.transform, "Puntos disponibles: 0", ComputerUITheme.FontBody, TextAlignmentOptions.Right,
+                new Vector2(0.6f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-20f, 0f), new Vector2(-20f, 0f));
+            pointsLabel.color = ComputerUITheme.TextWarning;
 
-            GameObject backButton = CreateUIObject("BackToExpansionsButton", header.transform, new Vector2(0.7f, 0f), new Vector2(0.85f, 1f), new Vector2(0.5f, 0.5f));
+            GameObject backButton = CreateUIObject("BackToExpansionsButton", header.transform, new Vector2(0.45f, 0.1f), new Vector2(0.60f, 0.9f), new Vector2(0.5f, 0.5f));
             Image backImage = backButton.AddComponent<Image>();
-            backImage.color = new Color(0.2f, 0.28f, 0.38f, 1f);
+            backImage.color = ComputerUITheme.ButtonSecondary;
             backToLegacyButton = backButton.AddComponent<Button>();
             backToLegacyButton.targetGraphic = backImage;
-            CreateTextObject("Text", backButton.transform, "Volver", 18, TextAlignmentOptions.Center,
+            TMP_Text backTxt = CreateTextObject("Text", backButton.transform, "Volver", ComputerUITheme.FontSmall, TextAlignmentOptions.Center,
                 Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            backTxt.color = ComputerUITheme.TextPrimary;
 
             GameObject info = CreateUIObject("InfoPanel", rootObj.transform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f));
             RectTransform infoRT = info.GetComponent<RectTransform>();
-            infoRT.sizeDelta = new Vector2(360f, -96f);
-            infoRT.anchoredPosition = new Vector2(-10f, -36f);
+            infoRT.sizeDelta = new Vector2(360f, -(ComputerUITheme.HeaderHeight + 28f));
+            infoRT.anchoredPosition = new Vector2(-10f, -(ComputerUITheme.HeaderHeight * 0.5f + 4f));
             Image infoBg = info.AddComponent<Image>();
-            infoBg.color = new Color(0.08f, 0.1f, 0.14f, 0.98f);
+            infoBg.color = ComputerUITheme.PanelDarkBg;
 
             VerticalLayoutGroup infoLayout = info.AddComponent<VerticalLayoutGroup>();
             infoLayout.padding = new RectOffset(20, 20, 20, 20);
-            infoLayout.spacing = 12;
+            infoLayout.spacing = 10;
             infoLayout.childControlHeight = false;
             infoLayout.childControlWidth = true;
             infoLayout.childForceExpandHeight = false;
@@ -499,33 +573,41 @@ namespace FLOBUK.StoreSimulator
             ContentSizeFitter infoFitter = info.AddComponent<ContentSizeFitter>();
             infoFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
 
-            infoTitle = CreateTextObject("NodeTitleText", info.transform, "", 24, TextAlignmentOptions.Left,
+            infoTitle = CreateTextObject("NodeTitleText", info.transform, "", ComputerUITheme.FontHeader, TextAlignmentOptions.Left,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
-            infoDescription = CreateTextObject("NodeDescriptionText", info.transform, "", 20, TextAlignmentOptions.TopLeft,
+            infoTitle.color = ComputerUITheme.TextPrimary;
+
+            infoDescription = CreateTextObject("NodeDescriptionText", info.transform, "", ComputerUITheme.FontBody, TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
-            infoCost = CreateTextObject("NodeCostText", info.transform, "", 20, TextAlignmentOptions.Left,
+            infoDescription.color = ComputerUITheme.TextSecondary;
+
+            infoCost = CreateTextObject("NodeCostText", info.transform, "", ComputerUITheme.FontBody, TextAlignmentOptions.Left,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
-            infoRequirements = CreateTextObject("RequirementsText", info.transform, "", 18, TextAlignmentOptions.TopLeft,
+            infoCost.color = ComputerUITheme.TextPrimary;
+
+            infoRequirements = CreateTextObject("RequirementsText", info.transform, "", ComputerUITheme.FontSmall, TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
+            infoRequirements.color = ComputerUITheme.TextSecondary;
 
             GameObject unlock = CreateUIObject("UnlockButton", info.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f));
             RectTransform unlockRT = unlock.GetComponent<RectTransform>();
-            unlockRT.sizeDelta = new Vector2(0f, 52f);
+            unlockRT.sizeDelta = new Vector2(0f, ComputerUITheme.ButtonHeight);
             Image unlockBg = unlock.AddComponent<Image>();
-            unlockBg.color = new Color(0.15f, 0.45f, 0.2f, 1f);
+            unlockBg.color = ComputerUITheme.ButtonPositive;
             infoUnlockButton = unlock.AddComponent<Button>();
             infoUnlockButton.targetGraphic = unlockBg;
 
-            CreateTextObject("Text", unlock.transform, "Desbloquear", 22, TextAlignmentOptions.Center,
+            TMP_Text unlockTxt = CreateTextObject("Text", unlock.transform, "Desbloquear", ComputerUITheme.FontBody, TextAlignmentOptions.Center,
                 Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            unlockTxt.color = ComputerUITheme.TextPrimary;
 
             GameObject treeScroll = CreateUIObject("TreeScrollView", rootObj.transform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0.5f, 0.5f));
             RectTransform scrollRT = treeScroll.GetComponent<RectTransform>();
             scrollRT.offsetMin = new Vector2(18f, 18f);
-            scrollRT.offsetMax = new Vector2(-380f, -90f);
+            scrollRT.offsetMax = new Vector2(-380f, -(ComputerUITheme.HeaderHeight + 8f));
 
             Image scrollBg = treeScroll.AddComponent<Image>();
-            scrollBg.color = new Color(0.11f, 0.13f, 0.17f, 0.9f);
+            scrollBg.color = ComputerUITheme.CardBg;
             ScrollRect scrollRect = treeScroll.AddComponent<ScrollRect>();
             scrollRect.horizontal = true;
             scrollRect.vertical = true;
@@ -537,7 +619,7 @@ namespace FLOBUK.StoreSimulator
             viewportRT.offsetMin = new Vector2(6f, 6f);
             viewportRT.offsetMax = new Vector2(-6f, -6f);
             Image viewportBg = viewport.AddComponent<Image>();
-            viewportBg.color = new Color(0.06f, 0.08f, 0.11f, 0.88f);
+            viewportBg.color = ComputerUITheme.RootBg;
             viewport.AddComponent<Mask>().showMaskGraphic = false;
 
             GameObject content = CreateUIObject("Content", viewport.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f));

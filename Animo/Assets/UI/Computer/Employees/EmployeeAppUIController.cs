@@ -27,12 +27,12 @@ namespace FLOBUK.StoreSimulator
         private const string NoStationText   = "Sin puesto";
         private const string NoStationDash   = "—";
 
-        private static readonly Color ColBlocked   = new Color(0.40f, 0.40f, 0.42f, 1f);
-        private static readonly Color ColAvailable = new Color(0.80f, 0.65f, 0.10f, 1f);
-        private static readonly Color ColHired     = new Color(0.17f, 0.50f, 0.28f, 1f);
-        private static readonly Color ColNoStation = new Color(0.75f, 0.40f, 0.10f, 1f);
-        private static readonly Color ColWorking   = new Color(0.12f, 0.42f, 0.72f, 1f);
-        private static readonly Color ColSelected  = new Color(1f,    1f,    1f,    0.12f);
+        private static readonly Color ColBlocked   = ComputerUITheme.StatusBlocked;
+        private static readonly Color ColAvailable = ComputerUITheme.StatusAvailable;
+        private static readonly Color ColHired     = ComputerUITheme.StatusOk;
+        private static readonly Color ColNoStation = ComputerUITheme.StatusNoStation;
+        private static readonly Color ColWorking   = ComputerUITheme.StatusWorking;
+        private static readonly Color ColSelected  = new Color(1f, 1f, 1f, 0.12f);
 
         private readonly Dictionary<int, EmployeeCardUI> cards = new Dictionary<int, EmployeeCardUI>();
 
@@ -410,34 +410,34 @@ namespace FLOBUK.StoreSimulator
 
             appRoot = CreateUIObject("EmployeesAppRoot", transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f));
             Image rootBg = appRoot.AddComponent<Image>();
-            rootBg.color = new Color(0.05f, 0.08f, 0.13f, 0.95f);
+            rootBg.color = ComputerUITheme.RootBg;
             RectTransform rootRT = appRoot.GetComponent<RectTransform>();
             rootRT.offsetMin = Vector2.zero;
             rootRT.offsetMax = Vector2.zero;
 
             GameObject header = CreateUIObject("Header", appRoot.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f));
             RectTransform headerRT = header.GetComponent<RectTransform>();
-            headerRT.sizeDelta = new Vector2(0f, 70f);
+            headerRT.sizeDelta = new Vector2(0f, ComputerUITheme.HeaderHeight);
             Image headerBg = header.AddComponent<Image>();
-            headerBg.color = new Color(0.08f, 0.11f, 0.17f, 0.98f);
-            CreateText("Title", header.transform, "App de Empleados", 28, TextAlignmentOptions.Left, new Vector2(20f, 0f), new Vector2(-20f, 0f));
+            headerBg.color = ComputerUITheme.HeaderBg;
+            CreateText("Title", header.transform, "App de Empleados", ComputerUITheme.FontTitle, TextAlignmentOptions.Left, new Vector2(20f, 0f), new Vector2(-20f, 0f));
 
             GameObject close = CreateUIObject("CloseButton", header.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f));
             RectTransform closeRT = close.GetComponent<RectTransform>();
             closeRT.sizeDelta = new Vector2(140f, 44f);
             closeRT.anchoredPosition = new Vector2(-20f, 0f);
             Image closeBg = close.AddComponent<Image>();
-            closeBg.color = new Color(0.28f, 0.24f, 0.24f, 1f);
+            closeBg.color = ComputerUITheme.ButtonSecondary;
             closeButton = close.AddComponent<Button>();
             closeButton.targetGraphic = closeBg;
-            CreateText("Text", close.transform, "Volver", 18, TextAlignmentOptions.Center);
+            CreateText("Text", close.transform, "Volver", ComputerUITheme.FontSmall, TextAlignmentOptions.Center);
 
             GameObject listPanel = CreateUIObject("ListPanel", appRoot.transform, new Vector2(0f, 0f), new Vector2(0.62f, 1f), new Vector2(0f, 0f));
             RectTransform listRT = listPanel.GetComponent<RectTransform>();
             listRT.offsetMin = new Vector2(16f, 16f);
-            listRT.offsetMax = new Vector2(-8f, -82f);
+            listRT.offsetMax = new Vector2(-8f, -(ComputerUITheme.HeaderHeight + 12f));
             Image listBg = listPanel.AddComponent<Image>();
-            listBg.color = new Color(0.09f, 0.12f, 0.18f, 0.95f);
+            listBg.color = ComputerUITheme.CardBg;
 
             ScrollRect scrollRect = listPanel.AddComponent<ScrollRect>();
             scrollRect.horizontal = false;
@@ -449,7 +449,7 @@ namespace FLOBUK.StoreSimulator
             viewportRT.offsetMin = new Vector2(6f, 6f);
             viewportRT.offsetMax = new Vector2(-6f, -6f);
             Image viewportBg = viewport.AddComponent<Image>();
-            viewportBg.color = new Color(0.06f, 0.09f, 0.14f, 0.9f);
+            viewportBg.color = ComputerUITheme.RootBg;
             viewport.AddComponent<Mask>().showMaskGraphic = false;
 
             GameObject content = CreateUIObject("Content", viewport.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f));
@@ -470,9 +470,9 @@ namespace FLOBUK.StoreSimulator
             GameObject detail = CreateUIObject("DetailPanel", appRoot.transform, new Vector2(0.62f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0f));
             RectTransform detailRT = detail.GetComponent<RectTransform>();
             detailRT.offsetMin = new Vector2(8f, 16f);
-            detailRT.offsetMax = new Vector2(-16f, -82f);
+            detailRT.offsetMax = new Vector2(-16f, -(ComputerUITheme.HeaderHeight + 12f));
             Image detailBg = detail.AddComponent<Image>();
-            detailBg.color = new Color(0.09f, 0.11f, 0.16f, 0.98f);
+            detailBg.color = ComputerUITheme.PanelDarkBg;
 
             VerticalLayoutGroup detailLayout = detail.AddComponent<VerticalLayoutGroup>();
             detailLayout.padding = new RectOffset(16, 16, 16, 16);
@@ -482,17 +482,18 @@ namespace FLOBUK.StoreSimulator
             detailLayout.childForceExpandHeight = false;
             detailLayout.childForceExpandWidth = true;
 
-            detailTitle = CreateText("DetailTitle", detail.transform, "Empleado #1", 24, TextAlignmentOptions.Left);
-            detailStatus = CreateText("DetailStatus", detail.transform, "Estado:", 20, TextAlignmentOptions.Left);
-            detailCost = CreateText("DetailCost", detail.transform, "Costo:", 18, TextAlignmentOptions.Left);
-            detailWorkstation = CreateText("DetailWorkstation", detail.transform, "Puesto: —", 17, TextAlignmentOptions.Left);
-            detailHint = CreateText("DetailHint", detail.transform, "", 15, TextAlignmentOptions.TopLeft);
+            detailTitle      = CreateText("DetailTitle",      detail.transform, "Empleado #1",  ComputerUITheme.FontHeader, TextAlignmentOptions.Left);
+            detailStatus     = CreateText("DetailStatus",     detail.transform, "Estado:",       ComputerUITheme.FontBody,   TextAlignmentOptions.Left);
+            detailCost       = CreateText("DetailCost",       detail.transform, "Costo:",        ComputerUITheme.FontBody,   TextAlignmentOptions.Left);
+            detailWorkstation= CreateText("DetailWorkstation",detail.transform, "Puesto: —",     ComputerUITheme.FontSmall,  TextAlignmentOptions.Left);
+            detailHint       = CreateText("DetailHint",       detail.transform, "",              ComputerUITheme.FontSmall,  TextAlignmentOptions.TopLeft);
             detailHint.textWrappingMode = TextWrappingModes.Normal;
+            detailHint.color = ComputerUITheme.TextMuted;
 
-            hireButton = CreateActionButton(detail.transform, "HireButton", "Contratar", new Color(0.14f, 0.42f, 0.22f, 1f));
-            cashierButton = CreateActionButton(detail.transform, "CashierButton", "Asignar: Cajero", new Color(0.10f, 0.38f, 0.58f, 1f));
-            restockerButton = CreateActionButton(detail.transform, "RestockerButton", "Asignar: Surtidor", new Color(0.45f, 0.30f, 0.08f, 1f));
-            assignStationButton = CreateActionButton(detail.transform, "AssignStationButton", "Asignar Puesto de Trabajo", new Color(0.35f, 0.15f, 0.50f, 1f));
+            hireButton          = CreateActionButton(detail.transform, "HireButton",         "Contratar",               ComputerUITheme.ButtonPositive);
+            cashierButton       = CreateActionButton(detail.transform, "CashierButton",      "Asignar: Cajero",         ComputerUITheme.ButtonSecondary);
+            restockerButton     = CreateActionButton(detail.transform, "RestockerButton",    "Asignar: Surtidor",       ComputerUITheme.NodeAccentImprovement);
+            assignStationButton = CreateActionButton(detail.transform, "AssignStationButton","Asignar Puesto de Trabajo", ComputerUITheme.NodeAccentEmployee);
         }
 
 
