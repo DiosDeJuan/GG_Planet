@@ -690,6 +690,7 @@ namespace FLOBUK.StoreSimulator
             GameObject lineObj = CreateUIObject("Line", linesContainer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             Image img = lineObj.AddComponent<Image>();
             img.raycastTarget = false;
+            img.color = Color.clear; // Prevent white-flash before ConnectionLineUI.UpdateColor() runs
             lineObj.AddComponent<ConnectionLineUI>();
             lineObj.transform.SetAsFirstSibling();
             return lineObj;

@@ -195,6 +195,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ProductPurchaseProbabilityAdapter>();
             if (systems.GetComponent<EmployeeCashierCoordinator>() == null)
                 systems.AddComponent<EmployeeCashierCoordinator>();
+            if (systems.GetComponent<EmployeeNPCSpawner>() == null)
+                systems.AddComponent<EmployeeNPCSpawner>();
         }
 
 
