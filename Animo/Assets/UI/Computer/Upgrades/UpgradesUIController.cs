@@ -227,7 +227,7 @@ namespace FLOBUK.StoreSimulator
 
                         string title = reqNode != null ? reqNode.title : reqId;
                         bool unlocked = reqNode != null && reqNode.isUnlocked;
-                        sb.Append(title).Append(unlocked ? " ✓" : " ✗");
+                        sb.Append(title).Append(unlocked ? " [OK]" : " [NO]");
                         if (i < node.requiredNodeIds.Count - 1)
                             sb.AppendLine();
                     }

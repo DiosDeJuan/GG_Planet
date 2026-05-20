@@ -53,7 +53,7 @@ namespace FLOBUK.StoreSimulator
         // employeeId → spawned NPC GameObject
         private readonly Dictionary<int, GameObject> spawnedNPCs = new Dictionary<int, GameObject>();
 
-        private readonly MaterialPropertyBlock _mpb = new MaterialPropertyBlock();
+        private MaterialPropertyBlock _mpb;
 
         public static EmployeeNPCSpawner Instance { get; private set; }
 
@@ -61,6 +61,7 @@ namespace FLOBUK.StoreSimulator
 
         void Awake()
         {
+            _mpb = new MaterialPropertyBlock();
             if (Instance != null && Instance != this)
             {
                 Destroy(this);

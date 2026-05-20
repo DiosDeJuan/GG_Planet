@@ -306,8 +306,6 @@ namespace FLOBUK.StoreSimulator
         public static void RegisterProductOutOfStock(ProductScriptableObject product)
         {
             // Hook prepared. No achievement completion until a real event source is available.
-            Debug.Log(LogPrefix + "Product out of stock (hook): '" +
-                      (product != null ? product.title : "?") + "'.");
         }
 
         /// <summary>

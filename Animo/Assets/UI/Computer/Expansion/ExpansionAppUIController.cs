@@ -119,7 +119,7 @@ namespace FLOBUK.StoreSimulator
                 new Vector2(0f, 0.90f), new Vector2(1f, 1f),
                 new Color(0.08f, 0.09f, 0.12f, 0.98f), 4f, 2f);
 
-            CreateLabel("TitleLabel", header, "🗺  Mapa del Terreno", 20,
+            CreateLabel("TitleLabel", header, "[MAPA]  Mapa del Terreno", 20,
                 TextAlignmentOptions.MidlineLeft,
                 new Vector2(0f, 0f), new Vector2(0.30f, 1f));
 
@@ -145,7 +145,7 @@ namespace FLOBUK.StoreSimulator
                 new Vector2(0f, 0.94f), new Vector2(1f, 1f),
                 new Color(0.07f, 0.08f, 0.11f, 0.96f), 2f, 2f);
             CreateLabel("LegendText", mapLegend,
-                "V=Venta   A=Almacén   O=Oficina   ✓Comprado  +Disponible  ✗Bloqueado",
+                "V=Venta   A=Almacén   O=Oficina   [OK]Comprado  +Disponible  [NO]Bloqueado",
                 10, TextAlignmentOptions.MidlineLeft,
                 Vector2.zero, Vector2.one);
 
@@ -406,6 +406,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnZonesChanged()
         {
+            if (this == null) return;
             if (!isActiveAndEnabled)
                 return;
 
@@ -418,6 +419,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnZonesReset()
         {
+            if (this == null) return;
             // Full data reset (load from file): force map rebuild on next show.
             mapBuilt = false;
             selectedZoneId = null;
@@ -427,6 +429,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnMoneyUpdate(string current, string change)
         {
+            if (this == null) return;
             if (!isActiveAndEnabled)
                 return;
 
@@ -523,9 +526,9 @@ namespace FLOBUK.StoreSimulator
         {
             switch (state)
             {
-                case ExpansionZoneState.Purchased: return "Comprada ✓";
+                case ExpansionZoneState.Purchased: return "Comprada [OK]";
                 case ExpansionZoneState.Available: return "Disponible";
-                default:                           return "Bloqueada ✗";
+                default:                           return "Bloqueada [NO]";
             }
         }
     }

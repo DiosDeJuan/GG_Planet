@@ -77,6 +77,8 @@ namespace FLOBUK.StoreSimulator
         private Vector3 sunRotation = Vector3.zero;
 
 
+        private static bool _warnedNullInstance;
+
         //initialize references
         void Awake()
         {
@@ -115,6 +117,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static string GetTimeString()
         {
+            if (Instance == null) return "00:00 am";
             int hours = Instance.currentTime / 3600; // Integer division for hours
             int minutes = Instance.currentTime % 3600 / 60; // Remainder divided by 60 for minutes
 
@@ -135,6 +138,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static string GetDayString()
         {
+            if (Instance == null) return "Day 0";
             return "Day " + Instance.currentDay;
         }
 
@@ -144,6 +148,11 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static StoreOpenState GetStoreOpenState()
         {
+            if (Instance == null)
+            {
+                if (!_warnedNullInstance) { _warnedNullInstance = true; Debug.LogWarning("[DayCycle] Instance is null — returning Waiting state."); }
+                return StoreOpenState.Waiting;
+            }
             if (Instance.currentTime <= Instance.openingHours.x * 3600)
                 return StoreOpenState.Waiting;
 
