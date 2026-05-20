@@ -77,7 +77,8 @@ namespace FLOBUK.StoreSimulator
         {
             if (!StoreDatabase.CanPurchase(purchasable.buyPrice))
             {
-                UIGame.Instance.ShowMessage("Not enough money to purchase this object");
+                long missing = purchasable.buyPrice - StoreDatabase.Instance.currentMoney;
+                UIGame.Instance.ShowMessage("Fondos insuficientes. Faltan " + StoreDatabase.FromLongToStringMoney(missing) + ".");
                 return;
             }
 
@@ -101,6 +102,16 @@ namespace FLOBUK.StoreSimulator
                     break;
             }
 
+            onUpgradePurchase?.Invoke(purchasable);
+        }
+
+
+        /// <summary>
+        /// Fires the onUpgradePurchase event without deducting money or changing state.
+        /// Used by bridge systems (e.g. EntrepreneurTreeLicenseBridge) to signal a free unlock.
+        /// </summary>
+        public static void NotifyPurchase(PurchasableScriptableObject purchasable)
+        {
             onUpgradePurchase?.Invoke(purchasable);
         }
 

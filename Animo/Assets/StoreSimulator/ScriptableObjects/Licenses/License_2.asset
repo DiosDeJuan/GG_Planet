@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: License_2
   m_EditorClassIdentifier: 
   id: 2
-  title: License 2
+  title: Productos Básicos 3
   icon: {fileID: 21300000, guid: 49453af233bd1964ba9aa2ed83975d4f, type: 3}
   requiredLevel: 3
   buyPrice: 20000

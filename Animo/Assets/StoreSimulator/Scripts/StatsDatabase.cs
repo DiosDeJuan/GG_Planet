@@ -82,6 +82,8 @@ namespace FLOBUK.StoreSimulator
         public string lowStockProductNames { get; private set; } = string.Empty;
         public int outOfStockSalesToday { get; private set; }
         public int unavailableProductComplaints { get; private set; }
+        public int extraSalesCount { get; private set; }
+        public int zeroPriceSalesCount { get; private set; }
 
         private const int LowStockThreshold = 3;
         private const int MaxLowStockNamesInReport = 8;
@@ -125,6 +127,7 @@ namespace FLOBUK.StoreSimulator
             recoveredProductsByName.Clear();
             outOfStockProductsByName.Clear();
             outOfStockSalesToday = unavailableProductComplaints = 0;
+            extraSalesCount = zeroPriceSalesCount = 0;
             lowStockProductCount = outOfStockProductCount = 0;
             lowStockProductNames = string.Empty;
             expansionZonesPurchasedToday = 0;
@@ -327,6 +330,8 @@ namespace FLOBUK.StoreSimulator
             int unavailableComplaintsD = data["unavailableProductComplaints"].AsInt;
             string outOfStockSoldNames = FormatTopProductsFromJson(data["outOfStockProductsByName"].AsArray);
             int achievesToday    = data["achievementsCompletedToday"].AsInt;
+            int extraSalesD      = data["extraSalesCount"].AsInt;
+            int zeroPriceSalesD  = data["zeroPriceSalesCount"].AsInt;
 
             var sb = new StringBuilder();
 
@@ -374,6 +379,10 @@ namespace FLOBUK.StoreSimulator
                 sb.Append("- Detalle: ").Append(lowStockNames).Append('\n');
             if (!string.IsNullOrEmpty(outOfStockSoldNames))
                 sb.Append("- Agotados vendidos: ").Append(outOfStockSoldNames).Append('\n');
+            if (extraSalesD > 0)
+                sb.Append("- Ventas extra (precio bajo): ").Append(extraSalesD).Append('\n');
+            if (zeroPriceSalesD > 0)
+                sb.Append("- Vendidos a $0.00: ").Append(zeroPriceSalesD).Append('\n');
 
             sb.Append("\nLogros:\n");
             sb.Append("- Desbloqueados hoy: ").Append(achievesToday).Append('\n');
@@ -413,6 +422,30 @@ namespace FLOBUK.StoreSimulator
             if (product != null)
                 Instance.AccumulateName(Instance.outOfStockProductsByName, product.title, 1);
             Debug.Log("[Inventory] Customer complaint for unavailable product: " + (product != null ? product.title : "Unknown"));
+        }
+
+        /// <summary>
+        /// Call this when a customer picks up an extra unit due to below-ideal pricing.
+        /// Tracks total extra purchases for the daily report.
+        /// </summary>
+        public static void RegisterExtraSale(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            Instance.extraSalesCount++;
+            Debug.Log("[Pricing] Extra sale registered for '" + (product != null ? product.title : "?")
+                + "' (total today: " + Instance.extraSalesCount + ").");
+        }
+
+        /// <summary>
+        /// Call this when a customer buys a product whose fixedPrice was $0.00.
+        /// Tracks total zero-price sales for the daily report.
+        /// </summary>
+        public static void RegisterZeroPriceSale(ProductScriptableObject product)
+        {
+            if (Instance == null) return;
+            Instance.zeroPriceSalesCount++;
+            Debug.Log("[Pricing] Zero-price sale registered for '" + (product != null ? product.title : "?")
+                + "' (total today: " + Instance.zeroPriceSalesCount + ").");
         }
 
 
@@ -599,6 +632,8 @@ namespace FLOBUK.StoreSimulator
             data["outOfStockSalesToday"] = outOfStockSalesToday;
             data["unavailableProductComplaints"] = unavailableProductComplaints;
             data["outOfStockProductsByName"] = SerializeDictionary(outOfStockProductsByName);
+            data["extraSalesCount"] = extraSalesCount;
+            data["zeroPriceSalesCount"] = zeroPriceSalesCount;
             
             return data;
         }
@@ -650,6 +685,8 @@ namespace FLOBUK.StoreSimulator
             outOfStockSalesToday = data["outOfStockSalesToday"].AsInt;
             unavailableProductComplaints = data["unavailableProductComplaints"].AsInt;
             DeserializeDictionary(data["outOfStockProductsByName"].AsArray, outOfStockProductsByName);
+            extraSalesCount = data["extraSalesCount"].AsInt;
+            zeroPriceSalesCount = data["zeroPriceSalesCount"].AsInt;
         }
 
 

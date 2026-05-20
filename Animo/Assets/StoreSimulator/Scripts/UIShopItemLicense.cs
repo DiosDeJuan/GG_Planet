@@ -37,7 +37,7 @@ namespace FLOBUK.StoreSimulator
             {
                 LicenseScriptableObject otherLicense = ItemDatabase.GetById(typeof(LicenseScriptableObject), license.otherRequired) as LicenseScriptableObject;
                 lockedOverlay.SetActive(!otherLicense.isPurchased);
-                lockedMessage.text = "Requires License " + otherLicense.title;
+                lockedMessage.text = "Requiere: " + otherLicense.title;
             }
 
             purchasedOverlay.SetActive(license.isPurchased);
