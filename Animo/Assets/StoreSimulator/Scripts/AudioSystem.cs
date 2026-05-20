@@ -81,6 +81,7 @@ namespace FLOBUK.StoreSimulator
         {
             //cancel execution if clip wasn't set
             if (clip == null) return;
+            if (Instance == null || Instance.audioSource == null) return;
 
             Instance.audioSource.PlayOneShot(clip);
         }

@@ -433,7 +433,7 @@ namespace FLOBUK.StoreSimulator
                 data["version"] = 2;
 
                 string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
-                File.WriteAllBytes(path, Encoding.UTF8.GetBytes(data.ToString()));
+                WriteAtomic(path, Encoding.UTF8.GetBytes(data.ToString()));
                 Debug.Log(LogPrefix + "Expansion data saved (" + purchasedZoneIds.Count + " zones).");
             }
             catch (Exception ex)
@@ -520,6 +520,21 @@ namespace FLOBUK.StoreSimulator
             zones.Clear();
             purchasedZoneIds.Clear();
             EnsureDefaultZones();
+        }
+
+        private static void WriteAtomic(string path, byte[] bytes)
+        {
+            string tempPath = path + ".tmp";
+            string backupPath = path + SaveGameSystem.backupExt;
+            File.WriteAllBytes(tempPath, bytes);
+            byte[] verify = File.ReadAllBytes(tempPath);
+            if (verify == null || verify.Length != bytes.Length)
+                throw new IOException("Temporary save verification failed.");
+            if (File.Exists(path))
+                File.Copy(path, backupPath, true);
+            if (File.Exists(path))
+                File.Delete(path);
+            File.Move(tempPath, path);
         }
 
         void OnDestroy()

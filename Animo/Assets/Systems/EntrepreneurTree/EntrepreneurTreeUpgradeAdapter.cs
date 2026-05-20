@@ -23,8 +23,8 @@ namespace FLOBUK.StoreSimulator
         public static EntrepreneurTreeUpgradeAdapter Instance { get; private set; }
 
         [Header("Optional runtime bonus application")]
-        [Tooltip("Enabled by default: charismatic applies +5% only on positive money deltas not already boosted by checkout flows.")]
-        public bool applyCharismaticBonusOnMoneyEvents = true;
+        [Tooltip("Optional fallback. Keep disabled so Carismático only affects cashier-handled sales.")]
+        public bool applyCharismaticBonusOnMoneyEvents = false;
 
         private bool hasCaffeine;
         private bool hasCharismatic;
@@ -96,10 +96,16 @@ namespace FLOBUK.StoreSimulator
 
         public void CreditSaleIncome(long baseIncome)
         {
+            CreditSaleIncome(baseIncome, false);
+        }
+
+
+        public void CreditSaleIncome(long baseIncome, bool cashierHandledSale)
+        {
             if (baseIncome <= 0)
                 return;
 
-            long finalIncome = ApplySalesBonus(baseIncome);
+            long finalIncome = cashierHandledSale ? ApplySalesBonus(baseIncome) : baseIncome;
             applyingSalesBonus = true;
             try
             {

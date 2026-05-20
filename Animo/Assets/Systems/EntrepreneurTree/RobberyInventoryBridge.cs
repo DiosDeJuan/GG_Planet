@@ -172,7 +172,7 @@ namespace FLOBUK.StoreSimulator
                 PlacementObject placement = placements[i];
                 if (placement == null || !placement.IsPlaceable(product))
                     continue;
-                if (placement.storageType != product.storageType)
+                if (!ShelfProductSlotSystem.CanPlaceProductOnFurniture(product, placement))
                     continue;
 
                 if (placement.product == product)

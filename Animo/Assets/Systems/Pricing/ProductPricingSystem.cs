@@ -167,9 +167,14 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public float GetPurchaseProbability(ProductScriptableObject product)
         {
+            return GetPurchaseProbabilityForPrice(product, product != null ? product.storePrice : 0L);
+        }
+
+        public float GetPurchaseProbabilityForPrice(ProductScriptableObject product, long currentPriceCents)
+        {
             if (product == null) return 0f;
             long ideal   = GetIdealPrice(product);
-            long current = product.storePrice;
+            long current = currentPriceCents;
             if (ideal <= 0) return 1f;
             if (current <= ideal) return 1f;
             float over = (float)(current - ideal) / ideal;
@@ -183,9 +188,14 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public float GetExtraPurchaseProbability(ProductScriptableObject product)
         {
+            return GetExtraPurchaseProbabilityForPrice(product, product != null ? product.storePrice : 0L);
+        }
+
+        public float GetExtraPurchaseProbabilityForPrice(ProductScriptableObject product, long currentPriceCents)
+        {
             if (product == null) return 0f;
             long ideal   = GetIdealPrice(product);
-            long current = product.storePrice;
+            long current = currentPriceCents;
             if (ideal <= 0 || current >= ideal) return 0f;
             float under = (float)(ideal - current) / ideal;
             return Mathf.Clamp01(under * 0.10f);

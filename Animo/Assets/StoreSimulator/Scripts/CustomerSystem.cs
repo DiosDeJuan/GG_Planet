@@ -25,6 +25,9 @@ namespace FLOBUK.StoreSimulator
         /// The boolean describes whether they were happy (true) or unhappy (false).
         /// </summary>
         public static event Action<bool> onCustomerLeft;
+
+        public static event Action<int> onCustomerEntered;
+        public static event Action<int> onDailyCustomerPlanCreated;
        
         /// <summary>
         /// Rate for spawning per real time minute. E.g. 5 = 5 new customers per minute.
@@ -87,6 +90,20 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public Transform[] spawnLocations;
 
+        [Header("ShopMaster Daily Demand")]
+        [Tooltip("Minimum customers scheduled for a new day before expansion bonuses.")]
+        public int minDailyCustomers = 50;
+
+        [Tooltip("Maximum customers scheduled for a new day before expansion bonuses.")]
+        public int maxDailyCustomers = 75;
+
+        [Tooltip("Safety cap for live customer instances.")]
+        public int maxSimultaneousCustomers = 100;
+
+        public int dailyCustomersScheduled { get; private set; }
+        public int dailyCustomersSpawned { get; private set; }
+        public int activeCustomers { get; private set; }
+
 
         //initialize references
         void Awake()
@@ -119,6 +136,9 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void CustomerLeft(bool wasHappy = false)
         {
+            if (Instance != null && Instance.activeCustomers > 0)
+                Instance.activeCustomers--;
+
             onCustomerLeft?.Invoke(wasHappy);
         }
 
@@ -191,21 +211,32 @@ namespace FLOBUK.StoreSimulator
         //it starts spawning customers after the store has been opened
         private void StartSpawning()
         {
+            StopAllCoroutines();
+            CancelInvoke();
+            PlanDailyCustomers();
             StartCoroutine(SpawnCustomers());
         }
 
 
-        //the actual spawn routine, distributing customer spawn across one minute
+        //the actual spawn routine, distributing the daily customer plan across the day
         private IEnumerator SpawnCustomers()
         {
-            while(true)
+            if (dailyCustomersScheduled <= 0)
+                yield break;
+
+            int dayLength = DayCycleSystem.Instance != null ? DayCycleSystem.Instance.lengthDaySeconds : 600;
+            float interval = Mathf.Max(1f, dayLength / (float)dailyCustomersScheduled);
+
+            while (dailyCustomersSpawned < dailyCustomersScheduled &&
+                   DayCycleSystem.GetStoreOpenState() == StoreOpenState.Open)
             {
-                for(int i = 0; i < spawnRate; i++)
+                if (activeCustomers < Mathf.Max(1, maxSimultaneousCustomers))
                 {
-                    Invoke("SpawnCustomer", UnityEngine.Random.Range(1, 60));
+                    SpawnCustomer();
                 }
 
-                yield return new WaitForSeconds(60); 
+                float jitter = UnityEngine.Random.Range(interval * 0.75f, interval * 1.25f);
+                yield return new WaitForSeconds(jitter);
             }
         }
 
@@ -213,9 +244,15 @@ namespace FLOBUK.StoreSimulator
         //instantiation of the random customer prefab at their initial random location
         private void SpawnCustomer()
         {
+            if (customerPrefabs == null || customerPrefabs.Length == 0 || spawnLocations == null || spawnLocations.Length == 0)
+                return;
+
             GameObject prefab = customerPrefabs[UnityEngine.Random.Range(0, customerPrefabs.Length)];
             Vector3 spawnPosition = spawnLocations[UnityEngine.Random.Range(0, spawnLocations.Length)].position;
             Instantiate(prefab, spawnPosition, Quaternion.identity);
+            activeCustomers++;
+            dailyCustomersSpawned++;
+            onCustomerEntered?.Invoke(dailyCustomersSpawned);
         }
 
 
@@ -224,6 +261,29 @@ namespace FLOBUK.StoreSimulator
         {
             StopAllCoroutines();
             CancelInvoke();
+        }
+
+
+        private void PlanDailyCustomers()
+        {
+            int min = Mathf.Max(1, minDailyCustomers);
+            int max = Mathf.Max(min, maxDailyCustomers);
+            int basePlan = UnityEngine.Random.Range(min, max + 1);
+            float multiplier = SupermarketExpansionSystem.Instance != null
+                ? SupermarketExpansionSystem.Instance.GetCustomerCapacityMultiplier()
+                : 1f;
+
+            dailyCustomersScheduled = Mathf.Max(1, Mathf.RoundToInt(basePlan * multiplier));
+            dailyCustomersSpawned = 0;
+            activeCustomers = 0;
+
+            int dayLength = DayCycleSystem.Instance != null ? DayCycleSystem.Instance.lengthDaySeconds : 600;
+            float minutes = Mathf.Max(1f, dayLength / 60f);
+            spawnRate = Mathf.Max(1, Mathf.RoundToInt(dailyCustomersScheduled / minutes));
+
+            Debug.Log("[ShopMaster] Daily customer plan: " + dailyCustomersScheduled
+                + " customers (base=" + basePlan + ", multiplier=" + multiplier.ToString("0.00") + ").");
+            onDailyCustomerPlanCreated?.Invoke(dailyCustomersScheduled);
         }
 
 
@@ -239,6 +299,9 @@ namespace FLOBUK.StoreSimulator
             data["multipleProductRate"] = multipleProductRate;
             data["duplicateProductRate"] = duplicateProductRate;
             data["payCashRate"] = payCashRate;
+            data["minDailyCustomers"] = minDailyCustomers;
+            data["maxDailyCustomers"] = maxDailyCustomers;
+            data["maxSimultaneousCustomers"] = maxSimultaneousCustomers;
             
             return data;
         }
@@ -257,6 +320,9 @@ namespace FLOBUK.StoreSimulator
             multipleProductRate = data["multipleProductRate"].AsInt;
             duplicateProductRate = data["duplicateProductRate"].AsInt;
             payCashRate = data["payCashRate"].AsInt;
+            if (data.HasKey("minDailyCustomers")) minDailyCustomers = data["minDailyCustomers"].AsInt;
+            if (data.HasKey("maxDailyCustomers")) maxDailyCustomers = data["maxDailyCustomers"].AsInt;
+            if (data.HasKey("maxSimultaneousCustomers")) maxSimultaneousCustomers = data["maxSimultaneousCustomers"].AsInt;
         }
 
 

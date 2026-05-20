@@ -132,6 +132,9 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public bool IsPlaceable(ProductScriptableObject p)
         {
+            if (!ShelfProductSlotSystem.CanPlaceProductOnFurniture(p, this))
+                return false;
+
             if(IsEmpty())
                 return GetPlacementPositions(p).Length > 0;
 

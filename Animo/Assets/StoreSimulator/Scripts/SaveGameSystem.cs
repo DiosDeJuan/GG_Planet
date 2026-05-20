@@ -30,6 +30,7 @@ namespace FLOBUK.StoreSimulator
         /// The file extension of the persistentDataPath file.
         /// </summary>
         public const string fileExt = ".dat";
+        public const string backupExt = ".bak";
 
         /// <summary>
         /// Fired when a data save action finished.
@@ -82,23 +83,35 @@ namespace FLOBUK.StoreSimulator
             string fileName = otherKey == string.Empty ? fileKey : otherKey;
             JSONNode data = new JSONObject();
 
-            data["UISettings"] = UISettings.Instance.SaveToJSON();
-            data["ItemDatabase"] = ItemDatabase.Instance.SaveToJSON();
-            data["StoreDatabase"] = StoreDatabase.Instance.SaveToJSON();
-            data["DayCycleSystem"] = DayCycleSystem.Instance.SaveToJSON();
-            data["StorageSystem"] = StorageSystem.Instance.SaveToJSON();
-            data["DeliverySystem"] = DeliverySystem.Instance.SaveToJSON();
-            data["DailyEventSystem"] = DailyEventSystem.Instance.SaveToJSON();
-            data["CustomerSystem"] = CustomerSystem.Instance.SaveToJSON();
-            data["TutorialSystem"] = TutorialSystem.Instance.SaveToJSON();
-            data["StatsDatabase"] = StatsDatabase.Instance.SaveToJSON();
+            SafeSaveComponent(data, "UISettings", () => UISettings.Instance != null ? UISettings.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "ItemDatabase", () => ItemDatabase.Instance != null ? ItemDatabase.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "StoreDatabase", () => StoreDatabase.Instance != null ? StoreDatabase.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "DayCycleSystem", () => DayCycleSystem.Instance != null ? DayCycleSystem.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "StorageSystem", () => StorageSystem.Instance != null ? StorageSystem.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "DeliverySystem", () => DeliverySystem.Instance != null ? DeliverySystem.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "DailyEventSystem", () => DailyEventSystem.Instance != null ? DailyEventSystem.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "CustomerSystem", () => CustomerSystem.Instance != null ? CustomerSystem.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "TutorialSystem", () => TutorialSystem.Instance != null ? TutorialSystem.Instance.SaveToJSON() : new JSONObject());
+            SafeSaveComponent(data, "StatsDatabase", () => StatsDatabase.Instance != null ? StatsDatabase.Instance.SaveToJSON() : new JSONObject());
 
-            byte[] dataAsBytes = Encoding.ASCII.GetBytes(data.ToString());
-            try { File.WriteAllBytes(Application.persistentDataPath + "/" + fileName + fileExt, dataAsBytes); }
-            catch (Exception) { }
+            byte[] dataAsBytes = Encoding.UTF8.GetBytes(data.ToString());
+            string path = Path.Combine(Application.persistentDataPath, fileName + fileExt);
+            try
+            {
+                WriteAtomic(path, dataAsBytes);
+                Debug.Log("[SaveSystem] Save completed: " + path);
+                if (UIGame.Instance != null)
+                    UIGame.AddNotification("Partida guardada correctamente.", otherColor: new Color(0.25f, 0.80f, 0.40f));
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[SaveSystem] Save failed. Last valid backup was preserved. " + e.Message);
+                if (UIGame.Instance != null)
+                    UIGame.AddNotification("Error al guardar. Se conservó el último respaldo.", otherColor: new Color(1f, 0.30f, 0.20f));
+            }
 
             //notify subscribed scripts of data update
-            dataSaveEvent?.Invoke();
+            InvokeEventSafe(dataSaveEvent, "dataSaveEvent");
         }
 
 
@@ -111,10 +124,23 @@ namespace FLOBUK.StoreSimulator
             string fileName = otherKey == string.Empty ? fileKey : otherKey;
             string dataString = string.Empty;
 
-            if (File.Exists(Application.persistentDataPath + "/" + fileKey + fileExt))
+            string path = Path.Combine(Application.persistentDataPath, fileName + fileExt);
+            if (File.Exists(path))
             {
-                byte[] dataAsBytes = File.ReadAllBytes(Application.persistentDataPath + "/" + fileKey + fileExt);
-                dataString = Encoding.ASCII.GetString(dataAsBytes);
+                try
+                {
+                    byte[] dataAsBytes = File.ReadAllBytes(path);
+                    dataString = Encoding.UTF8.GetString(dataAsBytes);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SaveSystem] Load failed for primary save. Trying backup. " + e.Message);
+                    dataString = TryReadBackup(path);
+                }
+            }
+            else
+            {
+                dataString = TryReadBackup(path);
             }
             
             //savegame not found - create new game instead
@@ -124,7 +150,24 @@ namespace FLOBUK.StoreSimulator
                 return;
             }
 
-            Instance.gameData = JSON.Parse(dataString);
+            Instance.gameData = TryParseSaveData(dataString, path, false);
+            if (Instance.gameData == null)
+            {
+                string backupString = TryReadBackup(path);
+                Instance.gameData = TryParseSaveData(backupString, path, true);
+                if (Instance.gameData == null)
+                {
+                    Debug.LogWarning("[SaveSystem] Primary and backup saves are invalid. Starting new game.");
+                    if (UIGame.Instance != null)
+                        UIGame.AddNotification("No se pudo cargar la partida. Iniciando partida segura.", otherColor: new Color(1f, 0.30f, 0.20f));
+                    New();
+                    return;
+                }
+
+                Debug.LogWarning("[SaveSystem] Primary save was invalid. Backup loaded successfully.");
+                if (UIGame.Instance != null)
+                    UIGame.AddNotification("Save principal danado. Cargando backup.", otherColor: new Color(1f, 0.65f, 0.18f));
+            }
             SceneManager.sceneLoaded += Instance.OnSceneLoaded;
         }
 
@@ -143,24 +186,143 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        private static void WriteAtomic(string path, byte[] bytes)
+        {
+            string directory = Path.GetDirectoryName(path);
+            if (!Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            string tempPath = path + ".tmp";
+            string backupPath = path + backupExt;
+
+            File.WriteAllBytes(tempPath, bytes);
+
+            // Basic integrity check before replacing the known-good save.
+            byte[] verifyBytes = File.ReadAllBytes(tempPath);
+            if (verifyBytes == null || verifyBytes.Length != bytes.Length)
+                throw new IOException("Temporary save verification failed.");
+            if (JSON.Parse(Encoding.UTF8.GetString(verifyBytes)) == null)
+                throw new IOException("Temporary save JSON validation failed.");
+
+            if (File.Exists(path))
+                File.Copy(path, backupPath, true);
+
+            if (File.Exists(path))
+                File.Delete(path);
+            File.Move(tempPath, path);
+        }
+
+
+        private static void SafeSaveComponent(JSONNode root, string key, Func<JSONNode> saveFunc)
+        {
+            try
+            {
+                JSONNode componentData = saveFunc != null ? saveFunc() : new JSONObject();
+                root[key] = componentData ?? new JSONObject();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[SaveSystem] Could not collect save data for " + key + ": " + e.Message);
+                root[key] = new JSONObject();
+            }
+        }
+
+
+        private static void SafeLoadComponent(string key, JSONNode root, Action<JSONNode> loadAction)
+        {
+            try
+            {
+                loadAction?.Invoke(root != null ? root[key] : null);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[SaveSystem] Could not load data for " + key + ": " + e.Message);
+            }
+        }
+
+
+        private static void InvokeEventSafe(Action evt, string eventName)
+        {
+            if (evt == null)
+                return;
+
+            Delegate[] listeners = evt.GetInvocationList();
+            for (int i = 0; i < listeners.Length; i++)
+            {
+                Action listener = listeners[i] as Action;
+                if (listener == null)
+                    continue;
+
+                try
+                {
+                    listener();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning("[SaveSystem] Listener failed during " + eventName + ": " + e.Message);
+                }
+            }
+        }
+
+
+        private static string TryReadBackup(string path)
+        {
+            string backupPath = path + backupExt;
+            if (!File.Exists(backupPath))
+                return string.Empty;
+
+            try
+            {
+                Debug.LogWarning("[SaveSystem] Loading backup save: " + backupPath);
+                return Encoding.UTF8.GetString(File.ReadAllBytes(backupPath));
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[SaveSystem] Backup load failed: " + e.Message);
+                return string.Empty;
+            }
+        }
+
+
+        private static JSONNode TryParseSaveData(string dataString, string path, bool isBackup)
+        {
+            if (string.IsNullOrEmpty(dataString))
+                return null;
+
+            try
+            {
+                JSONNode parsed = JSON.Parse(dataString);
+                if (parsed == null)
+                    Debug.LogWarning("[SaveSystem] " + (isBackup ? "Backup" : "Primary") + " save JSON parse returned null: " + path);
+                return parsed;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[SaveSystem] " + (isBackup ? "Backup" : "Primary") + " save JSON parse failed: " + e.Message);
+                return null;
+            }
+        }
+
+
         //called on scene change for both a new or loaded save file
         //this makes sure we apply our local save file to the game systems in the scene
         //OnSceneLoaded is called after Awake(), but before Start(), making it possible to time actions
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            UISettings.Instance.LoadFromJSON(gameData["UISettings"]);
-            ItemDatabase.Instance.LoadFromJSON(gameData["ItemDatabase"]);
-            StoreDatabase.Instance.LoadFromJSON(gameData["StoreDatabase"]);
-            DayCycleSystem.Instance.LoadFromJSON(gameData["DayCycleSystem"]);
-            StorageSystem.Instance.LoadFromJSON(gameData["StorageSystem"]);
-            DeliverySystem.Instance.LoadFromJSON(gameData["DeliverySystem"]);
-            DailyEventSystem.Instance.LoadFromJSON(gameData["DailyEventSystem"]);
-            CustomerSystem.Instance.LoadFromJSON(gameData["CustomerSystem"]);
-            TutorialSystem.Instance.LoadFromJSON(gameData["TutorialSystem"]);
-            StatsDatabase.Instance.LoadFromJSON(gameData["StatsDatabase"]);
+            JSONNode data = gameData ?? new JSONObject();
+            SafeLoadComponent("UISettings", data, node => { if (UISettings.Instance != null) UISettings.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("ItemDatabase", data, node => { if (ItemDatabase.Instance != null) ItemDatabase.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("StoreDatabase", data, node => { if (StoreDatabase.Instance != null) StoreDatabase.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("DayCycleSystem", data, node => { if (DayCycleSystem.Instance != null) DayCycleSystem.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("StorageSystem", data, node => { if (StorageSystem.Instance != null) StorageSystem.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("DeliverySystem", data, node => { if (DeliverySystem.Instance != null) DeliverySystem.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("DailyEventSystem", data, node => { if (DailyEventSystem.Instance != null) DailyEventSystem.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("CustomerSystem", data, node => { if (CustomerSystem.Instance != null) CustomerSystem.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("TutorialSystem", data, node => { if (TutorialSystem.Instance != null) TutorialSystem.Instance.LoadFromJSON(node); });
+            SafeLoadComponent("StatsDatabase", data, node => { if (StatsDatabase.Instance != null) StatsDatabase.Instance.LoadFromJSON(node); });
             
             //notify subscribed scripts of data update
-            dataLoadEvent?.Invoke();
+            InvokeEventSafe(dataLoadEvent, "dataLoadEvent");
             SceneManager.sceneLoaded -= Instance.OnSceneLoaded;
         }
     }

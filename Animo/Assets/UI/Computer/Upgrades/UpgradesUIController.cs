@@ -44,7 +44,10 @@ namespace FLOBUK.StoreSimulator
         private Button backToLegacyButton;
 
         private bool treeBuilt;
-        private bool listenersBound;
+        private bool treeEventsBound;
+        private bool unlockButtonListenerBound;
+        private bool openTreeButtonListenerBound;
+        private bool backTreeButtonListenerBound;
         private bool autoConfigured;
         private int lastFocusFrame = -1;
 
@@ -302,23 +305,30 @@ namespace FLOBUK.StoreSimulator
 
         private void BindListeners()
         {
-            if (listenersBound)
-                return;
-
-            EntrepreneurTreeManager.onPointsChanged += OnPointsChanged;
-            EntrepreneurTreeManager.onNodeUnlocked += OnNodeUnlocked;
-
-            if (infoUnlockButton)
+            if (!treeEventsBound)
             {
-                infoUnlockButton.onClick.AddListener(OnUnlockButtonClicked);
+                EntrepreneurTreeManager.onPointsChanged += OnPointsChanged;
+                EntrepreneurTreeManager.onNodeUnlocked += OnNodeUnlocked;
+                treeEventsBound = true;
             }
 
-            if (openTreeButton != null)
-                openTreeButton.onClick.AddListener(ShowTreeView);
-            if (backToLegacyButton != null)
-                backToLegacyButton.onClick.AddListener(ShowLegacyView);
+            if (infoUnlockButton && !unlockButtonListenerBound)
+            {
+                infoUnlockButton.onClick.AddListener(OnUnlockButtonClicked);
+                unlockButtonListenerBound = true;
+            }
 
-            listenersBound = true;
+            if (openTreeButton != null && !openTreeButtonListenerBound)
+            {
+                openTreeButton.onClick.AddListener(ShowTreeView);
+                openTreeButtonListenerBound = true;
+            }
+
+            if (backToLegacyButton != null && !backTreeButtonListenerBound)
+            {
+                backToLegacyButton.onClick.AddListener(ShowLegacyView);
+                backTreeButtonListenerBound = true;
+            }
         }
 
 
@@ -413,6 +423,7 @@ namespace FLOBUK.StoreSimulator
             Debug.Log(LogPrefix + "Tree root resolved: " + rootTransform.name + ".");
             Debug.Log(LogPrefix + "Content parent resolved: " + (treeScrollContent != null ? treeScrollContent.name : "null") + ".");
             EnsureTreeOpenButton();
+            BindListeners();
         }
 
 
@@ -826,20 +837,30 @@ namespace FLOBUK.StoreSimulator
 
         void OnDestroy()
         {
-            if (!listenersBound)
-                return;
+            if (treeEventsBound)
+            {
+                EntrepreneurTreeManager.onPointsChanged -= OnPointsChanged;
+                EntrepreneurTreeManager.onNodeUnlocked -= OnNodeUnlocked;
+                treeEventsBound = false;
+            }
 
-            EntrepreneurTreeManager.onPointsChanged -= OnPointsChanged;
-            EntrepreneurTreeManager.onNodeUnlocked -= OnNodeUnlocked;
-
-            if (infoUnlockButton)
+            if (infoUnlockButton && unlockButtonListenerBound)
+            {
                 infoUnlockButton.onClick.RemoveListener(OnUnlockButtonClicked);
-            if (openTreeButton != null)
-                openTreeButton.onClick.RemoveListener(ShowTreeView);
-            if (backToLegacyButton != null)
-                backToLegacyButton.onClick.RemoveListener(ShowLegacyView);
+                unlockButtonListenerBound = false;
+            }
 
-            listenersBound = false;
+            if (openTreeButton != null && openTreeButtonListenerBound)
+            {
+                openTreeButton.onClick.RemoveListener(ShowTreeView);
+                openTreeButtonListenerBound = false;
+            }
+
+            if (backToLegacyButton != null && backTreeButtonListenerBound)
+            {
+                backToLegacyButton.onClick.RemoveListener(ShowLegacyView);
+                backTreeButtonListenerBound = false;
+            }
         }
     }
 }

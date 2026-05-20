@@ -137,6 +137,76 @@ namespace FLOBUK.StoreSimulator
 
 
         /// <summary>
+        /// Attempts to collect one more unit of the current wishlist product.
+        /// Used by ShopMaster's below-ideal price extra-purchase rule.
+        /// </summary>
+        public bool TryAddExtraCurrentProduct()
+        {
+            if (!ShouldCollect() || GetMissingCount() <= 0 || !CanCollect())
+                return false;
+
+            Add();
+            return true;
+        }
+
+
+        /// <summary>
+        /// Best-effort recovery for customers who abandon checkout after waiting.
+        /// It returns their bagged products to compatible existing placements so
+        /// stock is not silently lost.
+        /// </summary>
+        public void RestoreItemsToShelves()
+        {
+            if (items == null || items.Count == 0)
+                return;
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                CustomerBagItem item = items[i];
+                if (item == null || item.product == null)
+                    continue;
+
+                for (int c = 0; c < item.count; c++)
+                    RestoreSingleItem(item.product);
+            }
+
+            items.Clear();
+        }
+
+
+        private void RestoreSingleItem(ProductScriptableObject product)
+        {
+            if (product == null)
+                return;
+
+#if UNITY_2022_2_OR_NEWER
+            PlacementObject[] placements = FindObjectsByType<PlacementObject>(FindObjectsSortMode.None);
+#else
+            PlacementObject[] placements = FindObjectsOfType<PlacementObject>();
+#endif
+            for (int i = 0; i < placements.Length; i++)
+            {
+                PlacementObject placement = placements[i];
+                if (placement == null || !placement.IsPlaceable(product))
+                    continue;
+                if (!placement.IsEmpty() && placement.product != product)
+                    continue;
+                if (ProductInventorySystem.Instance != null &&
+                    !ProductInventorySystem.Instance.ValidatePlacement(product, placement))
+                    continue;
+
+                Quaternion worldRotation = placement.transform.rotation * Quaternion.Euler(0, placement.orientation, 0);
+                Vector3 localPosition = placement.Add(product);
+                Vector3 worldPosition = placement.container.TransformPoint(localPosition);
+                Instantiate(product.prefab, worldPosition, worldRotation, placement.container);
+                return;
+            }
+
+            Debug.LogWarning("[CustomerWait] Could not restore abandoned product to a shelf: " + product.title);
+        }
+
+
+        /// <summary>
         /// Returns the count of individual items in the bag.
         /// </summary>
         public int GetItemsCount()

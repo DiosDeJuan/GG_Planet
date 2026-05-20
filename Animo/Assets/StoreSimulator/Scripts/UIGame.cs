@@ -146,6 +146,8 @@ namespace FLOBUK.StoreSimulator
         private Dictionary<string, GameObject> actionsDic = new Dictionary<string, GameObject>();
         //coroutine for the error message to enable access to it
         private Coroutine messageCoroutine;
+        private static bool missingNotificationWarningShown;
+        private static bool missingNotificationComponentWarningShown;
 
 
         //initialize references
@@ -293,11 +295,39 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void AddNotification(string text, Sprite otherIcon = null, Color? otherColor = null, float otherDuration = 0)
         {
+            if (Instance == null)
+            {
+                if (!missingNotificationWarningShown)
+                {
+                    Debug.LogWarning("[ShopMaster] Notification skipped because UIGame.Instance is not available.");
+                    missingNotificationWarningShown = true;
+                }
+                return;
+            }
+
+            if (Instance.notificationPrefab == null || Instance.notificationContainer == null)
+            {
+                if (!missingNotificationWarningShown)
+                {
+                    Debug.LogWarning("[ShopMaster] Notification skipped because notification prefab/container is missing.");
+                    missingNotificationWarningShown = true;
+                }
+                return;
+            }
+
             GameObject obj = Instantiate(Instance.notificationPrefab, Instance.notificationContainer, false);
             UINotification notification = obj.GetComponent<UINotification>();
 
-            notification.Initialize(text, otherIcon, otherColor, otherDuration);
-            AudioSystem.Play2D(Instance.notificationClip);
+            if (notification != null)
+                notification.Initialize(text, otherIcon, otherColor, otherDuration);
+            else if (!missingNotificationComponentWarningShown)
+            {
+                Debug.LogWarning("[ShopMaster] Notification prefab has no UINotification component.");
+                missingNotificationComponentWarningShown = true;
+            }
+
+            if (Instance.notificationClip != null)
+                AudioSystem.Play2D(Instance.notificationClip);
         }
 
 

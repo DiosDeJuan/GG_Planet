@@ -55,10 +55,10 @@ namespace FLOBUK.StoreSimulator
             if (ShoplifterSystem.Instance != null)
                 data["ShoplifterSystem"] = ShoplifterSystem.Instance.SaveToJSON();
 
-            byte[] bytes = Encoding.ASCII.GetBytes(data.ToString());
+            byte[] bytes = Encoding.UTF8.GetBytes(data.ToString());
             string path  = Path.Combine(Application.persistentDataPath, fileName + SaveGameSystem.fileExt);
 
-            try { File.WriteAllBytes(path, bytes); }
+            try { WriteAtomic(path, bytes); }
             catch (Exception e)
             {
                 Debug.LogWarning(LogPrefix + "Failed to save progress data at path '" + path + "': " + e.Message);
@@ -93,7 +93,7 @@ namespace FLOBUK.StoreSimulator
             try
             {
                 bytes = File.ReadAllBytes(path);
-                json = Encoding.ASCII.GetString(bytes);
+                json = Encoding.UTF8.GetString(bytes);
             }
             catch (Exception e)
             {
@@ -158,7 +158,7 @@ namespace FLOBUK.StoreSimulator
             try
             {
                 byte[] bytes = File.ReadAllBytes(path);
-                string json  = Encoding.ASCII.GetString(bytes);
+                string json  = Encoding.UTF8.GetString(bytes);
                 if (string.IsNullOrEmpty(json))
                     return new JSONObject();
 
@@ -171,6 +171,24 @@ namespace FLOBUK.StoreSimulator
                 Debug.LogWarning(LogPrefix + "ReadComponentData(\"" + component + "\") failed: " + e.Message);
                 return new JSONObject();
             }
+        }
+
+
+        private static void WriteAtomic(string path, byte[] bytes)
+        {
+            string tempPath = path + ".tmp";
+            string backupPath = path + SaveGameSystem.backupExt;
+
+            File.WriteAllBytes(tempPath, bytes);
+            byte[] verify = File.ReadAllBytes(tempPath);
+            if (verify == null || verify.Length != bytes.Length)
+                throw new IOException("Temporary save verification failed.");
+
+            if (File.Exists(path))
+                File.Copy(path, backupPath, true);
+            if (File.Exists(path))
+                File.Delete(path);
+            File.Move(tempPath, path);
         }
     }
 }

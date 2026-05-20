@@ -162,12 +162,6 @@ namespace FLOBUK.StoreSimulator
                 reason = "Este nodo ya está desbloqueado.";
                 return false;
             }
-            if (Instance.currentPoints < node.cost)
-            {
-                reason = "No tienes puntos de progreso suficientes.";
-                return false;
-            }
-
             List<string> missingNames = null;
             foreach (string reqId in node.requiredNodeIds)
             {
@@ -183,6 +177,12 @@ namespace FLOBUK.StoreSimulator
             if (missingNames != null && missingNames.Count > 0)
             {
                 reason = "Faltan requisitos: " + string.Join(", ", missingNames);
+                return false;
+            }
+
+            if (Instance.currentPoints < node.cost)
+            {
+                reason = "No tienes puntos de progreso suficientes.";
                 return false;
             }
 

@@ -67,7 +67,16 @@ namespace FLOBUK.StoreSimulator
         {
             if (product == null) return false;
             if (ProductPricingSystem.Instance == null) return true; // safe fallback
-            return ProductPricingSystem.Instance.ShouldCustomerBuy(product);
+            float probability = ProductPricingSystem.Instance.GetPurchaseProbability(product);
+            bool result = Random.value <= probability;
+#if UNITY_EDITOR
+            Debug.Log(LogPrefix + "QA buy decision product=" + product.title
+                + " ideal=" + StoreDatabase.FromLongToStringMoney(ProductPricingSystem.Instance.GetIdealPrice(product))
+                + " current=" + StoreDatabase.FromLongToStringMoney(product.storePrice)
+                + " probability=" + Mathf.RoundToInt(probability * 100f) + "%"
+                + " result=" + result);
+#endif
+            return result;
         }
 
         /// <summary>
@@ -79,7 +88,15 @@ namespace FLOBUK.StoreSimulator
         {
             if (product == null) return false;
             if (ProductPricingSystem.Instance == null) return false;
-            return ProductPricingSystem.Instance.ShouldCustomerBuyExtra(product);
+            float probability = ProductPricingSystem.Instance.GetExtraPurchaseProbability(product);
+            bool result = probability > 0f && Random.value <= probability;
+#if UNITY_EDITOR
+            Debug.Log(LogPrefix + "QA extra decision product=" + product.title
+                + " current=" + StoreDatabase.FromLongToStringMoney(product.storePrice)
+                + " extraProbability=" + Mathf.RoundToInt(probability * 100f) + "%"
+                + " result=" + result);
+#endif
+            return result;
         }
 
         /// <summary>

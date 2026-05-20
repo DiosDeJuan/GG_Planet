@@ -53,6 +53,11 @@ namespace FLOBUK.StoreSimulator
             return securityLevel;
         }
 
+        public int GetCurrentSecurityLevel()
+        {
+            return securityLevel;
+        }
+
 
         public float GetArrestChance()
         {
@@ -64,6 +69,26 @@ namespace FLOBUK.StoreSimulator
         public float GetAutoArrestChance()
         {
             return arrestChance;
+        }
+
+        public float GetAutomaticArrestChance()
+        {
+            return arrestChance;
+        }
+
+        public string GetSecuritySystemName()
+        {
+            switch (securityLevel)
+            {
+                case 1:
+                    return "Camaras";
+                case 2:
+                    return "Guardias";
+                case 3:
+                    return "Alarma";
+                default:
+                    return "Sin seguridad";
+            }
         }
 
 
@@ -94,7 +119,13 @@ namespace FLOBUK.StoreSimulator
             if (arrestChance <= 0f)
                 return false;
 
-            return UnityEngine.Random.value <= arrestChance;
+            float roll = UnityEngine.Random.value;
+            bool success = roll <= arrestChance;
+            Debug.Log(LogPrefix + "Automatic arrest roll. Level=" + securityLevel
+                + ", Chance=" + arrestChance.ToString("0.00")
+                + ", Roll=" + roll.ToString("0.00")
+                + ", Result=" + (success ? "success" : "fail"));
+            return success;
         }
 
 

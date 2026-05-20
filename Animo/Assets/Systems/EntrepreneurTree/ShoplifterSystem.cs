@@ -95,8 +95,7 @@ namespace FLOBUK.StoreSimulator
             agent.Initialize(this, customer, type);
             activeAgents[id] = agent;
             StatsDatabase.RegisterThiefAppeared();
-            if (UIGame.Instance != null)
-                UIGame.AddNotification("Un ladrón está actuando en la tienda.", otherColor: new Color(0.92f, 0.16f, 0.16f));
+            ShowShoplifterNotification("Ladron detectado en la tienda.", new Color(0.92f, 0.16f, 0.16f));
             Debug.Log(LogPrefix + (isForced ? "[AdminMode] " : "") + "Assigned thief type " + type + " to customer " + id);
         }
 
@@ -136,10 +135,37 @@ namespace FLOBUK.StoreSimulator
 
         public bool TryAutomaticArrest(ShoplifterAgent agent)
         {
-            if (agent == null || EntrepreneurTreeSecurityAdapter.Instance == null)
+            if (agent == null)
                 return false;
 
-            return EntrepreneurTreeSecurityAdapter.Instance.TryAutomaticArrest();
+            EntrepreneurTreeSecurityAdapter security = EntrepreneurTreeSecurityAdapter.Instance;
+            if (security == null)
+            {
+                Debug.Log("[Security] Automatic arrest unavailable. Security adapter is missing.");
+                return false;
+            }
+
+            int level = security.GetCurrentSecurityLevel();
+            float chance = security.GetAutomaticArrestChance();
+            if (level <= 0 || chance <= 0f)
+            {
+                Debug.Log("[Security] Automatic arrest skipped. No security level is unlocked.");
+                return false;
+            }
+
+            float roll = UnityEngine.Random.value;
+            bool success = roll <= chance;
+            Debug.Log("[Security] Automatic arrest roll. Level=" + level
+                + ", System=" + security.GetSecuritySystemName()
+                + ", Chance=" + chance.ToString("0.00")
+                + ", Roll=" + roll.ToString("0.00")
+                + ", Result=" + (success ? "success" : "fail"));
+
+            if (!success)
+                ShowShoplifterNotification(security.GetSecuritySystemName() + " detecto actividad, pero el ladron sigue escapando.",
+                    new Color(1f, 0.45f, 0.15f));
+
+            return success;
         }
 
 
@@ -149,8 +175,8 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             StatsDatabase.RegisterThiefDetected(agent.stolenValue, agent.stolenProductsCount, agent.stolenItems);
-            UIGame.AddNotification("¡Ladrón detectado! Valor objetivo: " + StoreDatabase.FromLongToStringMoney(agent.stolenValue),
-                otherColor: new Color(1f, 0.28f, 0.18f));
+            ShowShoplifterNotification("Ladron detectado. Valor robado: " + StoreDatabase.FromLongToStringMoney(agent.stolenValue),
+                new Color(1f, 0.28f, 0.18f));
         }
 
 
@@ -171,9 +197,12 @@ namespace FLOBUK.StoreSimulator
 
             StatsDatabase.RegisterThiefAutomaticArrest(restoredCount, restoredValue, agent.stolenItems);
             AchievementSystem.RegisterThiefCaptured();
-            UIGame.AddNotification("¡Ladrón arrestado automáticamente!", otherColor: new Color(0.2f, 0.8f, 0.24f));
+            string securityName = EntrepreneurTreeSecurityAdapter.Instance != null
+                ? EntrepreneurTreeSecurityAdapter.Instance.GetSecuritySystemName()
+                : "Seguridad";
+            ShowShoplifterNotification(securityName + " detuvo un ladron automaticamente.", new Color(0.2f, 0.8f, 0.24f));
             if (restoredCount > 0)
-                UIGame.AddNotification("Productos recuperados: " + restoredCount, otherColor: new Color(0.25f, 0.9f, 0.35f));
+                ShowShoplifterNotification("Productos recuperados: " + restoredCount, new Color(0.25f, 0.9f, 0.35f));
         }
 
 
@@ -192,15 +221,15 @@ namespace FLOBUK.StoreSimulator
                 restoredValue = agent.stolenValue;
             }
 
-            long reward = (long)Mathf.Floor(agent.stolenValue * manualCaptureRewardFraction);
-            if (reward > 0)
-                StoreDatabase.AddRemoveMoney(reward);
+            int pointReward = Mathf.Max(1, Mathf.FloorToInt(agent.stolenProductsCount * manualCaptureRewardFraction) + 1);
+            EntrepreneurTreeManager.AddPoints(pointReward);
+            Debug.Log(LogPrefix + "Manual capture completed. Restored=" + restoredCount + ", RewardPoints=" + pointReward);
+            ShowShoplifterNotification("Ladron detenido manualmente. +" + pointReward + " punto(s) de progreso.", new Color(0.2f, 0.82f, 0.28f));
 
             StatsDatabase.RegisterThiefManualArrest(restoredCount, restoredValue, agent.stolenItems);
             AchievementSystem.RegisterThiefCaptured();
-            UIGame.AddNotification("¡Ladrón detenido por el jugador!", otherColor: new Color(0.2f, 0.82f, 0.28f));
             if (restoredCount > 0)
-                UIGame.AddNotification("Productos recuperados: " + restoredCount, otherColor: new Color(0.25f, 0.9f, 0.35f));
+                ShowShoplifterNotification("Productos recuperados: " + restoredCount, new Color(0.25f, 0.9f, 0.35f));
         }
 
 
@@ -215,8 +244,8 @@ namespace FLOBUK.StoreSimulator
                 StoreDatabase.AddRemoveMoney(-agent.stolenValue);
 
             StatsDatabase.RegisterThiefEscaped(agent.stolenValue, agent.stolenProductsCount, agent.stolenItems);
-            UIGame.AddNotification("Un ladrón escapó con " + StoreDatabase.FromLongToStringMoney(agent.stolenValue) + " en productos.",
-                otherColor: new Color(0.75f, 0.15f, 0.12f));
+            ShowShoplifterNotification("Ladron escapo con " + StoreDatabase.FromLongToStringMoney(agent.stolenValue) + " en productos.",
+                new Color(0.75f, 0.15f, 0.12f));
         }
 
 
@@ -310,7 +339,12 @@ namespace FLOBUK.StoreSimulator
                 moneyFactor = dynamicMoney / 15000000f;
             }
 
-            float combined = Mathf.Clamp01((dayFactor + levelFactor + moneyFactor) * expansionDifficultyMultiplier);
+            int salesExpansions = SupermarketExpansionSystem.Instance != null
+                ? SupermarketExpansionSystem.Instance.GetPurchasedSalesExpansionCount()
+                : 0;
+            float expansionFactor = Mathf.Clamp01(salesExpansions / 10f);
+
+            float combined = Mathf.Clamp01((dayFactor + levelFactor + moneyFactor + expansionFactor) * expansionDifficultyMultiplier);
             return Mathf.Lerp(baseThiefChance, maxThiefChance, combined);
         }
 
@@ -355,8 +389,8 @@ namespace FLOBUK.StoreSimulator
         private void OnDayFinished()
         {
             string summary = StatsDatabase.GetDailyRobberySummary();
-            if (!string.IsNullOrEmpty(summary) && UIGame.Instance != null)
-                UIGame.AddNotification(summary, otherColor: new Color(0.98f, 0.88f, 0.28f));
+            if (!string.IsNullOrEmpty(summary))
+                ShowShoplifterNotification(summary, new Color(0.98f, 0.88f, 0.28f));
         }
 
 
@@ -369,6 +403,18 @@ namespace FLOBUK.StoreSimulator
             adminForceNextThief = true;
             adminForcedType = type;
             Debug.Log("[AdminMode] Forced shoplifter spawn scheduled: type=" + type + ". Affects next customer to enter.");
+        }
+
+
+        public void ShowShoplifterNotification(string message, Color color)
+        {
+            if (string.IsNullOrEmpty(message))
+                return;
+
+            if (UIGame.Instance != null)
+                UIGame.AddNotification(message, otherColor: color);
+            else
+                Debug.Log(LogPrefix + "Notification skipped: " + message);
         }
 
 

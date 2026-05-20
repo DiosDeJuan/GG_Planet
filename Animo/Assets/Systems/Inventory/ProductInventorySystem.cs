@@ -170,7 +170,8 @@ namespace FLOBUK.StoreSimulator
             if (product == null || placement == null)
                 return true; // nothing to validate
 
-            if (product.storageType == placement.storageType)
+            string reason;
+            if (ShelfProductSlotSystem.CanPlaceProductOnFurniture(product, placement, out reason))
                 return true;
 
             string key = product.id.ToString() + "_" + placement.GetInstanceID();
@@ -181,10 +182,13 @@ namespace FLOBUK.StoreSimulator
 
             _lastMismatchNotifyTime[key] = now;
             string msg = string.Format(
-                "Producto incorrecto: {0} debe colocarse en {1}.",
-                product.title, product.storageType);
-            UIGame.AddNotification(msg, otherColor: new Color(1f, 0.30f, 0.30f, 1f));
+                "Producto incorrecto: {0} no puede colocarse en {1}.",
+                product.title, placement.gameObject.name);
+            if (UIGame.Instance != null)
+                UIGame.AddNotification(msg, otherColor: new Color(1f, 0.30f, 0.30f, 1f));
             Debug.LogWarning(LogPrefix + msg);
+            if (!string.IsNullOrEmpty(reason))
+                Debug.LogWarning(LogPrefix + reason);
             AchievementSystem.RegisterWrongPlacement(product);
             return false;
         }

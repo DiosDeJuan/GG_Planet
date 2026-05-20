@@ -216,13 +216,15 @@ namespace FLOBUK.StoreSimulator
                                      0.50f, 0.60f, 1, 1, 4, 0, -4, 0);
             row.priceLabel.alignment = TextAlignmentOptions.BottomRight;
 
-            // Adjust buttons row (bottom-right)
-            // [-$0.50][-$0.10][+$0.10][+$0.50][reset]
-            string[] labels = { "-$0.50", "-$0.10", "+$0.10", "+$0.50", "↺" };
-            long[]   deltas = { -StepLarge, -StepSmall, StepSmall, StepLarge, DeltaReset };
-            Color[]  colors = { ColorDanger, ColorWarning, ColorGood, ColorGood, ColorBtnReset };
+            row.pendingPrice = product.storePrice;
 
-            float btnW = 0.09f;
+            // Adjust buttons row (bottom-right)
+            // [-$0.50][-$0.10][+$0.10][+$0.50][$0][OK][IDEAL]
+            string[] labels = { "-$0.50", "-$0.10", "+$0.10", "+$0.50", "$0", "OK", "IDEAL" };
+            long[]   deltas = { -StepLarge, -StepSmall, StepSmall, StepLarge, 0L, 0L, DeltaReset };
+            Color[]  colors = { ColorDanger, ColorWarning, ColorGood, ColorGood, ColorBtnNeutral, ColorAccent, ColorBtnReset };
+
+            float btnW = 0.07f;
             float btnStart = 0.50f;
             for (int b = 0; b < labels.Length; b++)
             {
@@ -242,10 +244,14 @@ namespace FLOBUK.StoreSimulator
                 ProductScriptableObject capturedProduct = product;
                 btn.onClick.AddListener(() =>
                 {
-                    if (capturedDelta == DeltaReset)
-                        ApplyReset(capturedProduct);
+                    if (captured == 4)
+                        ApplySetZero(row);
+                    else if (captured == 5)
+                        ConfirmPrice(row);
+                    else if (capturedDelta == DeltaReset)
+                        ApplyResetPreview(row);
                     else
-                        ApplyDelta(capturedProduct, capturedDelta);
+                        ApplyDelta(row, capturedDelta);
                 });
 
                 AddText(btnGO, "L", labels[b], 8, FontStyles.Bold, Color.white);
@@ -259,20 +265,48 @@ namespace FLOBUK.StoreSimulator
 
         // ── Button handlers ───────────────────────────────────────────────────────
 
-        private void ApplyDelta(ProductScriptableObject product, long deltaCents)
+        private void ApplyDelta(PricingRow row, long deltaCents)
         {
-            if (product == null || ProductPricingSystem.Instance == null) return;
-            long next = product.storePrice + deltaCents;
-            if (!ProductPricingSystem.Instance.TrySetCurrentPrice(product, next, out string reason))
+            if (row == null || row.product == null || ProductPricingSystem.Instance == null) return;
+            row.pendingPrice += deltaCents;
+            if (statusLabel != null)
+                statusLabel.text = "Pendiente: " + row.product.title + " -> " + StoreDatabase.FromLongToStringMoney(row.pendingPrice);
+            RefreshRow(row);
+        }
+
+        private void ApplySetZero(PricingRow row)
+        {
+            if (row == null || row.product == null) return;
+            row.pendingPrice = 0L;
+            if (statusLabel != null)
+                statusLabel.text = "Precio $0.00: no genera ingresos, pero puede aumentar compra extra.";
+            RefreshRow(row);
+        }
+
+        private void ApplyResetPreview(PricingRow row)
+        {
+            if (row == null || row.product == null || ProductPricingSystem.Instance == null) return;
+            row.pendingPrice = ProductPricingSystem.Instance.GetIdealPrice(row.product);
+            if (statusLabel != null)
+                statusLabel.text = "Pendiente: " + row.product.title + " -> precio ideal.";
+            RefreshRow(row);
+        }
+
+        private void ConfirmPrice(PricingRow row)
+        {
+            if (row == null || row.product == null || ProductPricingSystem.Instance == null) return;
+
+            if (!ProductPricingSystem.Instance.TrySetCurrentPrice(row.product, row.pendingPrice, out string reason))
             {
                 if (statusLabel != null)
                     statusLabel.text = reason;
+                RefreshRow(row);
+                return;
             }
-            else
-            {
-                if (statusLabel != null)
-                    statusLabel.text = product.title + ": " + StoreDatabase.FromLongToStringMoney(next);
-            }
+
+            if (statusLabel != null)
+                statusLabel.text = row.product.title + ": " + StoreDatabase.FromLongToStringMoney(row.pendingPrice) + " confirmado.";
+            RefreshRow(row);
         }
 
         private void ApplyReset(ProductScriptableObject product)
@@ -323,33 +357,44 @@ namespace FLOBUK.StoreSimulator
 
             long ideal   = ProductPricingSystem.Instance.GetIdealPrice(row.product);
             long current = row.product.storePrice;
+            long preview = row.pendingPrice;
             long maxP    = ProductPricingSystem.Instance.GetMaxAllowedPrice(row.product);
-            float prob   = ProductPricingSystem.Instance.GetPurchaseProbability(row.product);
-            float extra  = ProductPricingSystem.Instance.GetExtraPurchaseProbability(row.product);
+            float prob   = ProductPricingSystem.Instance.GetPurchaseProbabilityForPrice(row.product, preview);
+            float extra  = ProductPricingSystem.Instance.GetExtraPurchaseProbabilityForPrice(row.product, preview);
 
             // Price label
-            row.priceLabel.text = StoreDatabase.FromLongToStringMoney(current) +
-                                  "  (ideal: " + StoreDatabase.FromLongToStringMoney(ideal) + ")";
+            row.priceLabel.text = "Actual: " + StoreDatabase.FromLongToStringMoney(current) +
+                                  "  Nuevo: " + StoreDatabase.FromLongToStringMoney(preview) +
+                                  "  ideal: " + StoreDatabase.FromLongToStringMoney(ideal);
 
             // Status
             string stateIcon;
             Color stateColor;
-            if (current == 0)
+            if (preview < 0 || preview > maxP)
+            {
+                row.statusLabel.text = "Fuera de rango. Permitido: $0.00 a " + StoreDatabase.FromLongToStringMoney(maxP);
+                row.statusLabel.color = ColorDanger;
+                row.probLabel.text = "Corrige el precio y confirma.";
+                row.probLabel.color = ColorDanger;
+                return;
+            }
+
+            if (preview == 0)
             {
                 stateIcon  = "🔵 Gratis";
                 stateColor = new Color(0.40f, 0.70f, 1.00f);
             }
-            else if (current < ideal)
+            else if (preview < ideal)
             {
                 stateIcon  = "🔵 Barato";
                 stateColor = new Color(0.40f, 0.70f, 1.00f);
             }
-            else if (current == ideal)
+            else if (preview == ideal)
             {
                 stateIcon  = "💚 Ideal";
                 stateColor = ColorGood;
             }
-            else if (current <= ideal * 2)
+            else if (preview <= ideal * 2)
             {
                 stateIcon  = "🟡 Caro";
                 stateColor = ColorWarning;
@@ -366,9 +411,7 @@ namespace FLOBUK.StoreSimulator
             // Probability
             int probPct  = Mathf.RoundToInt(prob  * 100f);
             int extraPct = Mathf.RoundToInt(extra * 100f);
-            row.probLabel.text = "Prob. compra: " + probPct + "%";
-            if (extraPct > 0)
-                row.probLabel.text += "   +extra: " + extraPct + "%";
+            row.probLabel.text = "Compra: " + probPct + "%   Extra: " + extraPct + "%";
             row.probLabel.color = prob >= 1f ? ColorGood : (prob >= 0.5f ? ColorWarning : ColorDanger);
         }
 
@@ -378,7 +421,11 @@ namespace FLOBUK.StoreSimulator
         {
             if (!isActiveAndEnabled) return;
             PricingRow row = FindRow(product);
-            if (row != null) RefreshRow(row);
+            if (row != null)
+            {
+                row.pendingPrice = product.storePrice;
+                RefreshRow(row);
+            }
         }
 
         private void OnProductNodeUnlocked(NodeData _)
@@ -469,7 +516,8 @@ namespace FLOBUK.StoreSimulator
             public TMP_Text statusLabel;
             public TMP_Text probLabel;
             public TMP_Text priceLabel;
-            public Button[] adjButtons = new Button[5];
+            public long pendingPrice;
+            public Button[] adjButtons = new Button[7];
         }
     }
 }

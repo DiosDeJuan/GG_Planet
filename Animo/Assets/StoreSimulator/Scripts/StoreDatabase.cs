@@ -26,7 +26,7 @@ namespace FLOBUK.StoreSimulator
         /// <summary>
         /// Culture that should be used for formatting currency.
         /// </summary>
-        public static CultureInfo cultureInfo = new CultureInfo("en-US");
+        public static CultureInfo cultureInfo = MoneyFormatter.UsdCulture;
 
         /// <summary>
         /// Event fired when the amount of money changes. Current value, value change.
@@ -94,7 +94,7 @@ namespace FLOBUK.StoreSimulator
         {
             Instance = this;
 
-            cultureInfo.NumberFormat.CurrencyNegativePattern = 1;
+            cultureInfo = MoneyFormatter.UsdCulture;
             CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
             CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
         }
@@ -130,7 +130,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static string FromLongToStringMoney(long money)
         {
-            return (money / 100m).ToString("C", cultureInfo);
+            return MoneyFormatter.Format(money);
         }
 
 
@@ -139,9 +139,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static long FromStringToLongMoney(string money)
         {
-            decimal value = 0;
-            decimal.TryParse(money, NumberStyles.Currency, cultureInfo, out value);
-            return (long)(value * 100m);
+            return MoneyFormatter.ParseToCents(money);
         }
 
 

@@ -47,6 +47,11 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public bool isPlayerControlled { get; private set; }
 
+        /// <summary>
+        /// True while an employee cashier is processing the current customer.
+        /// </summary>
+        public bool isAutomatedCheckoutInProgress { get; private set; }
+
         //previous camera position that should be transitioned back to when leaving
         private Vector3 prevCamPosition;
         //previous camera rotation that should be transitioned back to when leaving
@@ -55,6 +60,8 @@ namespace FLOBUK.StoreSimulator
         private Collider[] cols;
         //reference to Animation component
         private Animation anim;
+        private Coroutine automatedCheckoutRoutine;
+        private bool checkoutAttendedByCashier;
 
 
         //initialize references
@@ -120,6 +127,9 @@ namespace FLOBUK.StoreSimulator
                     itemIndex++;
                 }
             }
+
+            if (customerQueue.Count > 0)
+                customerQueue[0].NotifyCheckoutWaitingForService(this);
         }
         
 
@@ -128,6 +138,9 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public override void Scan(CheckoutItem item)
         {
+            if (customerQueue.Count > 0)
+                customerQueue[0].NotifyCheckoutServiceStarted();
+
             cart.Add(item);
             deskItems.Remove(item);
             AudioSystem.Play3D(scanClip, conveyorPositions.position);
@@ -196,9 +209,24 @@ namespace FLOBUK.StoreSimulator
                 }
             }
 
+            if (customerBag != null)
+            {
+                for (int i = 0; i < customerBag.items.Count; i++)
+                {
+                    CustomerBagItem sold = customerBag.items[i];
+                    if (sold == null || sold.product == null)
+                        continue;
+
+                    if (ProductPurchaseProbabilityAdapter.Instance != null)
+                        ProductPurchaseProbabilityAdapter.Instance.FireSaleHooks(sold.product, sold.fixedPrice);
+                    StatsDatabase.RegisterSoldProduct(sold.product, sold.count);
+                }
+            }
+
             cart.Clear();
+            bool cashierHandledSale = checkoutAttendedByCashier || isAutomatedCheckoutInProgress;
             if (EntrepreneurTreeUpgradeAdapter.Instance != null)
-                EntrepreneurTreeUpgradeAdapter.Instance.CreditSaleIncome(billAmount);
+                EntrepreneurTreeUpgradeAdapter.Instance.CreditSaleIncome(billAmount, cashierHandledSale);
             else
                 StoreDatabase.AddRemoveMoney(billAmount);
             AudioSystem.Play2D(successClip);
@@ -218,6 +246,7 @@ namespace FLOBUK.StoreSimulator
             }
 
             customerBag = null;
+            checkoutAttendedByCashier = false;
             customerQueue[0].GoHome();
             customerQueue.RemoveAt(0);
             StoreDatabase.AddRemoveExperience(3);
@@ -225,6 +254,104 @@ namespace FLOBUK.StoreSimulator
             for (int i = 0; i < customerQueue.Count; i++)
             {
                 customerQueue[i].ProceedQueue(queuePositions.GetChild(i), i + 1);
+            }
+        }
+
+
+        /// <summary>
+        /// Called by EmployeeCashierCoordinator.  Starts a backend checkout flow only
+        /// when the desk is idle for player control and a customer has already placed
+        /// products on the conveyor.
+        /// </summary>
+        public bool TryStartAutomatedCheckout(float speedMultiplier)
+        {
+            if (isPlayerControlled || isAutomatedCheckoutInProgress || customerQueue.Count == 0)
+                return false;
+            if ((terminal != null && terminal.IsInteractable()) || (register != null && register.IsInteractable()))
+                return false;
+            if (customerBag == null || deskItems.Count == 0)
+                return false;
+
+            automatedCheckoutRoutine = StartCoroutine(AutomatedCheckout(speedMultiplier));
+            return true;
+        }
+
+
+        public bool TryCancelWaitingCustomer(Customer customer)
+        {
+            if (customer == null || customerQueue.Count == 0 || customerQueue[0] != customer)
+                return false;
+            if (isPlayerControlled || isAutomatedCheckoutInProgress)
+                return false;
+
+            Debug.Log("[CustomerWait] Customer left checkout after waiting too long.");
+
+            if (customerBag != null)
+                customerBag.RestoreItemsToShelves();
+
+            for (int i = deskItems.Count - 1; i >= 0; i--)
+            {
+                if (deskItems[i] != null)
+                    Destroy(deskItems[i].gameObject);
+            }
+            deskItems.Clear();
+            cart.Clear();
+            customerBag = null;
+
+            customer.ShowUnhappy("Waited too long at checkout.");
+            customer.GoHome();
+            customerQueue.RemoveAt(0);
+
+            for (int i = 0; i < customerQueue.Count; i++)
+                customerQueue[i].ProceedQueue(queuePositions.GetChild(i), i + 1);
+
+            return true;
+        }
+
+
+        private IEnumerator AutomatedCheckout(float speedMultiplier)
+        {
+            isAutomatedCheckoutInProgress = true;
+            speedMultiplier = Mathf.Max(0.1f, speedMultiplier);
+
+            Customer customer = customerQueue.Count > 0 ? customerQueue[0] : null;
+            if (customer != null)
+                customer.NotifyCheckoutServiceStarted();
+
+            int productCount = Mathf.Max(1, deskItems.Count);
+            float scanDuration = productCount * 0.5f;
+            float paymentDuration = customer != null && customer.payCash ? 2.5f : 1.5f;
+            float totalDuration = Mathf.Clamp((scanDuration + paymentDuration) / speedMultiplier, 1f, 12f);
+            float perItemDelay = Mathf.Max(0.05f, (totalDuration - paymentDuration / speedMultiplier) / productCount);
+
+            Debug.Log("[CashierAI] Serving customer at " + name + " in " + totalDuration.ToString("0.0") + "s.");
+
+            while (deskItems.Count > 0)
+            {
+                CheckoutItem item = deskItems[0];
+                if (item != null)
+                    Scan(item);
+                yield return new WaitForSeconds(perItemDelay);
+            }
+
+            yield return new WaitForSeconds(Mathf.Max(0.05f, paymentDuration / speedMultiplier));
+
+            if (customerQueue.Count > 0)
+                customerQueue[0].PausePayment();
+
+            try
+            {
+                if (customerQueue.Count > 0 && customerBag != null)
+                {
+                    checkoutAttendedByCashier = true;
+                    OnBillCustomer(cart.total.text);
+                }
+            }
+            finally
+            {
+                checkoutAttendedByCashier = false;
+                isAutomatedCheckoutInProgress = false;
+                automatedCheckoutRoutine = null;
             }
         }
 
@@ -245,11 +372,19 @@ namespace FLOBUK.StoreSimulator
         public override bool Interact(string actionName)
         {
             if (actionName != "LeftClick") return false;
+            if (isAutomatedCheckoutInProgress)
+            {
+                UIGame.Instance?.ShowMessage("Un cajero ya está atendiendo esta caja.");
+                return false;
+            }
 
             PlayerInput.GetPlayerByIndex(0).onActionTriggered += OnAction;
             UIGame.AddAction("Esc", "Exit");
 
             isPlayerControlled = true;
+            if (customerQueue.Count > 0)
+                customerQueue[0].NotifyCheckoutServiceStarted();
+
             PlayerController.SetMovementState(MovementState.None, false);
 
             for(int i = 0; i < cols.Length; i++)
@@ -364,6 +499,9 @@ namespace FLOBUK.StoreSimulator
         {
             terminal.onInputConfirmed -= OnBillCustomer;
             register.onInputConfirmed -= OnBillCustomer;
+
+            if (automatedCheckoutRoutine != null)
+                StopCoroutine(automatedCheckoutRoutine);
         }
     }
 }

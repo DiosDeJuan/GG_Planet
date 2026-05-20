@@ -23,11 +23,11 @@ namespace FLOBUK.StoreSimulator
     /// • Persists assignments in a separate file "<see cref="SaveFileName"/>.dat"
     ///   by subscribing to <see cref="SaveGameSystem"/>'s save/load events.
     ///
-    /// Log prefix: [Shelf]
+    /// Log prefix: [ShelfSlots]
     /// </summary>
     public class ShelfProductSlotSystem : MonoBehaviour
     {
-        private const string LogPrefix    = "[Shelf] ";
+        private const string LogPrefix    = "[ShelfSlots] ";
         private const string SaveFileName = "shelfSlots";
         private const int    SaveVersion  = 1;
 
@@ -183,12 +183,8 @@ namespace FLOBUK.StoreSimulator
             }
 
             // Validate StorageType compatibility.
-            if (!IsCompatible(product, placement))
+            if (!CanPlaceProductOnFurniture(product, placement, out reason))
             {
-                reason = string.Format(
-                    "Incompatible: {0} ({1}) no puede ir en {2} ({3}).",
-                    product.title, product.storageType,
-                    placement.gameObject.name, placement.storageType);
                 if (UIGame.Instance != null)
                     UIGame.AddNotification(
                         "Mueble incorrecto: " + product.title + " → " + placement.gameObject.name,
@@ -207,6 +203,25 @@ namespace FLOBUK.StoreSimulator
             Debug.Log(LogPrefix + "Assigned '" + product.title + "' → '" + placement.gameObject.name + "'.");
             onSlotsChanged?.Invoke();
             return true;
+        }
+
+        public bool AssignProductToSlot(PlacementObject placement,
+                                        ProductScriptableObject product,
+                                        out string reason)
+        {
+            return AssignProduct(placement, product, out reason);
+        }
+
+        public bool NeedsRestock(PlacementObject placement)
+        {
+            ProductScriptableObject assigned = GetAssignedProduct(placement);
+            if (placement == null || assigned == null)
+                return false;
+            if (!CanPlaceProductOnFurniture(assigned, placement))
+                return false;
+            if (placement.product != null && placement.product != assigned)
+                return true;
+            return placement.IsPlaceable(assigned);
         }
 
         /// <summary>Removes the product assignment for <paramref name="placement"/>.</summary>
@@ -232,13 +247,35 @@ namespace FLOBUK.StoreSimulator
         /// Default (0) always matches any placement.
         /// </summary>
         public static bool IsCompatible(ProductScriptableObject product, PlacementObject placement)
+            => CanPlaceProductOnFurniture(product, placement);
+
+        public static bool CanPlaceProductOnFurniture(ProductScriptableObject product, PlacementObject placement)
         {
+            string reason;
+            return CanPlaceProductOnFurniture(product, placement, out reason);
+        }
+
+        public static bool CanPlaceProductOnFurniture(ProductScriptableObject product,
+                                                      PlacementObject placement,
+                                                      out string reason)
+        {
+            reason = null;
             if (product == null || placement == null)
+            {
+                reason = "Producto o mueble no valido.";
                 return false;
+            }
             // Default storageType on product = any placement is OK.
             if (product.storageType == StorageType.Default)
                 return true;
-            return product.storageType == placement.storageType;
+            if (product.storageType == placement.storageType)
+                return true;
+
+            reason = string.Format(
+                "Incompatible: {0} ({1}) no puede ir en {2} ({3}).",
+                product.title, product.storageType,
+                placement.gameObject.name, placement.storageType);
+            return false;
         }
 
         // ── Save / Load ────────────────────────────────────────────────────────
@@ -263,7 +300,7 @@ namespace FLOBUK.StoreSimulator
             string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
             try
             {
-                File.WriteAllText(path, root.ToString());
+                WriteAtomic(path, System.Text.Encoding.UTF8.GetBytes(root.ToString()));
                 Debug.Log(LogPrefix + "Saved " + arr.Count + " slot assignment(s).");
             }
             catch (Exception ex)
@@ -277,7 +314,7 @@ namespace FLOBUK.StoreSimulator
             _assignments.Clear();
 
             string path = Path.Combine(Application.persistentDataPath, SaveFileName + SaveGameSystem.fileExt);
-            if (!File.Exists(path))
+            if (!File.Exists(path) && !File.Exists(path + SaveGameSystem.backupExt))
             {
                 Debug.Log(LogPrefix + "No saved slot file found — starting fresh.");
                 ScanScene();
@@ -286,11 +323,10 @@ namespace FLOBUK.StoreSimulator
 
             try
             {
-                string json = File.ReadAllText(path);
-                JSONNode root = JSON.Parse(json);
+                JSONNode root = ReadSlotSave(path);
                 if (root == null)
                 {
-                    Debug.LogWarning(LogPrefix + "Slot save file is empty or invalid.");
+                    Debug.LogWarning(LogPrefix + "Slot save file and backup are empty or invalid.");
                     ScanScene();
                     return;
                 }
@@ -366,18 +402,65 @@ namespace FLOBUK.StoreSimulator
         {
             if (string.IsNullOrEmpty(idStr))
                 return null;
-            if (!int.TryParse(idStr, out int id))
-                return null;
-
             List<PurchasableScriptableObject> all =
                 ItemDatabase.GetByType(typeof(ProductScriptableObject));
             for (int i = 0; i < all.Count; i++)
             {
                 ProductScriptableObject product = all[i] as ProductScriptableObject;
-                if (product != null && product.id == id)
+                if (product != null && product.id.ToString() == idStr)
                     return product;
             }
             return null;
+        }
+
+        private static void WriteAtomic(string path, byte[] bytes)
+        {
+            string tempPath = path + ".tmp";
+            string backupPath = path + SaveGameSystem.backupExt;
+            File.WriteAllBytes(tempPath, bytes);
+            byte[] verify = File.ReadAllBytes(tempPath);
+            if (verify == null || verify.Length != bytes.Length)
+                throw new IOException("Temporary save verification failed.");
+            if (JSON.Parse(System.Text.Encoding.UTF8.GetString(verify)) == null)
+                throw new IOException("Temporary slot save JSON validation failed.");
+            if (File.Exists(path))
+                File.Copy(path, backupPath, true);
+            if (File.Exists(path))
+                File.Delete(path);
+            File.Move(tempPath, path);
+        }
+
+        private static JSONNode ReadSlotSave(string path)
+        {
+            JSONNode primary = TryParseSlotSave(path);
+            if (primary != null)
+                return primary;
+
+            string backupPath = path + SaveGameSystem.backupExt;
+            JSONNode backup = TryParseSlotSave(backupPath);
+            if (backup != null)
+            {
+                Debug.LogWarning(LogPrefix + "Primary slot save invalid. Loaded backup.");
+                return backup;
+            }
+
+            return null;
+        }
+
+        private static JSONNode TryParseSlotSave(string path)
+        {
+            if (!File.Exists(path) && !File.Exists(path + SaveGameSystem.backupExt))
+                return null;
+
+            try
+            {
+                return JSON.Parse(File.ReadAllText(path));
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(LogPrefix + "Could not read slot save '" + path + "': " + ex.Message);
+                return null;
+            }
         }
     }
 }

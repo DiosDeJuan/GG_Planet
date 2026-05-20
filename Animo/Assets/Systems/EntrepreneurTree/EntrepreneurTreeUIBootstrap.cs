@@ -127,6 +127,9 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ExpansionStorageCapacityAdapter>();
                 systems.AddComponent<ProductInventorySystem>();
                 systems.AddComponent<ShelfProductSlotSystem>();
+                systems.AddComponent<ProductPricingSystem>();
+                systems.AddComponent<ProductPurchaseProbabilityAdapter>();
+                systems.AddComponent<EmployeeCashierCoordinator>();
             }
             else
             {
@@ -183,6 +186,12 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ProductInventorySystem>();
             if (systems.GetComponent<ShelfProductSlotSystem>() == null)
                 systems.AddComponent<ShelfProductSlotSystem>();
+            if (systems.GetComponent<ProductPricingSystem>() == null)
+                systems.AddComponent<ProductPricingSystem>();
+            if (systems.GetComponent<ProductPurchaseProbabilityAdapter>() == null)
+                systems.AddComponent<ProductPurchaseProbabilityAdapter>();
+            if (systems.GetComponent<EmployeeCashierCoordinator>() == null)
+                systems.AddComponent<EmployeeCashierCoordinator>();
         }
 
 

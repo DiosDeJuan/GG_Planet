@@ -67,6 +67,12 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void Purchase(PurchasableScriptableObject purchasable)
         {
+            if (purchasable == null)
+            {
+                Debug.LogWarning("[Orders] Purchase blocked: purchasable is null.");
+                return;
+            }
+
             //get amount of products in the package
             int amount = 1;
             if (purchasable is ProductScriptableObject)
@@ -79,22 +85,49 @@ namespace FLOBUK.StoreSimulator
                     return;
                 }
 
-                amount = (purchasable as ProductScriptableObject).packageCount;
+                amount = Mathf.Max(1, product.packageCount);
             }
 
-            if (!StoreDatabase.CanPurchase(purchasable.buyPrice * amount))
+            if (StoreDatabase.Instance == null)
             {
-                UIGame.Instance.ShowMessage("Not enough money to purchase this item");
+                Debug.LogWarning("[Orders] Purchase blocked: StoreDatabase.Instance is null.");
+                return;
+            }
+
+            if (Instance == null || Instance.packagePrefab == null || Instance.deliveryStart == null)
+            {
+                string setupMessage = "No se pudo crear el pedido: sistema de entregas no disponible.";
+                UIGame.Instance?.ShowMessage(setupMessage);
+                Debug.LogWarning("[Orders] Purchase blocked: DeliverySystem is not fully configured.");
+                return;
+            }
+
+            long totalCost = purchasable.buyPrice * amount;
+            if (!StoreDatabase.CanPurchase(totalCost))
+            {
+                long missingFunds = Math.Max(0L, totalCost - StoreDatabase.Instance.currentMoney);
+                string message = "Fondos insuficientes. Faltan " + StoreDatabase.FromLongToStringMoney(missingFunds) + ".";
+                UIGame.Instance?.ShowMessage(message);
+                Debug.Log("[Orders] Purchase blocked for " + purchasable.title + ": missing "
+                    + StoreDatabase.FromLongToStringMoney(missingFunds) + ".");
                 return;
             }
 
             //subtract money
-            StoreDatabase.AddRemoveMoney(-purchasable.buyPrice * amount);
+            StoreDatabase.AddRemoveMoney(-totalCost);
 
             //spawn package and amount of items within that package
             Vector3 deliveryPosition = Instance.GetDeliveryPosition();
             GameObject newPackage = Instantiate(Instance.packagePrefab, deliveryPosition + new Vector3(0, 2, 0), Quaternion.identity);
             PackageObject packageObject = newPackage.GetComponent<PackageObject>();
+            if (packageObject == null)
+            {
+                Debug.LogWarning("[Orders] Package prefab is missing PackageObject. Refunding failed order.");
+                StoreDatabase.AddRemoveMoney(totalCost);
+                Destroy(newPackage);
+                return;
+            }
+
             packageObject.Add(purchasable, amount);
 
             onProductPurchase?.Invoke(purchasable as ProductScriptableObject);

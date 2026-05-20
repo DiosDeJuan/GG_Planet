@@ -41,6 +41,8 @@ namespace FLOBUK.StoreSimulator
         private ShoplifterInteractable interactable;
         private bool initialized;
         private bool theftStarted;
+        private bool inventoryRestored;
+        private bool inventoryLossConfirmed;
         private float baseSpeed;
         // Material created for the floating indicator — destroyed with this component.
         private Material indicatorMaterial;
@@ -90,7 +92,7 @@ namespace FLOBUK.StoreSimulator
 
             isEscaping = true;
             interactable.SetInteractable(true);
-            UIGame.AddNotification("Seguridad falló. Intervén manualmente.", otherColor: new Color(1f, 0.45f, 0.15f));
+            system.ShowShoplifterNotification("Seguridad fallo. Interven manualmente.", new Color(1f, 0.45f, 0.15f));
             owner.GoHome();
             return true;
         }
@@ -125,19 +127,25 @@ namespace FLOBUK.StoreSimulator
         {
             restoredCount = 0;
             restoredValue = 0;
-            if (inventoryBridge == null || reservedItems.Count == 0)
+            if (inventoryRestored || inventoryLossConfirmed || inventoryBridge == null || reservedItems.Count == 0)
                 return false;
 
-            return inventoryBridge.RestoreStolenItems(reservedItems, out restoredCount, out restoredValue);
+            bool restored = inventoryBridge.RestoreStolenItems(reservedItems, out restoredCount, out restoredValue);
+            if (restored)
+                inventoryRestored = true;
+            return restored;
         }
 
 
         public bool ConfirmInventoryLoss()
         {
-            if (inventoryBridge == null || reservedItems.Count == 0)
+            if (inventoryRestored || inventoryLossConfirmed || inventoryBridge == null || reservedItems.Count == 0)
                 return false;
 
-            return inventoryBridge.ConfirmStolenItems(reservedItems);
+            bool confirmed = inventoryBridge.ConfirmStolenItems(reservedItems);
+            if (confirmed)
+                inventoryLossConfirmed = true;
+            return confirmed;
         }
 
 

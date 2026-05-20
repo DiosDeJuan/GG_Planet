@@ -45,12 +45,18 @@ namespace FLOBUK.StoreSimulator
         /// Cache for count of customers who left unhappy.
         /// </summary>
         public int customersUnhappy { get; private set; }
+        public int customersScheduled { get; private set; }
+        public int customersEntered { get; private set; }
+        public long salaryExpenses { get; private set; }
+        public long rentExpenses { get; private set; }
+        public long utilityExpenses { get; private set; }
 
         public int thievesAppeared { get; private set; }
         public int thievesDetected { get; private set; }
         public int thievesAutoArrested { get; private set; }
         public int thievesManualArrested { get; private set; }
         public int thievesEscaped { get; private set; }
+        public long robberyValueStolen { get; private set; }
         public long robberyMoneyLost { get; private set; }
         public long robberyValueRecovered { get; private set; }
         public int robbedProducts { get; private set; }
@@ -74,12 +80,16 @@ namespace FLOBUK.StoreSimulator
         public int lowStockProductCount { get; private set; }
         public int outOfStockProductCount { get; private set; }
         public string lowStockProductNames { get; private set; } = string.Empty;
+        public int outOfStockSalesToday { get; private set; }
+        public int unavailableProductComplaints { get; private set; }
 
         private const int LowStockThreshold = 3;
         private const int MaxLowStockNamesInReport = 8;
 
         private readonly Dictionary<string, int> robbedProductsByName = new Dictionary<string, int>();
         private readonly Dictionary<string, int> recoveredProductsByName = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> outOfStockProductsByName = new Dictionary<string, int>();
+        private bool dailyExpensesApplied;
 
 
         //initialize references
@@ -92,6 +102,8 @@ namespace FLOBUK.StoreSimulator
             DayCycleSystem.onDayLoaded += OnDayLoaded;
             DayCycleSystem.onDayOver += OnDayOver;
             CustomerSystem.onCustomerLeft += OnCustomerLeft;
+            CustomerSystem.onCustomerEntered += OnCustomerEntered;
+            CustomerSystem.onDailyCustomerPlanCreated += OnDailyCustomerPlanCreated;
             SupermarketExpansionSystem.onZonePurchased += OnZonePurchased;
             AchievementSystem.onAchievementCompleted += OnAchievementCompleted;
         }
@@ -103,11 +115,18 @@ namespace FLOBUK.StoreSimulator
             moneyEarned = moneySpent = 0;
             xpEarned = 0;
             customersHappy = customersUnhappy = 0;
+            customersScheduled = customersEntered = 0;
+            salaryExpenses = rentExpenses = utilityExpenses = 0;
+            dailyExpensesApplied = false;
             thievesAppeared = thievesDetected = thievesAutoArrested = thievesManualArrested = thievesEscaped = 0;
-            robberyMoneyLost = robberyValueRecovered = 0;
+            robberyValueStolen = robberyMoneyLost = robberyValueRecovered = 0;
             robbedProducts = recoveredProducts = 0;
             robbedProductsByName.Clear();
             recoveredProductsByName.Clear();
+            outOfStockProductsByName.Clear();
+            outOfStockSalesToday = unavailableProductComplaints = 0;
+            lowStockProductCount = outOfStockProductCount = 0;
+            lowStockProductNames = string.Empty;
             expansionZonesPurchasedToday = 0;
             achievementsCompletedToday = 0;
             RefreshEmployeeSnapshot();
@@ -145,6 +164,18 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        private void OnCustomerEntered(int enteredToday)
+        {
+            customersEntered = Mathf.Max(customersEntered, enteredToday);
+        }
+
+
+        private void OnDailyCustomerPlanCreated(int scheduled)
+        {
+            customersScheduled = scheduled;
+        }
+
+
         //subscribed to expansion zone purchase
         private void OnZonePurchased(ExpansionZoneData zone)
         {
@@ -162,10 +193,46 @@ namespace FLOBUK.StoreSimulator
         //subscribed to day-over event: capture end-of-day snapshots before the scene transitions
         private void OnDayOver()
         {
+            ApplyDailyOperatingExpenses();
             RefreshEmployeeSnapshot();
             RefreshSecuritySnapshot();
             CaptureExpansionSnapshot();
             CaptureInventorySnapshot();
+        }
+
+
+        private void ApplyDailyOperatingExpenses()
+        {
+            if (dailyExpensesApplied || StoreDatabase.Instance == null)
+                return;
+
+            dailyExpensesApplied = true;
+
+            int hired = EntrepreneurEmployeeSystem.Instance != null
+                ? EntrepreneurEmployeeSystem.Instance.GetHiredCount()
+                : employeesHired;
+            salaryExpenses = hired * 6000L;
+
+            long capitalBase = StoreDatabase.Instance.startMoney > 0
+                ? StoreDatabase.Instance.startMoney
+                : 100000L;
+            int salesExpansions = SupermarketExpansionSystem.Instance != null
+                ? SupermarketExpansionSystem.Instance.GetPurchasedSalesExpansionCount()
+                : 0;
+            rentExpenses = (long)System.Math.Floor(capitalBase * (0.05f + salesExpansions * 0.015f));
+
+            // Placeholder-safe utility backend. Per-light detection stays for the visual/building phase.
+            utilityExpenses = (long)System.Math.Floor(capitalBase * 0.05f);
+
+            long total = salaryExpenses + rentExpenses + utilityExpenses;
+            if (total <= 0)
+                return;
+
+            StoreDatabase.AddRemoveMoney(-total);
+            Debug.Log("[ShopMaster] Daily operating expenses applied. Salaries="
+                + StoreDatabase.FromLongToStringMoney(salaryExpenses)
+                + ", rent=" + StoreDatabase.FromLongToStringMoney(rentExpenses)
+                + ", utilities=" + StoreDatabase.FromLongToStringMoney(utilityExpenses) + ".");
         }
 
 
@@ -243,6 +310,11 @@ namespace FLOBUK.StoreSimulator
             long robberyLost     = data["robberyMoneyLost"].AsLong;
             int  customersHappyD = data["customersHappy"].AsInt;
             int  customersUnhappyD = data["customersUnhappy"].AsInt;
+            int customersScheduledD = data["customersScheduled"].AsInt;
+            int customersEnteredD = data["customersEntered"].AsInt;
+            long salaryExpensesD = data["salaryExpenses"].AsLong;
+            long rentExpensesD = data["rentExpenses"].AsLong;
+            long utilityExpensesD = data["utilityExpenses"].AsLong;
 
             int zonesToday       = data["expansionZonesPurchasedToday"].AsInt;
             int zonesTotalBought = data["expansionTotalZones"].AsInt;
@@ -251,6 +323,9 @@ namespace FLOBUK.StoreSimulator
             int lowStockCount    = data["lowStockProductCount"].AsInt;
             int outOfStockCount  = data["outOfStockProductCount"].AsInt;
             string lowStockNames = data["lowStockProductNames"].Value;
+            int outOfStockSalesD = data["outOfStockSalesToday"].AsInt;
+            int unavailableComplaintsD = data["unavailableProductComplaints"].AsInt;
+            string outOfStockSoldNames = FormatTopProductsFromJson(data["outOfStockProductsByName"].AsArray);
             int achievesToday    = data["achievementsCompletedToday"].AsInt;
 
             var sb = new StringBuilder();
@@ -259,18 +334,31 @@ namespace FLOBUK.StoreSimulator
             // moneyOut is persisted as a negative long (all withdrawals are negative in StoreDatabase).
             // Net profit = revenue - |expenses|, which equals moneyIn + moneyOut since moneyOut < 0.
             long netProfit = moneyIn - System.Math.Abs(moneyOut);
+            long operatingExpenses = salaryExpensesD + rentExpensesD + utilityExpensesD;
+            long productExpenses = System.Math.Max(0, System.Math.Abs(moneyOut) - operatingExpenses);
+            int lostCustomers = customersUnhappyD;
+            string performanceSummary = BuildPerformanceSummary(netProfit, lostCustomers, robberyLost, outOfStockCount + outOfStockSalesD);
             sb.Append("Finanzas del día:\n");
-            sb.Append("- Ingresos: ").Append(StoreDatabase.FromLongToStringMoney(moneyIn)).Append('\n');
-            sb.Append("- Gastos: ").Append(StoreDatabase.FromLongToStringMoney(-System.Math.Abs(moneyOut))).Append('\n');
-            if (robberyLost < 0)
-                sb.Append("- Pérdidas por robo: ").Append(StoreDatabase.FromLongToStringMoney(-robberyLost)).Append('\n');
+            sb.Append("- Ventas totales: ").Append(StoreDatabase.FromLongToStringMoney(moneyIn)).Append('\n');
+            sb.Append("- Gastos en productos: ").Append(StoreDatabase.FromLongToStringMoney(productExpenses)).Append('\n');
+            sb.Append("- Gastos totales: ").Append(StoreDatabase.FromLongToStringMoney(-System.Math.Abs(moneyOut))).Append('\n');
+            sb.Append("- Salarios: ").Append(StoreDatabase.FromLongToStringMoney(salaryExpensesD)).Append('\n');
+            sb.Append("- Renta: ").Append(StoreDatabase.FromLongToStringMoney(rentExpensesD)).Append('\n');
+            sb.Append("- Luz/servicios: ").Append(StoreDatabase.FromLongToStringMoney(utilityExpensesD)).Append('\n');
+            // Always show robbery losses, including $0.00.
+                sb.Append("- Pérdidas por robo: ").Append(StoreDatabase.FromLongToStringMoney(robberyLost)).Append('\n');
             sb.Append("- Ganancia neta: ").Append(StoreDatabase.FromLongToStringMoney(netProfit)).Append('\n');
+            sb.Append("- Desempeno general: ").Append(performanceSummary).Append('\n');
 
             // ── Customer summary ───────────────────────────────────────────────
             sb.Append("\nClientes:\n");
+            sb.Append("- Programados: ").Append(customersScheduledD).Append('\n');
+            sb.Append("- Entraron: ").Append(customersEnteredD).Append('\n');
             sb.Append("- Atendidos: ").Append(customersHappyD + customersUnhappyD).Append('\n');
             sb.Append("- Satisfechos: ").Append(customersHappyD).Append('\n');
             sb.Append("- Inconformes: ").Append(customersUnhappyD).Append('\n');
+            sb.Append("- Clientes perdidos: ").Append(lostCustomers).Append('\n');
+            sb.Append("- Quejas por producto no disponible: ").Append(unavailableComplaintsD).Append('\n');
 
             sb.Append("\nExpansión:\n");
             sb.Append("- Zonas totales: ").Append(zonesTotalBought).Append('\n');
@@ -280,9 +368,12 @@ namespace FLOBUK.StoreSimulator
 
             sb.Append("\nInventario (cierre):\n");
             sb.Append("- Sin stock: ").Append(outOfStockCount).Append('\n');
+            sb.Append("- Agotados por venta: ").Append(outOfStockSalesD).Append('\n');
             sb.Append("- Stock bajo (<3 und.): ").Append(lowStockCount).Append('\n');
             if (!string.IsNullOrEmpty(lowStockNames))
                 sb.Append("- Detalle: ").Append(lowStockNames).Append('\n');
+            if (!string.IsNullOrEmpty(outOfStockSoldNames))
+                sb.Append("- Agotados vendidos: ").Append(outOfStockSoldNames).Append('\n');
 
             sb.Append("\nLogros:\n");
             sb.Append("- Desbloqueados hoy: ").Append(achievesToday).Append('\n');
@@ -290,6 +381,38 @@ namespace FLOBUK.StoreSimulator
               .Append('/').Append(totalAchievementsPossible).Append('\n');
 
             return sb.ToString();
+        }
+
+
+        public static void RegisterSoldProduct(ProductScriptableObject product, int quantity)
+        {
+            if (Instance == null || product == null || quantity <= 0)
+                return;
+
+            if (ProductInventorySystem.Instance == null)
+                return;
+
+            int remaining = ProductInventorySystem.Instance.GetTotalStock(product);
+            if (remaining > 0)
+                return;
+
+            Instance.outOfStockSalesToday++;
+            Instance.AccumulateName(Instance.outOfStockProductsByName, product.title, quantity);
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("Producto agotado: " + product.title + ". Los clientes podrian molestarse.", otherColor: new Color(1f, 0.65f, 0.18f));
+            Debug.Log("[Inventory] Product out of stock after sale: " + product.title);
+        }
+
+
+        public static void RegisterUnavailableProductComplaint(ProductScriptableObject product)
+        {
+            if (Instance == null)
+                return;
+
+            Instance.unavailableProductComplaints++;
+            if (product != null)
+                Instance.AccumulateName(Instance.outOfStockProductsByName, product.title, 1);
+            Debug.Log("[Inventory] Customer complaint for unavailable product: " + (product != null ? product.title : "Unknown"));
         }
 
 
@@ -304,6 +427,7 @@ namespace FLOBUK.StoreSimulator
         {
             if (Instance == null) return;
             Instance.thievesDetected++;
+            Instance.robberyValueStolen += stolenValue > 0 ? stolenValue : 0;
             Instance.robbedProducts += Mathf.Max(0, productCount);
             Instance.AccumulateItemDictionary(Instance.robbedProductsByName, items, false);
         }
@@ -349,9 +473,7 @@ namespace FLOBUK.StoreSimulator
 
             float effectiveness = 0f;
             int handled = Instance.thievesAutoArrested + Instance.thievesManualArrested;
-            int denominator = handled + Instance.thievesEscaped;
-            if (denominator <= 0)
-                denominator = Instance.thievesDetected;
+            int denominator = Instance.thievesDetected;
             if (denominator > 0)
                 effectiveness = ((float)handled / denominator) * 100f;
 
@@ -360,10 +482,13 @@ namespace FLOBUK.StoreSimulator
 
             return "Robos del día:\n" +
                    "- Ladrones aparecidos: " + Instance.thievesAppeared + "\n" +
+                   "- Robos ocurridos: " + Instance.thievesDetected + "\n" +
                    "- Ladrones detectados: " + Instance.thievesDetected + "\n" +
                    "- Arrestos automáticos: " + Instance.thievesAutoArrested + "\n" +
                    "- Detenidos manualmente: " + Instance.thievesManualArrested + "\n" +
                    "- Escaparon: " + Instance.thievesEscaped + "\n" +
+                   "- Valor robado: " + StoreDatabase.FromLongToStringMoney(Instance.robberyValueStolen) + "\n" +
+                   "- Valor perdido: " + StoreDatabase.FromLongToStringMoney(Instance.robberyMoneyLost) + "\n" +
                    "- Pérdida total: " + StoreDatabase.FromLongToStringMoney(Instance.robberyMoneyLost) + "\n" +
                    "- Valor recuperado: " + StoreDatabase.FromLongToStringMoney(Instance.robberyValueRecovered) + "\n" +
                    "- Productos robados: " + Instance.robbedProducts + "\n" +
@@ -392,6 +517,7 @@ namespace FLOBUK.StoreSimulator
             int thievesAutoData = data["thievesAutoArrested"].AsInt;
             int thievesManualData = data["thievesManualArrested"].AsInt;
             int thievesEscapedData = data["thievesEscaped"].AsInt;
+            long stolenValueData = data["robberyValueStolen"].AsLong;
             long robberyLostData = data["robberyMoneyLost"].AsLong;
             long recoveredValueData = data["robberyValueRecovered"].AsLong;
             int robbedProductsData = data["robbedProducts"].AsInt;
@@ -403,17 +529,18 @@ namespace FLOBUK.StoreSimulator
             float securityChanceData = data["securityChanceSnapshot"].AsFloat;
 
             int handled = thievesAutoData + thievesManualData;
-            int denominator = handled + thievesEscapedData;
-            if (denominator <= 0)
-                denominator = thievesDetectedData;
+            int denominator = thievesDetectedData;
             float effectiveness = denominator > 0 ? (handled / (float)denominator) * 100f : 0f;
 
             return "Robos del día:\n" +
                    "- Ladrones aparecidos: " + thievesAppearedData + "\n" +
+                   "- Robos ocurridos: " + thievesDetectedData + "\n" +
                    "- Ladrones detectados: " + thievesDetectedData + "\n" +
                    "- Arrestos automáticos: " + thievesAutoData + "\n" +
                    "- Detenidos manualmente: " + thievesManualData + "\n" +
                    "- Escaparon: " + thievesEscapedData + "\n" +
+                   "- Valor robado: " + StoreDatabase.FromLongToStringMoney(stolenValueData) + "\n" +
+                   "- Valor perdido: " + StoreDatabase.FromLongToStringMoney(robberyLostData) + "\n" +
                    "- Pérdida total: " + StoreDatabase.FromLongToStringMoney(robberyLostData) + "\n" +
                    "- Valor recuperado: " + StoreDatabase.FromLongToStringMoney(recoveredValueData) + "\n" +
                    "- Productos robados: " + robbedProductsData + "\n" +
@@ -439,11 +566,17 @@ namespace FLOBUK.StoreSimulator
             data["xpEarned"] = xpEarned;
             data["customersHappy"] = customersHappy;
             data["customersUnhappy"] = customersUnhappy;
+            data["customersScheduled"] = customersScheduled;
+            data["customersEntered"] = customersEntered;
+            data["salaryExpenses"] = salaryExpenses;
+            data["rentExpenses"] = rentExpenses;
+            data["utilityExpenses"] = utilityExpenses;
             data["thievesAppeared"] = thievesAppeared;
             data["thievesDetected"] = thievesDetected;
             data["thievesAutoArrested"] = thievesAutoArrested;
             data["thievesManualArrested"] = thievesManualArrested;
             data["thievesEscaped"] = thievesEscaped;
+            data["robberyValueStolen"] = robberyValueStolen;
             data["robberyMoneyLost"] = robberyMoneyLost;
             data["robberyValueRecovered"] = robberyValueRecovered;
             data["robbedProducts"] = robbedProducts;
@@ -463,6 +596,9 @@ namespace FLOBUK.StoreSimulator
             data["lowStockProductCount"] = lowStockProductCount;
             data["outOfStockProductCount"] = outOfStockProductCount;
             data["lowStockProductNames"] = lowStockProductNames ?? string.Empty;
+            data["outOfStockSalesToday"] = outOfStockSalesToday;
+            data["unavailableProductComplaints"] = unavailableProductComplaints;
+            data["outOfStockProductsByName"] = SerializeDictionary(outOfStockProductsByName);
             
             return data;
         }
@@ -481,11 +617,17 @@ namespace FLOBUK.StoreSimulator
             xpEarned = data["xpEarned"].AsLong;
             customersHappy = data["customersHappy"].AsInt;
             customersUnhappy = data["customersUnhappy"].AsInt;
+            customersScheduled = data["customersScheduled"].AsInt;
+            customersEntered = data["customersEntered"].AsInt;
+            salaryExpenses = data["salaryExpenses"].AsLong;
+            rentExpenses = data["rentExpenses"].AsLong;
+            utilityExpenses = data["utilityExpenses"].AsLong;
             thievesAppeared = data["thievesAppeared"].AsInt;
             thievesDetected = data["thievesDetected"].AsInt;
             thievesAutoArrested = data["thievesAutoArrested"].AsInt;
             thievesManualArrested = data["thievesManualArrested"].AsInt;
             thievesEscaped = data["thievesEscaped"].AsInt;
+            robberyValueStolen = data["robberyValueStolen"].AsLong;
             robberyMoneyLost = data["robberyMoneyLost"].AsLong;
             robberyValueRecovered = data["robberyValueRecovered"].AsLong;
             robbedProducts = data["robbedProducts"].AsInt;
@@ -505,6 +647,9 @@ namespace FLOBUK.StoreSimulator
             lowStockProductCount = data["lowStockProductCount"].AsInt;
             outOfStockProductCount = data["outOfStockProductCount"].AsInt;
             lowStockProductNames = data["lowStockProductNames"].Value ?? string.Empty;
+            outOfStockSalesToday = data["outOfStockSalesToday"].AsInt;
+            unavailableProductComplaints = data["unavailableProductComplaints"].AsInt;
+            DeserializeDictionary(data["outOfStockProductsByName"].AsArray, outOfStockProductsByName);
         }
 
 
@@ -524,15 +669,26 @@ namespace FLOBUK.StoreSimulator
 
         private void RefreshSecuritySnapshot()
         {
+            if (EntrepreneurTreeGameplayBridge.Instance != null)
+            {
+                securityLevelSnapshot = EntrepreneurTreeGameplayBridge.Instance.GetSecurityLevel();
+                securityChanceSnapshot = EntrepreneurTreeGameplayBridge.Instance.GetSecurityArrestChance() * 100f;
+                return;
+            }
+
+            if (EntrepreneurTreeSecurityAdapter.Instance != null)
+            {
+                securityLevelSnapshot = EntrepreneurTreeSecurityAdapter.Instance.GetCurrentSecurityLevel();
+                securityChanceSnapshot = EntrepreneurTreeSecurityAdapter.Instance.GetAutomaticArrestChance() * 100f;
+                return;
+            }
+
             if (EntrepreneurTreeGameplayBridge.Instance == null)
             {
                 securityLevelSnapshot = 0;
                 securityChanceSnapshot = 0f;
                 return;
             }
-
-            securityLevelSnapshot = EntrepreneurTreeGameplayBridge.Instance.GetSecurityLevel();
-            securityChanceSnapshot = EntrepreneurTreeGameplayBridge.Instance.GetSecurityArrestChance() * 100f;
         }
 
 
@@ -555,6 +711,17 @@ namespace FLOBUK.StoreSimulator
 
             if (recovered)
                 RefreshEmployeeSnapshot();
+        }
+
+
+        private void AccumulateName(Dictionary<string, int> dict, string productName, int quantity)
+        {
+            if (dict == null || string.IsNullOrEmpty(productName))
+                return;
+
+            int existing;
+            dict.TryGetValue(productName, out existing);
+            dict[productName] = existing + Mathf.Max(1, quantity);
         }
 
 
@@ -587,6 +754,35 @@ namespace FLOBUK.StoreSimulator
             }
 
             return sb.ToString();
+        }
+
+
+        private static string FormatTopProductsFromJson(JSONArray array)
+        {
+            if (array == null || array.Count == 0)
+                return string.Empty;
+
+            Dictionary<string, int> dict = new Dictionary<string, int>();
+            DeserializeDictionary(array, dict);
+            return FormatTopProducts(dict);
+        }
+
+
+        private static string BuildPerformanceSummary(long netProfit, int lostCustomers, long robberyLost, int outOfStockTotal)
+        {
+            int penalties = 0;
+            if (netProfit < 0) penalties += 2;
+            if (lostCustomers >= 5) penalties++;
+            if (robberyLost > 0) penalties++;
+            if (outOfStockTotal >= 3) penalties++;
+
+            if (penalties <= 0 && netProfit > 0)
+                return "Excelente";
+            if (penalties <= 1)
+                return "Bueno";
+            if (penalties <= 3)
+                return "Regular";
+            return "Malo";
         }
 
 
@@ -637,6 +833,8 @@ namespace FLOBUK.StoreSimulator
             DayCycleSystem.onDayLoaded -= OnDayLoaded;
             DayCycleSystem.onDayOver -= OnDayOver;
             CustomerSystem.onCustomerLeft -= OnCustomerLeft;
+            CustomerSystem.onCustomerEntered -= OnCustomerEntered;
+            CustomerSystem.onDailyCustomerPlanCreated -= OnDailyCustomerPlanCreated;
             SupermarketExpansionSystem.onZonePurchased -= OnZonePurchased;
             AchievementSystem.onAchievementCompleted -= OnAchievementCompleted;
         }

@@ -27,7 +27,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class EntrepreneurEmployeeSystem : MonoBehaviour
     {
-        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string LogPrefix = "[EmployeeApp] ";
         public const int MaxEmployees = 18;
 
         public static EntrepreneurEmployeeSystem Instance { get; private set; }
@@ -187,6 +187,9 @@ namespace FLOBUK.StoreSimulator
             if (assignment.role == EmployeeRole.None)
                 assignment.role = EmployeeRole.Cashier;
 
+            Debug.Log(LogPrefix + "Employee hired: #" + employeeId
+                + " cost=" + StoreDatabase.FromLongToStringMoney(assignment.hireCost)
+                + " role=" + assignment.role + ".");
             onEmployeeHired?.Invoke(employeeId);
             onEmployeeRoleChanged?.Invoke(employeeId, assignment.role);
             AchievementSystem.RegisterEmployeeHired(GetHiredCount(), GetAssignedCount(), MaxEmployees);
@@ -202,6 +205,12 @@ namespace FLOBUK.StoreSimulator
             if (assignment == null)
             {
                 reason = "Empleado desconocido.";
+                return false;
+            }
+
+            if (!IsEmployeeUnlocked(employeeId))
+            {
+                reason = "Desbloquea este empleado en el Árbol del Emprendedor antes de asignar rol.";
                 return false;
             }
 
@@ -224,6 +233,7 @@ namespace FLOBUK.StoreSimulator
             }
 
             assignment.role = role;
+            Debug.Log(LogPrefix + "Employee role changed: #" + employeeId + " -> " + role + ".");
             onEmployeeRoleChanged?.Invoke(employeeId, role);
             AchievementSystem.RegisterAllEmployeesAssigned(GetHiredCount(), GetAssignedCount(), MaxEmployees);
             return true;
@@ -294,9 +304,13 @@ namespace FLOBUK.StoreSimulator
                     continue;
 
                 assignment.isHired = row["isHired"].AsBool;
-                assignment.role = (EmployeeRole)row["role"].AsInt;
-                assignment.hireCost = row["hireCost"].AsLong;
+                assignment.role = SanitizeRole(row["role"].AsInt);
+                assignment.hireCost = Math.Max(0L, row["hireCost"].AsLong);
             }
+
+            Debug.Log(LogPrefix + "Employee roster loaded. hired=" + GetHiredCount()
+                + ", cashiers=" + GetRoleCount(EmployeeRole.Cashier)
+                + ", restockers=" + GetRoleCount(EmployeeRole.Restocker) + ".");
         }
 
 
@@ -343,6 +357,16 @@ namespace FLOBUK.StoreSimulator
         private static int GetHireCostIndex(int employeeId)
         {
             return employeeId - 1;
+        }
+
+
+        private static EmployeeRole SanitizeRole(int roleValue)
+        {
+            if (roleValue == (int)EmployeeRole.Cashier)
+                return EmployeeRole.Cashier;
+            if (roleValue == (int)EmployeeRole.Restocker)
+                return EmployeeRole.Restocker;
+            return EmployeeRole.None;
         }
 
 

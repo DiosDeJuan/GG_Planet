@@ -138,7 +138,7 @@ namespace FLOBUK.StoreSimulator
                 return false;
             }
 
-            if (product.storageType != currentPlacement.storageType)
+            if (!ShelfProductSlotSystem.CanPlaceProductOnFurniture(product, currentPlacement))
             {
                 UIGame.Instance.ShowMessage("The storage type of the product and placement do not match");
                 return false;
@@ -184,7 +184,7 @@ namespace FLOBUK.StoreSimulator
                 return false;
             }
 
-            if (product != null && product.storageType != currentPlacement.storageType)
+            if (product != null && !ShelfProductSlotSystem.CanPlaceProductOnFurniture(product, currentPlacement))
             {
                 UIGame.Instance.ShowMessage("The storage type of the product and placement do not match");
                 return false;

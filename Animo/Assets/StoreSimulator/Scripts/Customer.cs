@@ -52,6 +52,8 @@ namespace FLOBUK.StoreSimulator
         private CheckoutObject checkout;
         //position spawned for returning to it when finished
         private Vector3 spawnPosition;
+        private Coroutine checkoutWaitRoutine;
+        private bool checkoutServiceStarted;
 
 
         //initialize references
@@ -84,7 +86,10 @@ namespace FLOBUK.StoreSimulator
         {
             //first in line
             if (queueIndex == 1)
+            {
                 currentStep = CustomerStep.Pay;
+                checkoutServiceStarted = false;
+            }
 
             //no callback in case we just made it into the queue
             //we leave the "proceed in queue" logic to the CashDesk
@@ -135,8 +140,32 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public void HasPaid()
         {
+            NotifyCheckoutServiceStarted();
             PausePayment();
             checkout.ActivateCheckout();
+        }
+
+
+        public void NotifyCheckoutWaitingForService(CashDesk desk)
+        {
+            if (checkoutServiceStarted || currentStep != CustomerStep.Pay)
+                return;
+
+            if (checkoutWaitRoutine != null)
+                StopCoroutine(checkoutWaitRoutine);
+
+            checkoutWaitRoutine = StartCoroutine(CheckoutWaitTimer(desk));
+        }
+
+
+        public void NotifyCheckoutServiceStarted()
+        {
+            checkoutServiceStarted = true;
+            if (checkoutWaitRoutine != null)
+            {
+                StopCoroutine(checkoutWaitRoutine);
+                checkoutWaitRoutine = null;
+            }
         }
 
 
@@ -169,6 +198,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public void GoHome()
         {
+            NotifyCheckoutServiceStarted();
             currentStep = CustomerStep.GoHome;
             agent.SetDestination(spawnPosition);
 
@@ -273,12 +303,12 @@ namespace FLOBUK.StoreSimulator
                 //we are near the current item
                 if (agent.IsNear(cart.GetProductPlacement().position))
                 {
-                    //compare store price with market price
-                    //do a random willingness to pay factor from +20% to +75%
                     ProductScriptableObject product = cart.GetProduct();
-                    long maxPrice = Mathf.FloorToInt(product.marketPrice * (1 + Random.Range(0.2f, 0.75f)));
+                    bool shouldBuy = ProductPurchaseProbabilityAdapter.Instance != null
+                        ? ProductPurchaseProbabilityAdapter.Instance.ShouldCustomerBuy(product)
+                        : product.storePrice <= Mathf.FloorToInt(product.marketPrice * (1 + Random.Range(0.2f, 0.75f)));
 
-                    if (product.storePrice > maxPrice)
+                    if (!shouldBuy)
                     {
                         //item cannot be reached or agent stuck
                         ShowUnhappy("Product " + product.name + " is too expensive.");
@@ -307,6 +337,14 @@ namespace FLOBUK.StoreSimulator
                             break;
                     }
 
+                    if (ProductPurchaseProbabilityAdapter.Instance != null &&
+                        HasExtraStock(product) &&
+                        ProductPurchaseProbabilityAdapter.Instance.ShouldCustomerBuyExtra(product) &&
+                        cart.TryAddExtraCurrentProduct())
+                    {
+                        Debug.Log("[Pricing] Customer picked an extra unit because price is below ideal: " + product.title);
+                    }
+
                     //continue with next item
                     cart.SetNextItem();
                     //delay to fully show animation
@@ -318,6 +356,7 @@ namespace FLOBUK.StoreSimulator
                 {
                     //item cannot be reached or agent stuck
                     ShowUnhappy("Could not get to " + cart.GetProduct().name + ".");
+                    StatsDatabase.RegisterUnavailableProductComplaint(cart.GetProduct());
 
                     //continue with next item
                     cart.SetNextItem();
@@ -367,6 +406,7 @@ namespace FLOBUK.StoreSimulator
             {
                 //item not found in store
                 ShowUnhappy("Product " + cart.GetProduct().name + " not found.");
+                StatsDatabase.RegisterUnavailableProductComplaint(cart.GetProduct());
 
                 //continue with next item
                 cart.SetNextItem();
@@ -462,10 +502,47 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        private IEnumerator CheckoutWaitTimer(CashDesk desk)
+        {
+            yield return new WaitForSeconds(7f);
+
+            if (checkoutServiceStarted || currentStep != CustomerStep.Pay)
+                yield break;
+
+            Debug.Log("[CustomerWait] Customer has waited 7 seconds at checkout.");
+            UIGame.AddNotification("Cliente esperando demasiado en caja.", otherColor: new Color(1f, 0.65f, 0.10f));
+            ShowUnhappy("Waiting too long.");
+
+            yield return new WaitForSeconds(5f);
+
+            if (checkoutServiceStarted || currentStep != CustomerStep.Pay)
+                yield break;
+
+            if (desk != null && desk.TryCancelWaitingCustomer(this))
+                yield break;
+
+            GoHome();
+        }
+
+
+        private static bool HasExtraStock(ProductScriptableObject product)
+        {
+            if (product == null)
+                return false;
+
+            if (ProductInventorySystem.Instance != null)
+                return ProductInventorySystem.Instance.GetShelfStock(product) > 0;
+
+            return true;
+        }
+
+
         //unsubscribe from events
         void OnDestroy()
         {
             agent.onDestinationReached -= OnDestinationReached;
+            if (checkoutWaitRoutine != null)
+                StopCoroutine(checkoutWaitRoutine);
         }
     }
 }

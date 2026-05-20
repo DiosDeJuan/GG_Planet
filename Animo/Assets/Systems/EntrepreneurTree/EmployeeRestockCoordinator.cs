@@ -8,7 +8,7 @@ namespace FLOBUK.StoreSimulator
     /// </summary>
     public class EmployeeRestockCoordinator : MonoBehaviour
     {
-        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string LogPrefix = "[Restock] ";
 
         [Header("Cycle")]
         [Min(1f)] public float baseCycleSeconds = 12f;
@@ -116,7 +116,12 @@ namespace FLOBUK.StoreSimulator
                 return;
             }
             if (!target.IsPlaceable(sourceProduct))
+            {
+                if (UIGame.Instance != null)
+                    UIGame.AddNotification("No hay espacio valido para " + sourceProduct.title + " en " + target.name + ".", otherColor: new Color(1f, 0.65f, 0.18f));
+                Debug.LogWarning(LogPrefix + "Restock target rejected '" + sourceProduct.title + "' for '" + target.name + "'.");
                 return;
+            }
 
             Transform item = sourcePackage.Remove();
             if (item == null)
@@ -191,9 +196,16 @@ namespace FLOBUK.StoreSimulator
 
                 if (packageCandidate == null || productCandidate == null)
                     continue;
-                if (productCandidate.storageType != placement.storageType
-                    && productCandidate.storageType != StorageType.Default)
+                string compatibilityReason;
+                if (!ShelfProductSlotSystem.CanPlaceProductOnFurniture(productCandidate, placement, out compatibilityReason))
+                {
+                    Debug.LogWarning(LogPrefix + compatibilityReason);
+                    if (UIGame.Instance != null)
+                        UIGame.AddNotification(
+                            "El producto " + productCandidate.title + " no puede colocarse en este mueble.",
+                            otherColor: new Color(1f, 0.30f, 0.30f));
                     continue;
+                }
                 if (!placement.IsPlaceable(productCandidate))
                     continue;
 

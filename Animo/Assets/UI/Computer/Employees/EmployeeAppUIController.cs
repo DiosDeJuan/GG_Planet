@@ -11,8 +11,10 @@ namespace FLOBUK.StoreSimulator
     [DisallowMultipleComponent]
     public class EmployeeAppUIController : MonoBehaviour
     {
-        private const string LogPrefix = "[EntrepreneurTree] ";
+        private const string LogPrefix = "[EmployeeApp] ";
         private const int MaxEmployees = EntrepreneurEmployeeSystem.MaxEmployees;
+        private const string CashierDescription = "Cajero: Atiende clientes en cajas registradoras, procesa pagos automáticamente y reduce abandono por espera.";
+        private const string RestockerDescription = "Surtidor: Reabastece muebles de venta usando productos disponibles en almacén cuando existan espacios asignados.";
 
         private readonly Dictionary<int, EmployeeCardUI> cards = new Dictionary<int, EmployeeCardUI>();
 
@@ -181,7 +183,7 @@ namespace FLOBUK.StoreSimulator
                 detailCost.text = "Costo contratación: " + StoreDatabase.FromLongToStringMoney(status.hireCost);
 
             if (detailHint != null)
-                detailHint.text = status.hint;
+                detailHint.text = status.hint + "\n\n" + CashierDescription + "\n" + RestockerDescription;
 
             if (hireButton != null)
             {
