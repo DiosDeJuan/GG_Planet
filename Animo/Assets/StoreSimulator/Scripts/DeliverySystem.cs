@@ -117,20 +117,33 @@ namespace FLOBUK.StoreSimulator
             StoreDatabase.AddRemoveMoney(-totalCost);
 
             //spawn package and amount of items within that package
-            Vector3 deliveryPosition = Instance.GetDeliveryPosition();
-            GameObject newPackage = Instantiate(Instance.packagePrefab, deliveryPosition + new Vector3(0, 2, 0), Quaternion.identity);
-            PackageObject packageObject = newPackage.GetComponent<PackageObject>();
-            if (packageObject == null)
+            try
             {
-                Debug.LogWarning("[Orders] Package prefab is missing PackageObject. Refunding failed order.");
-                StoreDatabase.AddRemoveMoney(totalCost);
-                Destroy(newPackage);
-                return;
+                Vector3 deliveryPosition = Instance.GetDeliveryPosition();
+                GameObject newPackage = Instantiate(Instance.packagePrefab, deliveryPosition + new Vector3(0, 2, 0), Quaternion.identity);
+                PackageObject packageObject = newPackage.GetComponent<PackageObject>();
+                if (packageObject == null)
+                {
+                    Debug.LogWarning("[Orders] Package prefab is missing PackageObject. Refunding failed order.");
+                    StoreDatabase.AddRemoveMoney(totalCost);
+                    Destroy(newPackage);
+                    UIGame.Instance?.ShowMessage("Error al crear el paquete: prefab sin PackageObject. Dinero reembolsado.");
+                    return;
+                }
+
+                packageObject.Add(purchasable, amount);
+                onProductPurchase?.Invoke(purchasable as ProductScriptableObject);
             }
-
-            packageObject.Add(purchasable, amount);
-
-            onProductPurchase?.Invoke(purchasable as ProductScriptableObject);
+            catch (Exception ex)
+            {
+                Debug.LogError("[Orders] Exception during package delivery for "
+                    + purchasable.title + " (id=" + purchasable.id + "): " + ex.Message
+                    + "\n" + ex.StackTrace);
+                // Refund the money since the package was not delivered.
+                StoreDatabase.AddRemoveMoney(totalCost);
+                UIGame.Instance?.ShowMessage("Error al entregar paquete: " + purchasable.title
+                    + ". Dinero reembolsado. Revisa la consola para detalles.");
+            }
         }
 
 
@@ -142,13 +155,18 @@ namespace FLOBUK.StoreSimulator
             float highestDistance = 0f;
             float rayLength = 50;
 
+            // Safe layer mask: use InteractionSystem if available, otherwise use default (all layers).
+            int layerMask = InteractionSystem.Instance != null
+                ? (int)InteractionSystem.Instance.layerMask
+                : Physics.DefaultRaycastLayers;
+
             //starting from the deliveryStart position, do a raycast until the end of deliveryDirection to find the lowest
             //position in height by raycasting against all packages that have already been spawned at the delivery area
             for(int i = 0; i < totalDeliveries; i++)
             {
                 Vector3 rayPosition = deliveryStart.position + new Vector3(i * deliveryDirection.x, 0, i * deliveryDirection.y);
                 Ray ray = new Ray(rayPosition + Vector3.up * rayLength, Vector3.down);
-                if (Physics.Raycast(ray, out RaycastHit hit, rayLength, InteractionSystem.Instance.layerMask))
+                if (Physics.Raycast(ray, out RaycastHit hit, rayLength, layerMask))
                 {
                     float hitDistance = Vector3.Distance(ray.origin, hit.point);
                     if (hitDistance > highestDistance)

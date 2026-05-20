@@ -46,6 +46,9 @@ namespace FLOBUK.StoreSimulator
         private float baseSpeed;
         // Material created for the floating indicator — destroyed with this component.
         private Material indicatorMaterial;
+        // Materials created for primitive accessories (cap, backpack) — destroyed with this component.
+        private readonly System.Collections.Generic.List<Material> accessoryMaterials
+            = new System.Collections.Generic.List<Material>();
 
         public void Initialize(ShoplifterSystem sourceSystem, Customer customer, ShoplifterType type)
         {
@@ -220,6 +223,91 @@ namespace FLOBUK.StoreSimulator
 
             // Spawn a small floating sphere above the thief as a clear world-space warning indicator.
             indicatorMaterial = SpawnFloatingIndicator(markerColor);
+
+            // Add cap + backpack placeholder accessories so thieves are visually distinct.
+            SpawnThiefAccessories(markerColor);
+        }
+
+
+        /// <summary>
+        /// Spawns a primitive cap (flattened cylinder on head) and backpack (box on back)
+        /// so thieves are immediately recognisable.  Uses primitives — no external assets required.
+        /// </summary>
+        private void SpawnThiefAccessories(Color accentColor)
+        {
+            // Try to find the character's head transform by name convention.
+            // Common names in humanoid character rigs: "Head", "head", "Bip001 Head", "mixamorig:Head".
+            Transform headBone = FindBoneByName(transform, "head") ?? FindBoneByName(transform, "Head");
+
+            // Cap — a flattened cylinder placed on/near the head.
+            float capRadius = 0.115f;
+            float capHeight = 0.06f;
+            Vector3 capLocalPos = headBone != null
+                ? Vector3.zero + Vector3.up * 0.12f   // just above head bone
+                : new Vector3(0f, 1.75f, 0f);          // world-space fallback offset
+
+            Transform capParent = headBone != null ? headBone : transform;
+
+            GameObject cap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            cap.name = "Thief_Cap";
+            cap.transform.SetParent(capParent, false);
+            cap.transform.localPosition = capLocalPos;
+            cap.transform.localScale    = new Vector3(capRadius * 2f, capHeight, capRadius * 2f);
+
+            Collider capCol = cap.GetComponent<Collider>();
+            if (capCol != null)
+                Object.Destroy(capCol);
+
+            ApplyPrimitiveMaterial(cap, new Color(0.12f, 0.12f, 0.12f)); // dark cap
+
+            // Backpack — a small box on the character's back.
+            float bpWidth  = 0.18f;
+            float bpHeight = 0.22f;
+            float bpDepth  = 0.09f;
+            // Position relative to character root: behind and mid-torso height.
+            GameObject backpack = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            backpack.name = "Thief_Backpack";
+            backpack.transform.SetParent(transform, false);
+            backpack.transform.localPosition = new Vector3(0f, 1.1f, -0.22f);
+            backpack.transform.localScale    = new Vector3(bpWidth, bpHeight, bpDepth);
+
+            Collider bpCol = backpack.GetComponent<Collider>();
+            if (bpCol != null)
+                Object.Destroy(bpCol);
+
+            ApplyPrimitiveMaterial(backpack, accentColor);
+        }
+
+
+        /// <summary>Searches child transforms for a bone whose name contains <paramref name="namePart"/>.</summary>
+        private static Transform FindBoneByName(Transform root, string namePart)
+        {
+            if (root == null || string.IsNullOrEmpty(namePart))
+                return null;
+
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (child != null && child.name.IndexOf(namePart, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    return child;
+            }
+
+            return null;
+        }
+
+
+        private void ApplyPrimitiveMaterial(GameObject go, Color color)
+        {
+            Renderer r = go.GetComponent<Renderer>();
+            if (r == null)
+                return;
+
+            if (standardShader == null)
+                standardShader = Shader.Find("Standard");
+
+            Material mat = new Material(standardShader);
+            mat.color = color;
+            r.material = mat;
+            accessoryMaterials.Add(mat);
         }
 
 
@@ -305,6 +393,14 @@ namespace FLOBUK.StoreSimulator
             // Destroy the indicator material to prevent memory leaks.
             if (indicatorMaterial != null)
                 Object.Destroy(indicatorMaterial);
+
+            // Destroy accessory materials.
+            for (int i = 0; i < accessoryMaterials.Count; i++)
+            {
+                if (accessoryMaterials[i] != null)
+                    Object.Destroy(accessoryMaterials[i]);
+            }
+            accessoryMaterials.Clear();
         }
     }
 }
