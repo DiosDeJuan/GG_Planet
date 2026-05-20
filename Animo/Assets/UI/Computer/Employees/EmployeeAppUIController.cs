@@ -7,14 +7,30 @@ namespace FLOBUK.StoreSimulator
 {
     /// <summary>
     /// Runtime employee app integrated in the computer UPGRADES/Expansions area.
+    /// Shows employee list, detail panel with hire/role/workstation controls.
+    /// Status labels use ASCII-only text compatible with LiberationSans SDF.
     /// </summary>
     [DisallowMultipleComponent]
     public class EmployeeAppUIController : MonoBehaviour
     {
         private const string LogPrefix = "[EmployeeApp] ";
         private const int MaxEmployees = EntrepreneurEmployeeSystem.MaxEmployees;
-        private const string CashierDescription = "Cajero: Atiende clientes en cajas registradoras, procesa pagos automáticamente y reduce abandono por espera.";
-        private const string RestockerDescription = "Surtidor: Reabastece muebles de venta usando productos disponibles en almacén cuando existan espacios asignados.";
+        private const string CashierDescription     = "Cajero: Atiende clientes en cajas registradoras, procesa pagos automaticamente y reduce abandono por espera.";
+        private const string RestockerDescription   = "Surtidor: Reabastece muebles de venta usando productos disponibles en almacen cuando existan espacios asignados.";
+
+        // ── State labels (ASCII-only, compatible with all TMP fonts) ──────────────
+        private const string LabelBlocked    = "[BLOQ]";
+        private const string LabelAvailable  = "[DISP]";
+        private const string LabelHired      = "[OK]";
+        private const string LabelNoStation  = "[SIN PUESTO]";
+        private const string LabelWorking    = "[TRABAJANDO]";
+
+        private static readonly Color ColBlocked   = new Color(0.40f, 0.40f, 0.42f, 1f);
+        private static readonly Color ColAvailable = new Color(0.80f, 0.65f, 0.10f, 1f);
+        private static readonly Color ColHired     = new Color(0.17f, 0.50f, 0.28f, 1f);
+        private static readonly Color ColNoStation = new Color(0.75f, 0.40f, 0.10f, 1f);
+        private static readonly Color ColWorking   = new Color(0.12f, 0.42f, 0.72f, 1f);
+        private static readonly Color ColSelected  = new Color(1f,    1f,    1f,    0.12f);
 
         private readonly Dictionary<int, EmployeeCardUI> cards = new Dictionary<int, EmployeeCardUI>();
 
@@ -25,12 +41,15 @@ namespace FLOBUK.StoreSimulator
         private TMP_Text detailTitle;
         private TMP_Text detailStatus;
         private TMP_Text detailCost;
+        private TMP_Text detailWorkstation;
         private TMP_Text detailHint;
         private Button hireButton;
         private Button cashierButton;
         private Button restockerButton;
+        private Button assignStationButton;
         private int selectedEmployeeId = 1;
         private bool listenersBound;
+
 
         void Awake()
         {
@@ -69,6 +88,8 @@ namespace FLOBUK.StoreSimulator
                 cashierButton.onClick.AddListener(() => OnRoleClicked(EmployeeRole.Cashier));
             if (restockerButton != null)
                 restockerButton.onClick.AddListener(() => OnRoleClicked(EmployeeRole.Restocker));
+            if (assignStationButton != null)
+                assignStationButton.onClick.AddListener(OnAssignStationClicked);
 
             listenersBound = true;
         }
@@ -156,6 +177,41 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        private void OnAssignStationClicked()
+        {
+            if (EmployeeWorkstationRegistry.Instance == null)
+                return;
+
+            EmployeeAssignment assignment = EntrepreneurEmployeeSystem.Instance?.GetAssignment(selectedEmployeeId);
+            if (assignment == null || !assignment.isHired)
+                return;
+
+            EmployeeWorkstationType stationType = assignment.role == EmployeeRole.Restocker
+                ? EmployeeWorkstationType.Restocker
+                : EmployeeWorkstationType.Cashier;
+
+            string reason;
+            EmployeeWorkstation ws = EmployeeWorkstationRegistry.Instance
+                .TryAutoAssign(selectedEmployeeId, stationType, out reason);
+
+            if (ws != null)
+            {
+                // Update saved workstationId on the assignment.
+                assignment.workstationId = ws.workstationId;
+                // Move NPC to the newly assigned station.
+                if (EmployeeNPCSpawner.Instance != null)
+                    EmployeeNPCSpawner.Instance.RefreshNPCPosition(selectedEmployeeId);
+                UIGame.Instance?.ShowMessage("Puesto asignado: " + ws.workstationId);
+            }
+            else
+            {
+                UIGame.Instance?.ShowMessage(reason);
+            }
+
+            RefreshAll();
+        }
+
+
         private void RefreshAll()
         {
             for (int employeeId = 1; employeeId <= MaxEmployees; employeeId++)
@@ -177,10 +233,18 @@ namespace FLOBUK.StoreSimulator
                 detailTitle.text = "Empleado #" + selectedEmployeeId;
 
             if (detailStatus != null)
+            {
                 detailStatus.text = "Estado: " + status.stateLabel;
+                detailStatus.color = status.stateColor;
+            }
 
             if (detailCost != null)
-                detailCost.text = "Costo contratación: " + StoreDatabase.FromLongToStringMoney(status.hireCost);
+                detailCost.text = status.isHired
+                    ? "Costo: ya contratado"
+                    : "Costo contratacion: " + StoreDatabase.FromLongToStringMoney(status.hireCost);
+
+            if (detailWorkstation != null)
+                detailWorkstation.text = "Puesto: " + status.workstationLabel;
 
             if (detailHint != null)
                 detailHint.text = status.hint + "\n\n" + CashierDescription + "\n" + RestockerDescription;
@@ -202,6 +266,16 @@ namespace FLOBUK.StoreSimulator
                 restockerButton.gameObject.SetActive(status.isHired);
                 restockerButton.interactable = status.isHired && status.role != EmployeeRole.Restocker;
             }
+
+            if (assignStationButton != null)
+            {
+                assignStationButton.gameObject.SetActive(status.isHired);
+                // Enable the button when the employee has no workstation assigned yet.
+                bool noStation = string.IsNullOrEmpty(status.workstationLabel)
+                              || status.workstationLabel == "—"
+                              || status.workstationLabel == "Sin puesto";
+                assignStationButton.interactable = status.isHired && noStation;
+            }
         }
 
 
@@ -213,9 +287,11 @@ namespace FLOBUK.StoreSimulator
                 isUnlocked = false,
                 isHired = false,
                 role = EmployeeRole.None,
-                stateLabel = "Bloqueado",
-                hint = "Desbloquea este empleado en el Árbol del Emprendedor",
-                canHire = false
+                stateLabel = LabelBlocked,
+                stateColor = ColBlocked,
+                hint = "Desbloquea este empleado en el Arbol del Emprendedor",
+                canHire = false,
+                workstationLabel = "—"
             };
 
             if (EntrepreneurEmployeeSystem.Instance == null)
@@ -229,14 +305,16 @@ namespace FLOBUK.StoreSimulator
 
             if (!status.isUnlocked)
             {
-                status.stateLabel = "Bloqueado";
-                status.hint = "Desbloquea este empleado en el Árbol del Emprendedor.";
+                status.stateLabel = LabelBlocked;
+                status.stateColor = ColBlocked;
+                status.hint = "Desbloquea este empleado en el Arbol del Emprendedor.";
                 return status;
             }
 
             if (!status.isHired)
             {
-                status.stateLabel = "Desbloqueado";
+                status.stateLabel = LabelAvailable;
+                status.stateColor = ColAvailable;
                 status.hint = "Disponible para contratar.";
                 string reason;
                 status.canHire = EntrepreneurEmployeeSystem.Instance.CanHireEmployee(employeeId, out reason);
@@ -245,11 +323,32 @@ namespace FLOBUK.StoreSimulator
                 return status;
             }
 
+            // Hired — check workstation
+            string wsId = EmployeeWorkstationRegistry.Instance != null
+                ? EmployeeWorkstationRegistry.Instance.GetAssignedId(employeeId)
+                : string.Empty;
+            bool hasStation = !string.IsNullOrEmpty(wsId);
+
             status.canHire = false;
-            status.stateLabel = status.role == EmployeeRole.None
-                ? "Contratado"
-                : "Asignado: " + GetRoleLabel(status.role);
-            status.hint = "Puedes cambiar su rol cuando lo necesites.";
+
+            if (!hasStation)
+            {
+                status.stateLabel = LabelNoStation;
+                status.stateColor = ColNoStation;
+                status.hint = "Contratado. Asigna un puesto de trabajo.";
+                status.workstationLabel = "Sin puesto";
+            }
+            else
+            {
+                status.stateLabel = LabelWorking;
+                status.stateColor = ColWorking;
+                status.hint = "Puedes cambiar su rol cuando lo necesites.";
+                status.workstationLabel = wsId;
+            }
+
+            if (status.role != EmployeeRole.None)
+                status.stateLabel += " " + GetRoleLabel(status.role);
+
             return status;
         }
 
@@ -384,12 +483,14 @@ namespace FLOBUK.StoreSimulator
             detailTitle = CreateText("DetailTitle", detail.transform, "Empleado #1", 24, TextAlignmentOptions.Left);
             detailStatus = CreateText("DetailStatus", detail.transform, "Estado:", 20, TextAlignmentOptions.Left);
             detailCost = CreateText("DetailCost", detail.transform, "Costo:", 18, TextAlignmentOptions.Left);
-            detailHint = CreateText("DetailHint", detail.transform, "", 16, TextAlignmentOptions.TopLeft);
+            detailWorkstation = CreateText("DetailWorkstation", detail.transform, "Puesto: —", 17, TextAlignmentOptions.Left);
+            detailHint = CreateText("DetailHint", detail.transform, "", 15, TextAlignmentOptions.TopLeft);
             detailHint.textWrappingMode = TextWrappingModes.Normal;
 
             hireButton = CreateActionButton(detail.transform, "HireButton", "Contratar", new Color(0.14f, 0.42f, 0.22f, 1f));
-            cashierButton = CreateActionButton(detail.transform, "CashierButton", "Asignar Cajero", new Color(0.10f, 0.45f, 0.55f, 1f));
-            restockerButton = CreateActionButton(detail.transform, "RestockerButton", "Asignar Surtidor", new Color(0.58f, 0.34f, 0.08f, 1f));
+            cashierButton = CreateActionButton(detail.transform, "CashierButton", "Asignar: Cajero", new Color(0.10f, 0.38f, 0.58f, 1f));
+            restockerButton = CreateActionButton(detail.transform, "RestockerButton", "Asignar: Surtidor", new Color(0.45f, 0.30f, 0.08f, 1f));
+            assignStationButton = CreateActionButton(detail.transform, "AssignStationButton", "Asignar Puesto de Trabajo", new Color(0.35f, 0.15f, 0.50f, 1f));
         }
 
 
@@ -399,14 +500,16 @@ namespace FLOBUK.StoreSimulator
             if (content != null)
                 listContent = content.gameObject;
 
-            closeButton = existingRoot.Find("Header/CloseButton")?.GetComponent<Button>();
-            detailTitle = existingRoot.Find("DetailPanel/DetailTitle")?.GetComponent<TMP_Text>();
-            detailStatus = existingRoot.Find("DetailPanel/DetailStatus")?.GetComponent<TMP_Text>();
-            detailCost = existingRoot.Find("DetailPanel/DetailCost")?.GetComponent<TMP_Text>();
-            detailHint = existingRoot.Find("DetailPanel/DetailHint")?.GetComponent<TMP_Text>();
-            hireButton = existingRoot.Find("DetailPanel/HireButton")?.GetComponent<Button>();
-            cashierButton = existingRoot.Find("DetailPanel/CashierButton")?.GetComponent<Button>();
-            restockerButton = existingRoot.Find("DetailPanel/RestockerButton")?.GetComponent<Button>();
+            closeButton      = existingRoot.Find("Header/CloseButton")?.GetComponent<Button>();
+            detailTitle      = existingRoot.Find("DetailPanel/DetailTitle")?.GetComponent<TMP_Text>();
+            detailStatus     = existingRoot.Find("DetailPanel/DetailStatus")?.GetComponent<TMP_Text>();
+            detailCost       = existingRoot.Find("DetailPanel/DetailCost")?.GetComponent<TMP_Text>();
+            detailWorkstation = existingRoot.Find("DetailPanel/DetailWorkstation")?.GetComponent<TMP_Text>();
+            detailHint       = existingRoot.Find("DetailPanel/DetailHint")?.GetComponent<TMP_Text>();
+            hireButton       = existingRoot.Find("DetailPanel/HireButton")?.GetComponent<Button>();
+            cashierButton    = existingRoot.Find("DetailPanel/CashierButton")?.GetComponent<Button>();
+            restockerButton  = existingRoot.Find("DetailPanel/RestockerButton")?.GetComponent<Button>();
+            assignStationButton = existingRoot.Find("DetailPanel/AssignStationButton")?.GetComponent<Button>();
         }
 
 
@@ -517,6 +620,8 @@ namespace FLOBUK.StoreSimulator
             public EmployeeRole role;
             public long hireCost;
             public string stateLabel;
+            public Color stateColor;
+            public string workstationLabel;
             public string hint;
         }
 
@@ -527,31 +632,44 @@ namespace FLOBUK.StoreSimulator
             public Image background;
             public TMP_Text title;
             public TMP_Text state;
+            private bool _selected;
 
             public void Refresh(EmployeeStatus status)
             {
                 if (state != null)
-                    state.text = status.stateLabel;
+                {
+                    state.text  = status.stateLabel;
+                    state.color = status.stateColor;
+                }
 
                 if (background != null)
-                {
-                    if (!status.isUnlocked)
-                        background.color = new Color(0.23f, 0.23f, 0.25f, 0.95f);
-                    else if (!status.isHired)
-                        background.color = new Color(0.17f, 0.30f, 0.55f, 0.95f);
-                    else
-                        background.color = new Color(0.17f, 0.50f, 0.28f, 0.95f);
-                }
+                    background.color = GetCardColor(status);
             }
 
             public void SetSelected(bool selected)
             {
-                if (button == null || background == null)
+                _selected = selected;
+                if (background == null)
                     return;
 
+                // Brighten alpha when selected to give clear focus indicator.
                 Color c = background.color;
-                c.a = selected ? 1f : 0.90f;
+                c.a = selected ? 1f : 0.82f;
                 background.color = c;
+
+                // Add a subtle white tint overlay.
+                if (title != null) title.color = selected ? Color.white : new Color(0.85f, 0.85f, 0.85f, 1f);
+            }
+
+            private static Color GetCardColor(EmployeeStatus status)
+            {
+                if (!status.isUnlocked) return new Color(0.18f, 0.18f, 0.20f, 0.95f);
+                if (!status.isHired)    return new Color(0.17f, 0.30f, 0.18f, 0.95f);
+
+                // Hired — show role tint.
+                if (status.role == EmployeeRole.Cashier)   return new Color(0.10f, 0.30f, 0.50f, 0.95f);
+                if (status.role == EmployeeRole.Restocker) return new Color(0.18f, 0.40f, 0.20f, 0.95f);
+                return new Color(0.20f, 0.20f, 0.35f, 0.95f);
             }
         }
 
