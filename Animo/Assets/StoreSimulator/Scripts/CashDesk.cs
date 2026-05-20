@@ -220,6 +220,8 @@ namespace FLOBUK.StoreSimulator
                     if (ProductPurchaseProbabilityAdapter.Instance != null)
                         ProductPurchaseProbabilityAdapter.Instance.FireSaleHooks(sold.product, sold.fixedPrice);
                     StatsDatabase.RegisterSoldProduct(sold.product, sold.count);
+                    if (sold.fixedPrice == 0)
+                        StatsDatabase.RegisterZeroPriceSale(sold.product);
                 }
             }
 

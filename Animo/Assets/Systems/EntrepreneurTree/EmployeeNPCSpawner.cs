@@ -55,6 +55,8 @@ namespace FLOBUK.StoreSimulator
 
         private readonly MaterialPropertyBlock _mpb = new MaterialPropertyBlock();
 
+        public static EmployeeNPCSpawner Instance { get; private set; }
+
         // ── Lifecycle ─────────────────────────────────────────────────────────────
 
         void Awake()

@@ -343,6 +343,7 @@ namespace FLOBUK.StoreSimulator
                         cart.TryAddExtraCurrentProduct())
                     {
                         Debug.Log("[Pricing] Customer picked an extra unit because price is below ideal: " + product.title);
+                        StatsDatabase.RegisterExtraSale(product);
                     }
 
                     //continue with next item
