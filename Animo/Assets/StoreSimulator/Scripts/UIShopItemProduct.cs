@@ -41,23 +41,30 @@ namespace FLOBUK.StoreSimulator
             if (storePrice) storePrice.text = StoreDatabase.FromLongToStringMoney(product.storePrice);
             if (marketPrice) marketPrice.text = StoreDatabase.FromLongToStringMoney(product.marketPrice);          
 
+            // Tree takes priority: when the tree system is present it decides lock state.
+            if (EntrepreneurTreeGameplayBridge.Instance != null)
+            {
+                bool treeUnlocked = EntrepreneurTreeGameplayBridge.Instance.IsProductUnlocked(product);
+                if (lockedOverlay != null)
+                    lockedOverlay.SetActive(!treeUnlocked);
+                if (!treeUnlocked && lockedMessage != null)
+                    lockedMessage.text = "Desbloquéalo en el Árbol del Emprendedor";
+                return;
+            }
+
+            // Fallback when no tree system is present: original license-based lock check.
             if (lockedOverlay != null && !lockedOverlay.activeInHierarchy)
             {
                 if (!string.IsNullOrEmpty(product.requiredLicense))
                 {
                     LicenseScriptableObject requiredLicense = ItemDatabase.GetById(typeof(LicenseScriptableObject), product.requiredLicense) as LicenseScriptableObject;
-                    lockedOverlay.SetActive(!requiredLicense.isPurchased);
-                    lockedMessage.text = "Requires License " + requiredLicense.title;
+                    if (requiredLicense != null)
+                    {
+                        lockedOverlay.SetActive(!requiredLicense.isPurchased);
+                        if (lockedMessage != null)
+                            lockedMessage.text = "Requires License " + requiredLicense.title;
+                    }
                 }
-            }
-
-            if (EntrepreneurTreeGameplayBridge.Instance != null &&
-                !EntrepreneurTreeGameplayBridge.Instance.IsProductUnlocked(product))
-            {
-                if (lockedOverlay != null)
-                    lockedOverlay.SetActive(true);
-                if (lockedMessage != null)
-                    lockedMessage.text = "Desbloquéalo en el Árbol del Emprendedor";
             }
         }
 

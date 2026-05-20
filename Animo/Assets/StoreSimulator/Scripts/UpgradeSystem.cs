@@ -77,7 +77,8 @@ namespace FLOBUK.StoreSimulator
         {
             if (!StoreDatabase.CanPurchase(purchasable.buyPrice))
             {
-                UIGame.Instance.ShowMessage("Not enough money to purchase this object");
+                long missing = purchasable.buyPrice - StoreDatabase.Instance.currentMoney;
+                UIGame.Instance.ShowMessage("Fondos insuficientes. Faltan " + StoreDatabase.FromLongToStringMoney(missing) + ".");
                 return;
             }
 
