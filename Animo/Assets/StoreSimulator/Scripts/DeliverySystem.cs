@@ -157,7 +157,7 @@ namespace FLOBUK.StoreSimulator
 
             // Safe layer mask: use InteractionSystem if available, otherwise use default (all layers).
             int layerMask = InteractionSystem.Instance != null
-                ? (int)InteractionSystem.Instance.layerMask
+                ? InteractionSystem.Instance.layerMask
                 : Physics.DefaultRaycastLayers;
 
             //starting from the deliveryStart position, do a raycast until the end of deliveryDirection to find the lowest

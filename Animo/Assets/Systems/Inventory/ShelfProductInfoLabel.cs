@@ -91,7 +91,9 @@ namespace FLOBUK.StoreSimulator
 
             // Name.
             if (_nameText != null)
-                _nameText.text = product.title ?? product.id;
+                _nameText.text = !string.IsNullOrEmpty(product.title) ? product.title
+                    : !string.IsNullOrEmpty(product.id) ? "[" + product.id + "]"
+                    : "[producto]";
 
             // Price + probability.
             if (_infoText != null)

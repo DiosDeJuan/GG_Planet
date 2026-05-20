@@ -167,9 +167,15 @@ namespace FLOBUK.StoreSimulator
                 return new GameObject[0];
             }
 
+            System.Text.StringBuilder nameList = new System.Text.StringBuilder();
+            for (int i = 0; i < result.Count; i++)
+            {
+                if (i > 0) nameList.Append(", ");
+                nameList.Append(result[i].name);
+            }
             Debug.Log(LogPrefix + "Auto-discovered " + result.Count
                 + " customer prefab(s) for employee NPC spawning: "
-                + string.Join(", ", result.ConvertAll(g => g.name)));
+                + nameList);
             return result.ToArray();
         }
 

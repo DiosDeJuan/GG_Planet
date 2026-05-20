@@ -50,6 +50,9 @@ namespace FLOBUK.StoreSimulator
         private readonly Dictionary<string, GameObject> placeholders =
             new Dictionary<string, GameObject>();
 
+        // Track materials created at runtime so they can be destroyed in OnDestroy.
+        private readonly List<Material> runtimeMaterials = new List<Material>();
+
         // ── Lifecycle ──────────────────────────────────────────────────────────
 
         void Awake()
@@ -77,6 +80,14 @@ namespace FLOBUK.StoreSimulator
             SupermarketExpansionSystem.onZonePurchased -= OnZonePurchased;
             SupermarketExpansionSystem.onZonesReset    -= OnZonesReset;
             SaveGameSystem.dataLoadEvent               -= OnDataLoaded;
+
+            // Destroy runtime materials to prevent leaks.
+            for (int i = 0; i < runtimeMaterials.Count; i++)
+            {
+                if (runtimeMaterials[i] != null)
+                    Object.Destroy(runtimeMaterials[i]);
+            }
+            runtimeMaterials.Clear();
 
             if (Instance == this)
                 Instance = null;
@@ -281,7 +292,7 @@ namespace FLOBUK.StoreSimulator
             }
         }
 
-        private static void SetTransparentColor(GameObject go, Color color)
+        private void SetTransparentColor(GameObject go, Color color)
         {
             Renderer r = go.GetComponent<Renderer>();
             if (r == null)
@@ -303,6 +314,7 @@ namespace FLOBUK.StoreSimulator
             }
 
             r.material = mat;
+            runtimeMaterials.Add(mat);
         }
 
         // ── Unity object finders ───────────────────────────────────────────────
