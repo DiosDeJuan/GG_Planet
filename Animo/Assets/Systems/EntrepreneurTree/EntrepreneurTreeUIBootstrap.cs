@@ -97,6 +97,7 @@ namespace FLOBUK.StoreSimulator
                     EnsureOrdersTab(helper, contentArea);
                     EnsurePricingTab(helper, contentArea);
                     EnsureInventoryTab(helper, contentArea);
+                    HideLicensesTab(helper);
                 }
             }
         }
@@ -126,10 +127,12 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<SupermarketExpansionSystem>();
                 systems.AddComponent<ExpansionCustomerDemandAdapter>();
                 systems.AddComponent<ExpansionStorageCapacityAdapter>();
+                systems.AddComponent<ExpansionRealWorldBridge>();
                 systems.AddComponent<ProductInventorySystem>();
                 systems.AddComponent<ShelfProductSlotSystem>();
                 systems.AddComponent<ProductPricingSystem>();
                 systems.AddComponent<ProductPurchaseProbabilityAdapter>();
+                systems.AddComponent<ShelfProductInfoLabelBootstrap>();
                 systems.AddComponent<EmployeeCashierCoordinator>();
                 systems.AddComponent<EmployeeNPCSpawner>();
                 systems.AddComponent<EmployeeWorkstationRegistry>();
@@ -187,6 +190,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ExpansionCustomerDemandAdapter>();
             if (systems.GetComponent<ExpansionStorageCapacityAdapter>() == null)
                 systems.AddComponent<ExpansionStorageCapacityAdapter>();
+            if (systems.GetComponent<ExpansionRealWorldBridge>() == null)
+                systems.AddComponent<ExpansionRealWorldBridge>();
             if (systems.GetComponent<ProductInventorySystem>() == null)
                 systems.AddComponent<ProductInventorySystem>();
             if (systems.GetComponent<ShelfProductSlotSystem>() == null)
@@ -195,6 +200,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<ProductPricingSystem>();
             if (systems.GetComponent<ProductPurchaseProbabilityAdapter>() == null)
                 systems.AddComponent<ProductPurchaseProbabilityAdapter>();
+            if (systems.GetComponent<ShelfProductInfoLabelBootstrap>() == null)
+                systems.AddComponent<ShelfProductInfoLabelBootstrap>();
             if (systems.GetComponent<EmployeeCashierCoordinator>() == null)
                 systems.AddComponent<EmployeeCashierCoordinator>();
             if (systems.GetComponent<EmployeeNPCSpawner>() == null)
@@ -909,6 +916,49 @@ namespace FLOBUK.StoreSimulator
             if (link == null)
                 link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
             link.Configure(helper, panel);
+        }
+
+        // ── Licenses tab (hide) ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Finds and hides the "Licenses" / "LICENCIAS" tab button from the computer UI.
+        /// The underlying LicenseScriptableObject logic is kept alive internally so the
+        /// asset's purchase-gate for products continues to work via EntrepreneurTreeLicenseBridge.
+        /// </summary>
+        private static void HideLicensesTab(UIShopCategoryHelper helper)
+        {
+            if (helper == null)
+                return;
+
+            Transform root = helper.transform.parent != null ? helper.transform.parent : helper.transform;
+            Button[] buttons = root.GetComponentsInChildren<Button>(true);
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Button btn = buttons[i];
+                if (btn == null)
+                    continue;
+
+                TMP_Text label = btn.GetComponentInChildren<TMP_Text>(true);
+                string text = label != null ? label.text.Trim().ToUpperInvariant() : string.Empty;
+                if (text == "LICENSES" || text == "LICENCIAS" || text == "LICENCE" || text == "LICENCES")
+                {
+                    btn.gameObject.SetActive(false);
+                    Debug.Log("[LicensesTab] Licenses tab hidden: '" + label.text + "'.");
+                }
+            }
+
+            // Also hide the Licenses content panel if it exists in the content area.
+            Transform contentArea = helper.transform;
+            string[] licensePanelNames = { "Licenses", "Licencias", "License" };
+            for (int n = 0; n < licensePanelNames.Length; n++)
+            {
+                Transform licPanel = contentArea.Find(licensePanelNames[n]);
+                if (licPanel != null)
+                {
+                    licPanel.gameObject.SetActive(false);
+                    Debug.Log("[LicensesTab] Licenses panel hidden: '" + licensePanelNames[n] + "'.");
+                }
+            }
         }
 
         // ── Tab-bar compact styling ───────────────────────────────────────────

@@ -76,6 +76,12 @@ namespace FLOBUK.StoreSimulator
 
         void Start()
         {
+            // Auto-discover Customer prefabs from the scene if none are configured in the Inspector.
+            // This is needed because this component is added at runtime via AddComponent and
+            // cannot be configured in the Inspector.
+            if (employeePrefabs == null || employeePrefabs.Length == 0)
+                employeePrefabs = AutoDiscoverCustomerPrefabs();
+
             // Re-spawn any employees that were hired before this component started
             // (e.g. loaded from save or admin mode unlock-all).
             RespawnAll();
@@ -110,6 +116,78 @@ namespace FLOBUK.StoreSimulator
             MoveNPCToWorkstation(employeeId);
         }
 
+        // ── Auto-discovery ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Finds distinct Customer GameObjects in the scene and returns their root
+        /// GameObjects as prefab candidates.  This is a runtime fallback for when
+        /// the component is created programmatically (no Inspector assignment).
+        /// Each found customer root is used as a visual template — it is NOT
+        /// re-used directly; we pass it to Instantiate(), same as a prefab.
+        /// </summary>
+        private static GameObject[] AutoDiscoverCustomerPrefabs()
+        {
+            Customer[] customers = FindCustomers();
+            if (customers == null || customers.Length == 0)
+            {
+                Debug.LogWarning(LogPrefix + "Auto-discover: no Customer components found in scene. "
+                    + "Employee visual NPCs will not spawn. Assign prefabs manually or ensure "
+                    + "Customer_A–E prefabs are in the scene.");
+                return new GameObject[0];
+            }
+
+            // Collect distinct root GameObjects (use root so we capture the full character prefab).
+            System.Collections.Generic.HashSet<GameObject> seen =
+                new System.Collections.Generic.HashSet<GameObject>();
+            System.Collections.Generic.List<GameObject> result =
+                new System.Collections.Generic.List<GameObject>();
+
+            for (int i = 0; i < customers.Length; i++)
+            {
+                if (customers[i] == null)
+                    continue;
+
+                // Walk up to the first root or to the first parent without a Customer component
+                // so we grab the whole character, not just the component's GO.
+                GameObject root = customers[i].gameObject;
+                Transform parent = root.transform.parent;
+                while (parent != null && parent.GetComponent<Customer>() != null)
+                {
+                    root = parent.gameObject;
+                    parent = root.transform.parent;
+                }
+
+                if (seen.Add(root))
+                    result.Add(root);
+            }
+
+            if (result.Count == 0)
+            {
+                Debug.LogWarning(LogPrefix + "Auto-discover: customers found but no roots resolved.");
+                return new GameObject[0];
+            }
+
+            System.Text.StringBuilder nameList = new System.Text.StringBuilder();
+            for (int i = 0; i < result.Count; i++)
+            {
+                if (i > 0) nameList.Append(", ");
+                nameList.Append(result[i].name);
+            }
+            Debug.Log(LogPrefix + "Auto-discovered " + result.Count
+                + " customer prefab(s) for employee NPC spawning: "
+                + nameList);
+            return result.ToArray();
+        }
+
+        private static Customer[] FindCustomers()
+        {
+#if UNITY_2022_2_OR_NEWER
+            return Object.FindObjectsByType<Customer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+            return Object.FindObjectsOfType<Customer>(true);
+#endif
+        }
+
         // ── Private helpers ───────────────────────────────────────────────────────
 
         private void OnEmployeeHired(int employeeId)
@@ -125,6 +203,10 @@ namespace FLOBUK.StoreSimulator
 
         private void OnDataLoaded()
         {
+            // Ensure we have prefabs discovered even after a scene reload.
+            if (employeePrefabs == null || employeePrefabs.Length == 0)
+                employeePrefabs = AutoDiscoverCustomerPrefabs();
+
             // Destroy all existing NPCs (they were from the previous session's state).
             DespawnAll();
             RespawnAll();
