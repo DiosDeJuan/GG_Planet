@@ -203,12 +203,12 @@ namespace FLOBUK.StoreSimulator
             _nameText = CreateTMP(canvasGO, "NameLabel", FontSizeName, new Vector2(0f, 0.48f), new Vector2(1f, 1f));
             _nameText.fontStyle = TMPro.FontStyles.Bold;
             _nameText.color     = Color.white;
-            _nameText.alignment = TMPro.TextAlignmentOptions.MidlineCenter;
+            _nameText.alignment = TMPro.TextAlignmentOptions.Center;
 
             // Info label (bottom half).
             _infoText = CreateTMP(canvasGO, "InfoLabel", FontSizeInfo, new Vector2(0f, 0f), new Vector2(1f, 0.48f));
             _infoText.color     = new Color(0.80f, 0.90f, 0.60f);
-            _infoText.alignment = TMPro.TextAlignmentOptions.MidlineCenter;
+            _infoText.alignment = TMPro.TextAlignmentOptions.Center;
 
             // Start hidden until a product is assigned.
             canvasGO.SetActive(false);
