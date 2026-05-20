@@ -63,9 +63,15 @@ namespace FLOBUK.StoreSimulator
             if (contentW <= 0f || contentH <= 0f)
                 return;
 
-            // ── Read available panel size; force layout so size is current ────
-            Canvas.ForceUpdateCanvases();
+            // ── Read available panel size ─────────────────────────────────────
+            // ForceUpdateCanvases only if the rect hasn't been calculated yet
+            // (this is only called once per expansion tab open, so cost is minimal).
             Vector2 panelSize = mapRoot.rect.size;
+            if (panelSize.x <= 0f || panelSize.y <= 0f)
+            {
+                Canvas.ForceUpdateCanvases();
+                panelSize = mapRoot.rect.size;
+            }
 
             // If canvas hasn't been laid out yet, fall back to a safe default.
             if (panelSize.x <= 0f || panelSize.y <= 0f)
