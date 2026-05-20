@@ -346,7 +346,7 @@ namespace FLOBUK.StoreSimulator
 
             if (!unlocked)
             {
-                row.statusLabel.text  = "🔒 Bloqueado en el Árbol del Emprendedor";
+                row.statusLabel.text  = "[BLOQ] Bloqueado en el Árbol del Emprendedor";
                 row.statusLabel.color = ColorLocked;
                 row.priceLabel.text   = "--";
                 row.probLabel.text    = "";

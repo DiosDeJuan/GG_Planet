@@ -145,9 +145,9 @@ namespace FLOBUK.StoreSimulator
                             : zone.type == ExpansionZoneType.Storage   ? "A"
                             : "O";
 
-            string stateLine = zone.state == ExpansionZoneState.Purchased ? "✓"
+            string stateLine = zone.state == ExpansionZoneState.Purchased ? "[OK]"
                              : zone.state == ExpansionZoneState.Available  ? "+"
-                             : "✗";
+                             : "[NO]";
 
             label.text = typeAbbr + "\n" + stateLine;
         }
