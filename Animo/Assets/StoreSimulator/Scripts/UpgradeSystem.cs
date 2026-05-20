@@ -107,6 +107,16 @@ namespace FLOBUK.StoreSimulator
 
 
         /// <summary>
+        /// Fires the onUpgradePurchase event without deducting money or changing state.
+        /// Used by bridge systems (e.g. EntrepreneurTreeLicenseBridge) to signal a free unlock.
+        /// </summary>
+        public static void NotifyPurchase(PurchasableScriptableObject purchasable)
+        {
+            onUpgradePurchase?.Invoke(purchasable);
+        }
+
+
+        /// <summary>
         /// Applies the decoration texture to the store based on the DecorationType.
         /// Unselects any other existing selection on the same DecorationType.
         /// </summary>

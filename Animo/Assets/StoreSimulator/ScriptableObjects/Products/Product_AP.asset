@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 08c7da9b121e3464c9646cf1d7956018, type: 3}
-  m_Name: Product_E
+  m_Name: Product_AP
   m_EditorClassIdentifier: 
-  id: 4
-  category: básicos
-  title: Azúcar
-  icon: {fileID: 21300000, guid: fde359b981ac36d42a0a677c6835ed1c, type: 3}
+  id: 41
+  category: lujo
+  title: Caviar
+  icon: {fileID: 21300000, guid: 8e375f9a54670f54ca85f19035aae6fe, type: 3}
   requiredLevel: 0
-  buyPrice: 70
-  prefab: {fileID: 872636651762138253, guid: 6d3c2ce5851462c499e8b0cb2c5ae923, type: 3}
+  buyPrice: 800
+  prefab: {fileID: 7197882021692412654, guid: dc2531e85b5ebf9428a92fd5efb88e73, type: 3}
   storageType: 0
   size: {x: 1, y: 1}
   packageCount: 9
-  storePrice: 100
-  marketPrice: 100
+  storePrice: 1200
+  marketPrice: 1200
   requiredLicense: 

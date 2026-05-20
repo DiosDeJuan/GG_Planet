@@ -39,10 +39,55 @@ namespace FLOBUK.StoreSimulator
             buttonsByZone.Clear();
             currentSelectedId = null;
 
-            // Map background grid (subtle dark tint already comes from the panel Image).
-            // Draw a slightly lighter grid pattern as a single child image.
+            if (zones.Count == 0)
+                return;
+
+            // ── Compute bounds of all zone definitions ────────────────────────
+            float minX = float.MaxValue, minY = float.MaxValue;
+            float maxX = float.MinValue, maxY = float.MinValue;
+
+            for (int i = 0; i < zones.Count; i++)
+            {
+                ExpansionZoneData z = zones[i];
+                if (z == null) continue;
+                if (z.mapPosition.x < minX) minX = z.mapPosition.x;
+                if (z.mapPosition.y < minY) minY = z.mapPosition.y;
+                float rx = z.mapPosition.x + z.mapSize.x;
+                float ry = z.mapPosition.y + z.mapSize.y;
+                if (rx > maxX) maxX = rx;
+                if (ry > maxY) maxY = ry;
+            }
+
+            float contentW = maxX - minX;
+            float contentH = maxY - minY;
+            if (contentW <= 0f || contentH <= 0f)
+                return;
+
+            // ── Read available panel size; force layout so size is current ────
+            Canvas.ForceUpdateCanvases();
+            Vector2 panelSize = mapRoot.rect.size;
+
+            // If canvas hasn't been laid out yet, fall back to a safe default.
+            if (panelSize.x <= 0f || panelSize.y <= 0f)
+                panelSize = new Vector2(400f, 320f);
+
+            const float Padding = 16f;
+            float availW = panelSize.x - Padding * 2f;
+            float availH = panelSize.y - Padding * 2f;
+
+            // Uniform scale to fit content inside available area while keeping aspect ratio.
+            float scaleX = availW / contentW;
+            float scaleY = availH / contentH;
+            float scale  = Mathf.Min(scaleX, scaleY);
+
+            // Centre the scaled content inside the panel.
+            float offsetX = Padding + (availW - contentW * scale) * 0.5f;
+            float offsetY = Padding + (availH - contentH * scale) * 0.5f;
+
+            // ── Background ────────────────────────────────────────────────────
             DrawGridBackground(zones);
 
+            // ── Zone buttons ──────────────────────────────────────────────────
             for (int i = 0; i < zones.Count; i++)
             {
                 ExpansionZoneData zone = zones[i];
@@ -54,19 +99,28 @@ namespace FLOBUK.StoreSimulator
                     typeof(ExpansionZoneButtonUI));
                 zoneObj.transform.SetParent(mapRoot, false);
 
+                // Convert zone's reference-space position to scaled panel space.
+                float px = offsetX + (zone.mapPosition.x - minX) * scale;
+                float py = offsetY + (zone.mapPosition.y - minY) * scale;
+                float sw = zone.mapSize.x * scale;
+                float sh = zone.mapSize.y * scale;
+
                 RectTransform rt = zoneObj.GetComponent<RectTransform>();
-                rt.anchorMin      = new Vector2(0f, 0f);
-                rt.anchorMax      = new Vector2(0f, 0f);
-                rt.pivot          = new Vector2(0f, 0f);
-                rt.anchoredPosition = zone.mapPosition;
-                rt.sizeDelta        = zone.mapSize;
+                rt.anchorMin        = new Vector2(0f, 0f);
+                rt.anchorMax        = new Vector2(0f, 0f);
+                rt.pivot            = new Vector2(0f, 0f);
+                rt.anchoredPosition = new Vector2(px, py);
+                rt.sizeDelta        = new Vector2(sw, sh);
 
                 ExpansionZoneButtonUI btn = zoneObj.GetComponent<ExpansionZoneButtonUI>();
                 btn.Initialize(zone, OnZoneClicked);
                 buttonsByZone[zone.id] = btn;
             }
 
-            Debug.Log(LogPrefix + "Map rebuilt: " + buttonsByZone.Count + " zones.");
+            Debug.Log(LogPrefix + "Map rebuilt: " + buttonsByZone.Count
+                + " zones. Scale=" + scale.ToString("F2")
+                + " Panel=" + panelSize.x.ToString("F0") + "×" + panelSize.y.ToString("F0")
+                + " Content=" + contentW.ToString("F0") + "×" + contentH.ToString("F0"));
         }
 
         /// <summary>Updates colours/labels of existing zone buttons without recreating them.</summary>

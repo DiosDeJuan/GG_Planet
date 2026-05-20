@@ -119,6 +119,7 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EntrepreneurTreeSecurityAdapter>();
                 systems.AddComponent<EntrepreneurTreeUpgradeAdapter>();
                 systems.AddComponent<EntrepreneurTreeGameplayBridge>();
+                systems.AddComponent<EntrepreneurTreeLicenseBridge>();
                 systems.AddComponent<EntrepreneurEmployeeSystem>();
                 systems.AddComponent<EmployeeRestockCoordinator>();
                 systems.AddComponent<ShoplifterSystem>();
@@ -170,6 +171,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EntrepreneurTreeUpgradeAdapter>();
             if (systems.GetComponent<EntrepreneurTreeGameplayBridge>() == null)
                 systems.AddComponent<EntrepreneurTreeGameplayBridge>();
+            if (systems.GetComponent<EntrepreneurTreeLicenseBridge>() == null)
+                systems.AddComponent<EntrepreneurTreeLicenseBridge>();
             if (systems.GetComponent<EntrepreneurEmployeeSystem>() == null)
                 systems.AddComponent<EntrepreneurEmployeeSystem>();
             if (systems.GetComponent<EmployeeRestockCoordinator>() == null)

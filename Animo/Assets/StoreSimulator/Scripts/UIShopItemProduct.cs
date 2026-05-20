@@ -62,7 +62,7 @@ namespace FLOBUK.StoreSimulator
                     {
                         lockedOverlay.SetActive(!requiredLicense.isPurchased);
                         if (lockedMessage != null)
-                            lockedMessage.text = "Requires License " + requiredLicense.title;
+                            lockedMessage.text = "Requiere: " + requiredLicense.title;
                     }
                 }
             }
