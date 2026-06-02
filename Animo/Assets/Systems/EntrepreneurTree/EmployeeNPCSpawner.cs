@@ -301,6 +301,7 @@ namespace FLOBUK.StoreSimulator
             Vector3 position = basePos + spawnOffset * (spawnedNPCs.Count);
             Quaternion rotation = Quaternion.identity;
 
+            string workstationId = string.Empty;
             if (EmployeeWorkstationRegistry.Instance != null)
             {
                 EmployeeWorkstation ws = EmployeeWorkstationRegistry.Instance.GetAssignedStation(employeeId);
@@ -308,6 +309,7 @@ namespace FLOBUK.StoreSimulator
                 {
                     position = ws.StandPosition;
                     rotation = ws.StandRotation;
+                    workstationId = ws.workstationId;
                 }
             }
 
@@ -325,8 +327,110 @@ namespace FLOBUK.StoreSimulator
 
             spawnedNPCs[employeeId] = npc;
 
-            Debug.Log(LogPrefix + "Spawned NPC for employee #" + employeeId
-                + " using prefab '" + prefab.name + "' at " + position + ".");
+            LogSpawnDiagnostics(employeeId, prefab.name, position, npc, startRole, workstationId);
+        }
+
+        /// <summary>
+        /// Logs comprehensive visual diagnostics for a newly spawned employee NPC.
+        /// This satisfies Tarea 6 visual proof requirements.
+        /// </summary>
+        private static void LogSpawnDiagnostics(int employeeId, string prefabName,
+            Vector3 spawnPosition, GameObject npc, EmployeeRole role, string workstationId)
+        {
+            Vector3 finalPos  = npc.transform.position;
+            Vector3 finalScale = npc.transform.lossyScale;
+
+            // Renderer status
+            Renderer[] renderers = npc.GetComponentsInChildren<Renderer>(includeInactive: true);
+            int activeRenderers   = 0;
+            int totalRenderers    = renderers.Length;
+            foreach (Renderer r in renderers)
+                if (r != null && r.enabled && r.gameObject.activeInHierarchy)
+                    activeRenderers++;
+
+            // NavMeshAgent status
+            NavMeshAgent agent = npc.GetComponent<NavMeshAgent>();
+            bool hasAgent  = agent != null;
+            bool agentEnabled = hasAgent && agent.enabled;
+            bool agentOnMesh  = hasAgent && agent.isOnNavMesh;
+            string pathStatus = hasAgent ? agent.pathStatus.ToString() : "N/A";
+
+            // Camera / player proximity
+            Camera mainCam = Camera.main;
+            float camDist  = mainCam != null
+                ? Vector3.Distance(finalPos, mainCam.transform.position)
+                : -1f;
+
+            // Parent active chain
+            bool parentActive = true;
+            Transform t = npc.transform.parent;
+            while (t != null)
+            {
+                if (!t.gameObject.activeSelf) { parentActive = false; break; }
+                t = t.parent;
+            }
+
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.AppendLine(LogPrefix + "=== NPC Spawn Diagnostics ===");
+            sb.AppendLine("  employeeId   : " + employeeId);
+            sb.AppendLine("  role         : " + role);
+            sb.AppendLine("  prefab       : " + prefabName);
+            sb.AppendLine("  spawnPos     : " + spawnPosition);
+            sb.AppendLine("  finalPos     : " + finalPos);
+            sb.AppendLine("  scale        : " + finalScale);
+            sb.AppendLine("  renderers    : " + activeRenderers + "/" + totalRenderers + " active");
+            sb.AppendLine("  parentActive : " + parentActive);
+            sb.AppendLine("  npcActive    : " + npc.activeSelf + " (hierarchy=" + npc.activeInHierarchy + ")");
+            sb.AppendLine("  NavMeshAgent : present=" + hasAgent
+                + " enabled=" + agentEnabled + " onMesh=" + agentOnMesh
+                + " pathStatus=" + pathStatus);
+            sb.AppendLine("  workstationId: " + (string.IsNullOrEmpty(workstationId) ? "<none>" : workstationId));
+            sb.AppendLine("  camDist      : " + (camDist < 0f ? "no main camera" : camDist.ToString("0.0") + "m"));
+
+            if (activeRenderers == 0)
+                sb.AppendLine("  [WARN] No active renderers — NPC will be invisible to player!");
+            if (!agentOnMesh)
+                sb.AppendLine("  [WARN] NavMeshAgent is NOT on NavMesh — NPC may be stuck or teleported!");
+            if (!parentActive)
+                sb.AppendLine("  [WARN] A parent object is inactive — NPC will not appear in scene!");
+            if (finalScale.x < 0.01f || finalScale.y < 0.01f || finalScale.z < 0.01f)
+                sb.AppendLine("  [WARN] Scale is near zero — NPC will not be visible!");
+
+            Debug.Log(sb.ToString());
+        }
+
+        /// <summary>
+        /// Dumps a full visual diagnostic for all currently spawned NPCs.
+        /// Call this from the console or a runner to verify NPC visibility at runtime.
+        /// </summary>
+        public void DumpAllNPCDiagnostics()
+        {
+            if (spawnedNPCs.Count == 0)
+            {
+                Debug.LogWarning(LogPrefix + "DumpAllNPCDiagnostics: no NPCs currently spawned.");
+                return;
+            }
+
+            foreach (KeyValuePair<int, GameObject> pair in spawnedNPCs)
+            {
+                int eid = pair.Key;
+                GameObject npc = pair.Value;
+                if (npc == null)
+                {
+                    Debug.LogWarning(LogPrefix + "Employee #" + eid + " NPC has been destroyed.");
+                    continue;
+                }
+
+                EmployeeRole role = EntrepreneurEmployeeSystem.Instance != null
+                    ? EntrepreneurEmployeeSystem.Instance.GetEmployeeRole(eid)
+                    : EmployeeRole.None;
+
+                string wsId = EmployeeWorkstationRegistry.Instance != null
+                    ? EmployeeWorkstationRegistry.Instance.GetAssignedId(eid)
+                    : string.Empty;
+
+                LogSpawnDiagnostics(eid, npc.name, npc.transform.position, npc, role, wsId);
+            }
         }
 
         private Vector3 GetFallbackSpawnPosition()
