@@ -1,6 +1,7 @@
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
+/*  Adaptado por Isaac Victoria. */
 
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -173,7 +174,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void SetMovementState(MovementState state, bool lockCursor)
         {
-            if (Cursor.lockState == CursorLockMode.None && lockCursor == true)
+            if (Cursor.lockState == CursorLockMode.None && lockCursor == true && Mouse.current != null)
             {
                 Mouse.current.WarpCursorPosition(new Vector2(Screen.width / 2, Screen.height / 2));
                 Instance.skipMouseDelta = true;

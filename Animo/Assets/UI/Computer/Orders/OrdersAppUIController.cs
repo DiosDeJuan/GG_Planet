@@ -81,7 +81,9 @@ namespace FLOBUK.StoreSimulator
             uiBuilt = true;
 
             // Panel background
-            Image bg = gameObject.AddComponent<Image>();
+            Image bg = GetComponent<Image>();
+            if (bg == null)
+                bg = gameObject.AddComponent<Image>();
             bg.color = ColorBackground;
 
             RectTransform rt = GetComponent<RectTransform>();
@@ -338,7 +340,13 @@ namespace FLOBUK.StoreSimulator
             }
 
             // Delegate to the existing asset purchase pipeline.
-            DeliverySystem.Purchase(product);
+            if (!DeliverySystem.Purchase(product))
+            {
+                if (statusLabel != null)
+                    statusLabel.text = "No se pudo completar el pedido. Revisa el mensaje mostrado.";
+                RefreshAll();
+                return;
+            }
 
             string successMsg = "Pedido realizado: " + product.title + " ×" + product.packageCount;
             if (statusLabel != null)

@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace FLOBUK.StoreSimulator
 {
@@ -10,15 +11,37 @@ namespace FLOBUK.StoreSimulator
     {
         private const string LogPrefix = "[Restock] ";
 
+        public enum RestockTaskState
+        {
+            Idle,
+            GoingToStorage,
+            PickingStock,
+            GoingToShelf,
+            PlacingProduct,
+            ReturningOrIdle
+        }
+
         [Header("Cycle")]
         [Min(1f)] public float baseCycleSeconds = 12f;
         [Min(0.5f)] public float minCycleSeconds = 1.5f;
         [Range(0.1f, 0.95f)] public float lowStockThreshold = 0.40f;
         [Min(1)] public int maxTasksPerCycle = 6;
         public bool notifyWhenMissingSource = false;
+        [Min(1f)] public float navigationTimeoutSeconds = 20f;
+        [Min(1f)] public float navigationTimeoutMarginSeconds = 8f;
+        [Min(1f)] public float navigationTimeoutMultiplier = 1.75f;
+        [Min(0.05f)] public float pickingSeconds = 0.35f;
+        [Min(0.05f)] public float placingSeconds = 0.35f;
+        [Min(0.1f)] public float arrivalTolerance = 0.8f;
+        [Min(1f)] public float navMeshSampleRadius = 8f;
 
         private Coroutine cycleRoutine;
+        private Coroutine visualTaskRoutine;
         private float lastMissingSourceWarnTime;
+
+        public RestockTaskState CurrentTaskState { get; private set; } = RestockTaskState.Idle;
+        public bool IsVisualTaskInProgress => visualTaskRoutine != null;
+        public bool LastTaskCompletedVisualRoute { get; private set; }
 
         void Awake()
         {
@@ -91,7 +114,8 @@ namespace FLOBUK.StoreSimulator
 
                 int tasks = Mathf.Clamp(restockers, 1, maxTasksPerCycle);
                 for (int i = 0; i < tasks; i++)
-                    ExecuteSingleTask();
+                    if (TryStartVisualTask())
+                        break;
             }
         }
 
@@ -130,6 +154,246 @@ namespace FLOBUK.StoreSimulator
             Vector3 targetPosition = target.Add(sourceProduct);
             Quaternion targetRotation = Quaternion.Euler(0, target.orientation, 0);
             InteractionSystem.MoveToTargetArc(item, target.container, targetPosition, targetRotation, GetPlacementLerpSpeed());
+        }
+
+
+        private bool TryStartVisualTask()
+        {
+            if (visualTaskRoutine != null)
+                return false;
+
+            PackageObject sourcePackage;
+            ProductScriptableObject sourceProduct;
+            PlacementObject target = FindRestockTarget(out sourcePackage, out sourceProduct);
+            if (target == null || sourcePackage == null || sourceProduct == null)
+            {
+                MaybeNotifyMissingSource();
+                return false;
+            }
+
+            int employeeId = FindAvailableRestockerEmployeeId();
+            GameObject npc = employeeId > 0 ? EmployeeNPCSpawner.Instance?.GetNPC(employeeId) : null;
+            NavMeshAgent agent = npc != null ? npc.GetComponent<NavMeshAgent>() : null;
+            if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+            {
+                Debug.LogWarning(LogPrefix + "Visual route unavailable; using documented emergency logical placement.");
+                ExecuteSingleTask();
+                return false;
+            }
+
+            LastTaskCompletedVisualRoute = false;
+            visualTaskRoutine = StartCoroutine(RunVisualTask(employeeId, npc, agent, sourcePackage, sourceProduct, target));
+            return true;
+        }
+
+
+        private IEnumerator RunVisualTask(int employeeId, GameObject npc, NavMeshAgent agent,
+                                          PackageObject sourcePackage, ProductScriptableObject sourceProduct,
+                                          PlacementObject target)
+        {
+            Transform carriedItem = null;
+            try
+            {
+                SetTaskState(RestockTaskState.GoingToStorage, employeeId, sourceProduct, target);
+                if (!TrySetDestination(agent, sourcePackage.transform.position))
+                    yield break;
+                yield return WaitForArrival(agent, GetNavigationTimeout(agent));
+                if (!HasArrived(agent))
+                    yield break;
+
+                SetTaskState(RestockTaskState.PickingStock, employeeId, sourceProduct, target);
+                yield return new WaitForSeconds(pickingSeconds);
+                carriedItem = Instantiate(sourceProduct.prefab).transform;
+                carriedItem.SetParent(npc.transform, true);
+
+                Vector3 shelfPosition = target.container != null
+                    ? target.container.position
+                    : target.transform.position;
+                SetTaskState(RestockTaskState.GoingToShelf, employeeId, sourceProduct, target);
+                if (!TrySetDestination(agent, shelfPosition))
+                    yield break;
+                yield return WaitForArrival(agent, GetNavigationTimeout(agent));
+                if (!HasArrived(agent))
+                    yield break;
+
+                SetTaskState(RestockTaskState.PlacingProduct, employeeId, sourceProduct, target);
+                yield return new WaitForSeconds(placingSeconds);
+                if (target.container == null || !target.IsPlaceable(sourceProduct))
+                    yield break;
+
+                Destroy(carriedItem.gameObject);
+                carriedItem = sourcePackage.Remove();
+                if (carriedItem == null)
+                    yield break;
+                Vector3 targetPosition = target.Add(sourceProduct);
+                Quaternion targetRotation = Quaternion.Euler(0, target.orientation, 0);
+                carriedItem.SetParent(null, true);
+                InteractionSystem.MoveToTargetArc(carriedItem, target.container, targetPosition, targetRotation, GetPlacementLerpSpeed());
+                carriedItem = null;
+                LastTaskCompletedVisualRoute = true;
+
+                SetTaskState(RestockTaskState.ReturningOrIdle, employeeId, sourceProduct, target);
+                EmployeeNPCSpawner.Instance?.RefreshNPCPosition(employeeId);
+            }
+            finally
+            {
+                if (carriedItem != null)
+                    Destroy(carriedItem.gameObject);
+                CurrentTaskState = RestockTaskState.Idle;
+                visualTaskRoutine = null;
+                Debug.Log(LogPrefix + "State Idle.");
+            }
+        }
+
+
+        private static int FindAvailableRestockerEmployeeId()
+        {
+            if (EntrepreneurEmployeeSystem.Instance == null)
+                return -1;
+
+            foreach (EmployeeAssignment assignment in EntrepreneurEmployeeSystem.Instance.GetAssignments())
+                if (assignment != null && assignment.isHired && assignment.role == EmployeeRole.Restocker)
+                    return assignment.employeeId;
+
+            return -1;
+        }
+
+
+        private bool TrySetDestination(NavMeshAgent agent, Vector3 target)
+        {
+            if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+                return false;
+
+            if (!TryResolveReachablePoint(agent, target, out Vector3 destination))
+            {
+                Debug.LogWarning(LogPrefix + "No reachable NavMesh point near " + target + ".");
+                return false;
+            }
+
+            agent.isStopped = false;
+            agent.updatePosition = true;
+            agent.updateRotation = true;
+            agent.speed = Mathf.Max(2.5f, agent.speed);
+            agent.acceleration = Mathf.Max(8f, agent.acceleration);
+            agent.SetDestination(destination);
+            Debug.Log(LogPrefix + "Navigation target " + destination + " resolved near " + target + ".");
+            return true;
+        }
+
+
+        private bool TryResolveReachablePoint(NavMeshAgent agent, Vector3 target, out Vector3 destination)
+        {
+            destination = Vector3.zero;
+            float bestDistance = float.MaxValue;
+            NavMeshPath path = new NavMeshPath();
+
+            for (float radius = 0f; radius <= navMeshSampleRadius; radius += 2f)
+            {
+                int samples = radius <= 0f ? 1 : 12;
+                for (int i = 0; i < samples; i++)
+                {
+                    float angle = samples == 1 ? 0f : i * Mathf.PI * 2f / samples;
+                    Vector3 candidate = target + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+                    if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2.5f, NavMesh.AllAreas))
+                        continue;
+                    if (!agent.CalculatePath(hit.position, path) || path.status != NavMeshPathStatus.PathComplete)
+                        continue;
+
+                    float distance = Vector3.Distance(hit.position, target);
+                    if (distance >= bestDistance)
+                        continue;
+
+                    bestDistance = distance;
+                    destination = hit.position;
+                }
+            }
+
+            return bestDistance < float.MaxValue;
+        }
+
+
+        private IEnumerator WaitForArrival(NavMeshAgent agent, float timeout)
+        {
+            float started = Time.realtimeSinceStartup;
+            Vector3 startPosition = agent != null ? agent.transform.position : Vector3.zero;
+            while (agent != null && agent.enabled && agent.isOnNavMesh && agent.pathPending)
+            {
+                if (Time.realtimeSinceStartup - started >= navigationTimeoutSeconds)
+                {
+                    Debug.LogWarning(LogPrefix + "Navigation path calculation timed out in state "
+                        + CurrentTaskState + ".");
+                    yield break;
+                }
+                yield return null;
+            }
+
+            timeout = Mathf.Max(timeout, GetNavigationTimeout(agent));
+            while (agent != null && agent.enabled && agent.isOnNavMesh && !HasArrived(agent))
+            {
+                UpdateEmployeeAnimator(agent);
+                if (Time.realtimeSinceStartup - started >= timeout)
+                {
+                    Debug.LogWarning(LogPrefix + "Navigation timeout in state " + CurrentTaskState
+                        + ". start=" + startPosition + ", current=" + agent.transform.position
+                        + ", moved=" + Vector3.Distance(startPosition, agent.transform.position).ToString("0.00")
+                        + ", remaining=" + agent.remainingDistance.ToString("0.00")
+                        + ", velocity=" + agent.velocity.magnitude.ToString("0.00") + ".");
+                    yield break;
+                }
+                yield return null;
+            }
+            UpdateEmployeeAnimator(agent);
+            if (HasArrived(agent))
+                Debug.Log(LogPrefix + "Arrived in state " + CurrentTaskState
+                    + ". moved=" + Vector3.Distance(startPosition, agent.transform.position).ToString("0.00")
+                    + ", elapsed=" + (Time.realtimeSinceStartup - started).ToString("0.00") + "s.");
+        }
+
+
+        private float GetNavigationTimeout(NavMeshAgent agent)
+        {
+            if (agent == null || !agent.hasPath || agent.path == null)
+                return navigationTimeoutSeconds;
+
+            Vector3[] corners = agent.path.corners;
+            float distance = 0f;
+            for (int i = 1; i < corners.Length; i++)
+                distance += Vector3.Distance(corners[i - 1], corners[i]);
+
+            float expectedSeconds = distance / Mathf.Max(0.1f, agent.speed);
+            return Mathf.Max(navigationTimeoutSeconds,
+                expectedSeconds * navigationTimeoutMultiplier + navigationTimeoutMarginSeconds);
+        }
+
+
+        private static void UpdateEmployeeAnimator(NavMeshAgent agent)
+        {
+            if (agent == null)
+                return;
+
+            Animator animator = agent.GetComponent<Animator>();
+            if (animator == null || !animator.enabled)
+                return;
+
+            Vector3 localVelocity = Quaternion.Inverse(agent.transform.rotation) * agent.desiredVelocity;
+            animator.SetFloat("Speed", agent.velocity.magnitude);
+            animator.SetFloat("Direction", Mathf.Atan2(localVelocity.x, localVelocity.z) * Mathf.Rad2Deg);
+        }
+
+
+        private bool HasArrived(NavMeshAgent agent)
+        {
+            return agent != null && !agent.pathPending &&
+                   agent.remainingDistance <= Mathf.Max(arrivalTolerance, agent.stoppingDistance);
+        }
+
+
+        private void SetTaskState(RestockTaskState state, int employeeId,
+                                  ProductScriptableObject product, PlacementObject target)
+        {
+            CurrentTaskState = state;
+            Debug.Log(LogPrefix + "Employee #" + employeeId + " state " + state
+                + " product='" + product.title + "' target='" + target.name + "'.");
         }
 
 
@@ -347,6 +611,8 @@ namespace FLOBUK.StoreSimulator
         void OnDestroy()
         {
             StopCycle();
+            if (visualTaskRoutine != null)
+                StopCoroutine(visualTaskRoutine);
             DayCycleSystem.onDayStarted -= OnDayStarted;
             DayCycleSystem.onDayOver -= OnDayOver;
             SaveGameSystem.dataLoadEvent -= OnDataLoaded;

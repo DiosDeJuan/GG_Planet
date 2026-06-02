@@ -1,6 +1,7 @@
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
+/*  Adaptado por Isaac Victoria. */
 
 using System;
 using UnityEngine;
@@ -65,12 +66,12 @@ namespace FLOBUK.StoreSimulator
         /// Called from a UIShopItem instance when trying to purchase that specific item.
         /// Does an internal check for money and then spawns the package.
         /// </summary>
-        public static void Purchase(PurchasableScriptableObject purchasable)
+        public static bool Purchase(PurchasableScriptableObject purchasable)
         {
             if (purchasable == null)
             {
                 Debug.LogWarning("[Orders] Purchase blocked: purchasable is null.");
-                return;
+                return false;
             }
 
             //get amount of products in the package
@@ -82,7 +83,9 @@ namespace FLOBUK.StoreSimulator
                     !EntrepreneurTreeGameplayBridge.Instance.IsProductUnlocked(product))
                 {
                     UIGame.Instance?.ShowMessage("Este producto está bloqueado en el Árbol del Emprendedor.");
-                    return;
+                    Debug.LogWarning("[Orders] Purchase blocked for " + product.title + " (id="
+                        + product.id + "): entrepreneur tree group is locked.");
+                    return false;
                 }
 
                 amount = Mathf.Max(1, product.packageCount);
@@ -91,7 +94,7 @@ namespace FLOBUK.StoreSimulator
             if (StoreDatabase.Instance == null)
             {
                 Debug.LogWarning("[Orders] Purchase blocked: StoreDatabase.Instance is null.");
-                return;
+                return false;
             }
 
             if (Instance == null || Instance.packagePrefab == null || Instance.deliveryStart == null)
@@ -99,7 +102,7 @@ namespace FLOBUK.StoreSimulator
                 string setupMessage = "No se pudo crear el pedido: sistema de entregas no disponible.";
                 UIGame.Instance?.ShowMessage(setupMessage);
                 Debug.LogWarning("[Orders] Purchase blocked: DeliverySystem is not fully configured.");
-                return;
+                return false;
             }
 
             long totalCost = purchasable.buyPrice * amount;
@@ -110,7 +113,7 @@ namespace FLOBUK.StoreSimulator
                 UIGame.Instance?.ShowMessage(message);
                 Debug.Log("[Orders] Purchase blocked for " + purchasable.title + ": missing "
                     + StoreDatabase.FromLongToStringMoney(missingFunds) + ".");
-                return;
+                return false;
             }
 
             //subtract money
@@ -128,11 +131,12 @@ namespace FLOBUK.StoreSimulator
                     StoreDatabase.AddRemoveMoney(totalCost);
                     Destroy(newPackage);
                     UIGame.Instance?.ShowMessage("Error al crear el paquete: prefab sin PackageObject. Dinero reembolsado.");
-                    return;
+                    return false;
                 }
 
                 packageObject.Add(purchasable, amount);
                 onProductPurchase?.Invoke(purchasable as ProductScriptableObject);
+                return true;
             }
             catch (Exception ex)
             {
@@ -143,6 +147,7 @@ namespace FLOBUK.StoreSimulator
                 StoreDatabase.AddRemoveMoney(totalCost);
                 UIGame.Instance?.ShowMessage("Error al entregar paquete: " + purchasable.title
                     + ". Dinero reembolsado. Revisa la consola para detalles.");
+                return false;
             }
         }
 

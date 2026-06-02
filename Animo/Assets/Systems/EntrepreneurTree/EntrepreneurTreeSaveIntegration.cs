@@ -80,7 +80,7 @@ namespace FLOBUK.StoreSimulator
         {
             string path = Path.Combine(Application.persistentDataPath, fileName + SaveGameSystem.fileExt);
 
-            if (!File.Exists(path))
+            if (!File.Exists(path) && !File.Exists(path + SaveGameSystem.backupExt))
             {
                 // New game or first run – reset managers to defaults.
                 EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
@@ -88,6 +88,17 @@ namespace FLOBUK.StoreSimulator
                 EntrepreneurEmployeeSystem.Instance?.LoadFromJSON(null);
                 ShoplifterSystem.Instance?.LoadFromJSON(null);
                 Debug.Log(LogPrefix + "No EntrepreneurTree save file found. Loaded defaults.");
+                return;
+            }
+
+            path = ResolveValidProgressPath(path);
+            if (string.IsNullOrEmpty(path))
+            {
+                EntrepreneurTreeManager.Instance?.LoadFromJSON(null);
+                AchievementSystem.Instance?.LoadFromJSON(null);
+                EntrepreneurEmployeeSystem.Instance?.LoadFromJSON(null);
+                ShoplifterSystem.Instance?.LoadFromJSON(null);
+                Debug.LogWarning(LogPrefix + "Progress file and backup were invalid. Loaded defaults.");
                 return;
             }
 
@@ -187,12 +198,47 @@ namespace FLOBUK.StoreSimulator
             byte[] verify = File.ReadAllBytes(tempPath);
             if (verify == null || verify.Length != bytes.Length)
                 throw new IOException("Temporary save verification failed.");
+            if (JSON.Parse(Encoding.UTF8.GetString(verify)) == null)
+                throw new IOException("Temporary progress save JSON validation failed.");
 
             if (File.Exists(path))
                 File.Copy(path, backupPath, true);
             if (File.Exists(path))
                 File.Delete(path);
             File.Move(tempPath, path);
+        }
+
+
+        private static string ResolveValidProgressPath(string path)
+        {
+            if (CanParse(path))
+                return path;
+
+            string backupPath = path + SaveGameSystem.backupExt;
+            if (!CanParse(backupPath))
+                return string.Empty;
+
+            Debug.LogWarning(LogPrefix + "Primary progress save invalid. Loaded backup.");
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("Progreso recuperado desde respaldo.", otherColor: new Color(1f, 0.65f, 0.18f));
+            return backupPath;
+        }
+
+
+        private static bool CanParse(string path)
+        {
+            if (!File.Exists(path))
+                return false;
+
+            try
+            {
+                string json = Encoding.UTF8.GetString(File.ReadAllBytes(path));
+                return !string.IsNullOrWhiteSpace(json) && JSON.Parse(json) != null;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

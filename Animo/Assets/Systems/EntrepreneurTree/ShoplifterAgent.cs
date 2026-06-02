@@ -82,8 +82,13 @@ namespace FLOBUK.StoreSimulator
             if (!initialized || owner == null || theftStarted || isResolved)
                 return false;
 
+            if (!TryCalculateStolenValues(cart))
+            {
+                Debug.LogWarning("[Robbery] Theft cancelled because no real cart products could be reserved.");
+                return false;
+            }
+
             theftStarted = true;
-            CalculateStolenValues(cart);
             system.NotifyThiefDetected(this);
 
             if (system.TryAutomaticArrest(this))
@@ -175,7 +180,7 @@ namespace FLOBUK.StoreSimulator
         }
 
 
-        private void CalculateStolenValues(CustomerCart cart)
+        private bool TryCalculateStolenValues(CustomerCart cart)
         {
             long target = system.GetTargetStealValue(thiefType);
             reservedItems.Clear();
@@ -184,16 +189,12 @@ namespace FLOBUK.StoreSimulator
             bool hasReserved = inventoryBridge != null &&
                                inventoryBridge.TryReserveStolenItems(cart, thiefType, target, reservedItems, out total, out products);
 
-            if (!hasReserved || total <= 0)
-            {
-                total = target;
-                products = Mathf.Max(1, Mathf.FloorToInt(total / 1000f));
-                if (!hasReserved)
-                    Debug.LogWarning("[Robbery] Inventory bridge did not return stolen items. Using fallback theft values.");
-            }
+            if (!hasReserved || total <= 0 || products <= 0)
+                return false;
 
             stolenValue = total;
             stolenProductsCount = products;
+            return true;
         }
 
 

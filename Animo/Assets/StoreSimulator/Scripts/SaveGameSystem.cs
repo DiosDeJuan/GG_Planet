@@ -1,6 +1,7 @@
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
+/*  Adaptado por Isaac Victoria. */
 
 using System;
 using System.IO;
@@ -201,7 +202,7 @@ namespace FLOBUK.StoreSimulator
             byte[] verifyBytes = File.ReadAllBytes(tempPath);
             if (verifyBytes == null || verifyBytes.Length != bytes.Length)
                 throw new IOException("Temporary save verification failed.");
-            if (JSON.Parse(Encoding.UTF8.GetString(verifyBytes)) == null)
+            if (!IsValidSaveRoot(JSON.Parse(Encoding.UTF8.GetString(verifyBytes))))
                 throw new IOException("Temporary save JSON validation failed.");
 
             if (File.Exists(path))
@@ -292,8 +293,11 @@ namespace FLOBUK.StoreSimulator
             try
             {
                 JSONNode parsed = JSON.Parse(dataString);
-                if (parsed == null)
+                if (!IsValidSaveRoot(parsed))
+                {
                     Debug.LogWarning("[SaveSystem] " + (isBackup ? "Backup" : "Primary") + " save JSON parse returned null: " + path);
+                    return null;
+                }
                 return parsed;
             }
             catch (Exception e)
@@ -301,6 +305,14 @@ namespace FLOBUK.StoreSimulator
                 Debug.LogWarning("[SaveSystem] " + (isBackup ? "Backup" : "Primary") + " save JSON parse failed: " + e.Message);
                 return null;
             }
+        }
+
+
+        private static bool IsValidSaveRoot(JSONNode parsed)
+        {
+            return parsed != null && !parsed.IsNull && parsed.Count > 0 &&
+                   parsed["StoreDatabase"] != null && parsed["StoreDatabase"].Count > 0 &&
+                   parsed["ItemDatabase"] != null && parsed["ItemDatabase"].Count > 0;
         }
 
 

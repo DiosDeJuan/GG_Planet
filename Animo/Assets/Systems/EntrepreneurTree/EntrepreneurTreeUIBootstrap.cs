@@ -97,6 +97,7 @@ namespace FLOBUK.StoreSimulator
                     EnsureOrdersTab(helper, contentArea);
                     EnsurePricingTab(helper, contentArea);
                     EnsureInventoryTab(helper, contentArea);
+                    EnsureInstructionsTab(helper, contentArea);
                     HideLicensesTab(helper);
                 }
             }
@@ -909,6 +910,83 @@ namespace FLOBUK.StoreSimulator
         private static void ConfigureInventoryButton(Button button,
             UIShopCategoryHelper helper, GameObject panel)
         {
+            if (button == null)
+                return;
+
+            ExpansionTabButtonLink link = button.GetComponent<ExpansionTabButtonLink>();
+            if (link == null)
+                link = button.gameObject.AddComponent<ExpansionTabButtonLink>();
+            link.Configure(helper, panel);
+        }
+
+        // ── Instructions tab ───────────────────────────────────────────────────
+
+        private static void EnsureInstructionsTab(UIShopCategoryHelper helper, Transform contentArea)
+        {
+            if (helper == null || contentArea == null)
+                return;
+
+            Transform panel = contentArea.Find("Instrucciones");
+            if (panel == null)
+            {
+                GameObject panelObject = new GameObject("Instrucciones",
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                panelObject.transform.SetParent(contentArea, false);
+                RectTransform panelRT = panelObject.GetComponent<RectTransform>();
+                panelRT.anchorMin = Vector2.zero;
+                panelRT.anchorMax = Vector2.one;
+                panelRT.offsetMin = Vector2.zero;
+                panelRT.offsetMax = Vector2.zero;
+                panelObject.SetActive(false);
+                panel = panelObject.transform;
+                Debug.Log("[Instructions] Instructions panel created.");
+            }
+
+            if (panel.GetComponent<InstructionsAppUIController>() == null)
+                panel.gameObject.AddComponent<InstructionsAppUIController>();
+
+            EnsureInstructionsButton(helper, panel.gameObject);
+        }
+
+        private static void EnsureInstructionsButton(UIShopCategoryHelper helper, GameObject panel)
+        {
+            Transform root = helper.transform.parent != null ? helper.transform.parent : helper.transform;
+            Button[] buttons = root.GetComponentsInChildren<Button>(true);
+            Button template = null;
+            Button existing = null;
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                TMP_Text label = buttons[i] != null ? buttons[i].GetComponentInChildren<TMP_Text>(true) : null;
+                string text = label != null ? label.text.Trim().ToUpperInvariant() : string.Empty;
+                if (text == "AYUDA")
+                {
+                    existing = buttons[i];
+                    break;
+                }
+                if ((text == "INVENTARIO" || text == "COMPRA" || text == "EMPLEADOS") && template == null)
+                    template = buttons[i];
+            }
+
+            Button button = existing;
+            if (button == null && template != null)
+            {
+                button = Object.Instantiate(template, template.transform.parent, false);
+                button.name = "InstructionsButton";
+                TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+                if (label != null)
+                {
+                    label.text = "AYUDA";
+                    label.color = Color.white;
+                }
+                Image image = button.GetComponent<Image>();
+                if (image != null)
+                    image.color = new Color(0.28f, 0.35f, 0.58f, 0.95f);
+                button.onClick.RemoveAllListeners();
+                ApplyTabButtonCompact(button);
+                button.transform.SetAsLastSibling();
+                Debug.Log("[Instructions] Instructions tab button created.");
+            }
+
             if (button == null)
                 return;
 

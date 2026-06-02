@@ -92,7 +92,7 @@ namespace FLOBUK.StoreSimulator
                 return true;
             }
 
-            bool isUnlocked = unlockedGroups.Contains(groupId);
+            bool isUnlocked = IsGroupUnlocked(groupId);
             if (!isUnlocked && loggedLockedProducts.Add(product.id))
                 Debug.Log(LogPrefix + "Product locked: " + product.title + " requires " + groupId + ".");
             if (isUnlocked && groupId == EntrepreneurTreeDefinition.DefaultUnlockedNodeId && loggedStarterProducts.Add(product.id))
@@ -112,13 +112,26 @@ namespace FLOBUK.StoreSimulator
             if (!productIdToGroup.TryGetValue(product.id, out groupId))
                 return string.Empty;
 
-            return unlockedGroups.Contains(groupId) ? string.Empty : groupId;
+            return IsGroupUnlocked(groupId) ? string.Empty : groupId;
         }
 
 
         public IReadOnlyCollection<string> GetUnlockedGroups()
         {
+            RefreshUnlockedGroupsFromTree();
             return unlockedGroups;
+        }
+
+
+        private bool IsGroupUnlocked(string groupId)
+        {
+            bool isUnlocked = EntrepreneurTreeManager.IsNodeUnlocked(groupId);
+            if (isUnlocked)
+                unlockedGroups.Add(groupId);
+            else
+                unlockedGroups.Remove(groupId);
+
+            return isUnlocked;
         }
 
 

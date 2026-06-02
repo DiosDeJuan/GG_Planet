@@ -1,6 +1,7 @@
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
+/*  Adaptado por Isaac Victoria. */
 
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -88,13 +89,23 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public void Hide()
         {
+            long newPrice = StoreDatabase.FromStringToLongMoney(storePrice.text);
+            if (ProductPricingSystem.Instance != null &&
+                !ProductPricingSystem.Instance.TrySetCurrentPrice(product, newPrice, out string reason))
+            {
+                UIGame.AddNotification(reason, otherColor: new Color(1f, 0.30f, 0.20f));
+                CalculateProfit();
+                return;
+            }
+
             PlayerInput.GetPlayerByIndex(0).onActionTriggered -= OnAction;
             UIGame.RemoveAction("Esc");
 
             PlayerController.SetMovementState(MovementState.All, true);
             InteractionSystem.SetInteractionState(InteractionState.All);
             
-            ItemDatabase.UpdateStorePrice(product.id, StoreDatabase.FromStringToLongMoney(storePrice.text));
+            if (ProductPricingSystem.Instance == null)
+                ItemDatabase.UpdateStorePrice(product.id, newPrice);
             gameObject.SetActive(false);
         }
 
@@ -141,7 +152,28 @@ namespace FLOBUK.StoreSimulator
             long currentPrice = string.IsNullOrEmpty(storePrice.text) ? 0 : StoreDatabase.FromStringToLongMoney(storePrice.text);
             long profitValue = currentPrice - product.buyPrice;
             string profitText = profitValue >= 0 ? "<color=green>Profit: " : "<color=red>Loss: ";
-            profitResult.text = profitText + StoreDatabase.FromLongToStringMoney(profitValue);
+            string feedback = string.Empty;
+            if (ProductPricingSystem.Instance != null)
+            {
+                long ideal = ProductPricingSystem.Instance.GetIdealPrice(product);
+                long max = ProductPricingSystem.Instance.GetMaxAllowedPrice(product);
+                float purchase = ProductPricingSystem.Instance.GetPurchaseProbabilityForPrice(product, currentPrice);
+                float extra = ProductPricingSystem.Instance.GetExtraPurchaseProbabilityForPrice(product, currentPrice);
+
+                if (currentPrice > max)
+                    feedback = "\n<color=red>Maximo permitido: " + StoreDatabase.FromLongToStringMoney(max) + ".</color>";
+                else if (currentPrice == 0)
+                    feedback = "\n<color=yellow>Precio $0.00: ingreso directo $0.00.</color>";
+                else if (currentPrice < ideal)
+                    feedback = "\n<color=green>Precio bajo: posibilidad de venta extra.</color>";
+                else if (currentPrice > ideal)
+                    feedback = "\n<color=yellow>Precio alto: menor probabilidad de compra.</color>";
+
+                feedback += "\nCompra: " + Mathf.RoundToInt(purchase * 100f)
+                    + "%  Extra: " + Mathf.RoundToInt(extra * 100f) + "%";
+            }
+
+            profitResult.text = profitText + StoreDatabase.FromLongToStringMoney(profitValue) + feedback;
         }
     }
 }

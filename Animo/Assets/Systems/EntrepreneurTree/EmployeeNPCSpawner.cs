@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 namespace FLOBUK.StoreSimulator
 {
@@ -72,6 +74,7 @@ namespace FLOBUK.StoreSimulator
             EntrepreneurEmployeeSystem.onEmployeeHired       += OnEmployeeHired;
             EntrepreneurEmployeeSystem.onEmployeeRoleChanged += OnRoleChanged;
             SaveGameSystem.dataLoadEvent                     += OnDataLoaded;
+            SceneManager.sceneLoaded                         += OnSceneLoaded;
         }
 
         void Start()
@@ -92,6 +95,7 @@ namespace FLOBUK.StoreSimulator
             EntrepreneurEmployeeSystem.onEmployeeHired       -= OnEmployeeHired;
             EntrepreneurEmployeeSystem.onEmployeeRoleChanged -= OnRoleChanged;
             SaveGameSystem.dataLoadEvent                     -= OnDataLoaded;
+            SceneManager.sceneLoaded                         -= OnSceneLoaded;
 
             if (Instance == this)
                 Instance = null;
@@ -127,6 +131,15 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         private static GameObject[] AutoDiscoverCustomerPrefabs()
         {
+            if (CustomerSystem.Instance != null &&
+                CustomerSystem.Instance.customerPrefabs != null &&
+                CustomerSystem.Instance.customerPrefabs.Length > 0)
+            {
+                Debug.Log(LogPrefix + "Using " + CustomerSystem.Instance.customerPrefabs.Length
+                    + " customer prefab(s) from CustomerSystem for employee NPC spawning.");
+                return CustomerSystem.Instance.customerPrefabs;
+            }
+
             Customer[] customers = FindCustomers();
             if (customers == null || customers.Length == 0)
             {
@@ -192,6 +205,7 @@ namespace FLOBUK.StoreSimulator
 
         private void OnEmployeeHired(int employeeId)
         {
+            EnsureEmployeePrefabs();
             SpawnOrRefresh(employeeId);
         }
 
@@ -204,12 +218,23 @@ namespace FLOBUK.StoreSimulator
         private void OnDataLoaded()
         {
             // Ensure we have prefabs discovered even after a scene reload.
-            if (employeePrefabs == null || employeePrefabs.Length == 0)
-                employeePrefabs = AutoDiscoverCustomerPrefabs();
+            EnsureEmployeePrefabs();
 
             // Destroy all existing NPCs (they were from the previous session's state).
             DespawnAll();
             RespawnAll();
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            EnsureEmployeePrefabs();
+            RespawnAll();
+        }
+
+        private void EnsureEmployeePrefabs()
+        {
+            if (employeePrefabs == null || employeePrefabs.Length == 0)
+                employeePrefabs = AutoDiscoverCustomerPrefabs();
         }
 
         private void RespawnAll()
@@ -249,6 +274,11 @@ namespace FLOBUK.StoreSimulator
 
             if (employeePrefabs == null || employeePrefabs.Length == 0)
             {
+                EnsureEmployeePrefabs();
+            }
+
+            if (employeePrefabs == null || employeePrefabs.Length == 0)
+            {
                 Debug.LogWarning(LogPrefix + "No employee prefabs configured — visual NPC will not spawn for employee #"
                     + employeeId + ". Assign Customer_A–E prefabs to EmployeeNPCSpawner.employeePrefabs.");
                 return;
@@ -265,7 +295,7 @@ namespace FLOBUK.StoreSimulator
 
             Vector3 basePos = employeeSpawnPoint != null
                 ? employeeSpawnPoint.position
-                : transform.position;
+                : GetFallbackSpawnPosition();
 
             // If a workstation is assigned, spawn the NPC there instead of the generic spawn point.
             Vector3 position = basePos + spawnOffset * (spawnedNPCs.Count);
@@ -297,6 +327,19 @@ namespace FLOBUK.StoreSimulator
 
             Debug.Log(LogPrefix + "Spawned NPC for employee #" + employeeId
                 + " using prefab '" + prefab.name + "' at " + position + ".");
+        }
+
+        private Vector3 GetFallbackSpawnPosition()
+        {
+            if (CustomerSystem.Instance != null &&
+                CustomerSystem.Instance.spawnLocations != null &&
+                CustomerSystem.Instance.spawnLocations.Length > 0 &&
+                CustomerSystem.Instance.spawnLocations[0] != null)
+            {
+                return CustomerSystem.Instance.spawnLocations[0].position;
+            }
+
+            return transform.position;
         }
 
         private static void DisableShoppingComponents(GameObject npc)
@@ -344,10 +387,23 @@ namespace FLOBUK.StoreSimulator
             if (ws == null)
                 return;
 
+            NavMeshAgent agent = npc.GetComponent<NavMeshAgent>();
+            NavMeshHit hit;
+            if (agent != null && agent.enabled && agent.isOnNavMesh &&
+                NavMesh.SamplePosition(ws.StandPosition, out hit, 2f, NavMesh.AllAreas))
+            {
+                agent.SetDestination(hit.position);
+                npc.transform.rotation = ws.StandRotation;
+                Debug.Log(LogPrefix + "Employee #" + employeeId
+                    + " walking to workstation '" + ws.workstationId + "' at " + hit.position + ".");
+                return;
+            }
+
             npc.transform.position = ws.StandPosition;
             npc.transform.rotation = ws.StandRotation;
-            Debug.Log(LogPrefix + "Moved NPC for employee #" + employeeId
-                + " to workstation '" + ws.workstationId + "' at " + ws.StandPosition + ".");
+            Debug.LogWarning(LogPrefix + "Employee #" + employeeId
+                + " moved directly to workstation '" + ws.workstationId
+                + "' because no valid NavMesh route was available.");
         }
 
         private void ApplyTintToNPC(GameObject npc, EmployeeRole role)

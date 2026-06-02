@@ -86,7 +86,9 @@ namespace FLOBUK.StoreSimulator
             uiBuilt = true;
 
             // Panel background
-            Image bg = gameObject.AddComponent<Image>();
+            Image bg = GetComponent<Image>();
+            if (bg == null)
+                bg = gameObject.AddComponent<Image>();
             bg.color = ColorBackground;
 
             RectTransform rt = GetComponent<RectTransform>();

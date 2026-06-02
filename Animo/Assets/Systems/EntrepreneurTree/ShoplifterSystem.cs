@@ -351,8 +351,12 @@ namespace FLOBUK.StoreSimulator
 
         private ShoplifterType ChooseThiefType()
         {
-            float specialChance = specialBaseChance;
-            if (DayCycleSystem.Instance != null && DayCycleSystem.Instance.currentDay > 0)
+            bool premiumTheftUnlocked =
+                EntrepreneurTreeManager.IsNodeUnlocked("product_luxury_1") ||
+                EntrepreneurTreeManager.IsNodeUnlocked("product_appliances_1");
+
+            float specialChance = premiumTheftUnlocked ? specialBaseChance : 0f;
+            if (premiumTheftUnlocked && DayCycleSystem.Instance != null && DayCycleSystem.Instance.currentDay > 0)
                 specialChance += Mathf.Floor(DayCycleSystem.Instance.currentDay / 10f) * 0.01f;
             specialChance = Mathf.Clamp01(specialChance);
 
@@ -361,10 +365,11 @@ namespace FLOBUK.StoreSimulator
                 return ShoplifterType.Special;
 
             roll -= specialChance;
-            if (roll <= expertChance)
+            if (premiumTheftUnlocked && roll <= expertChance)
                 return ShoplifterType.Expert;
 
-            roll -= expertChance;
+            if (premiumTheftUnlocked)
+                roll -= expertChance;
             if (roll <= fastChance)
                 return ShoplifterType.Fast;
 

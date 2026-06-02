@@ -143,8 +143,10 @@ namespace FLOBUK.StoreSimulator
                     if (ws.TryAssign(employeeId))
                     {
                         _assignmentByEmployee[employeeId] = ws.workstationId;
+                        SyncEmployeeAssignment(employeeId, ws.workstationId);
                         Debug.Log(LogPrefix + "Auto-assigned employee #" + employeeId
                             + " to station '" + ws.workstationId + "'.");
+                        EmployeeNPCSpawner.Instance?.RefreshNPCPosition(employeeId);
                         return ws;
                     }
                 }
@@ -179,7 +181,9 @@ namespace FLOBUK.StoreSimulator
             }
 
             _assignmentByEmployee[employeeId] = workstationId;
+            SyncEmployeeAssignment(employeeId, workstationId);
             Debug.Log(LogPrefix + "Employee #" + employeeId + " assigned to station '" + workstationId + "'.");
+            EmployeeNPCSpawner.Instance?.RefreshNPCPosition(employeeId);
             return true;
         }
 
@@ -195,6 +199,7 @@ namespace FLOBUK.StoreSimulator
                 ws.Release();
 
             _assignmentByEmployee.Remove(employeeId);
+            SyncEmployeeAssignment(employeeId, string.Empty);
         }
 
         // ── Save / Load ───────────────────────────────────────────────────────────
@@ -239,6 +244,7 @@ namespace FLOBUK.StoreSimulator
                 {
                     ws.RestoreOccupant(empId);
                     _assignmentByEmployee[empId] = wsId;
+                    SyncEmployeeAssignment(empId, wsId);
                 }
             }
 
@@ -296,8 +302,10 @@ namespace FLOBUK.StoreSimulator
                 stationGo.transform.localRotation = Quaternion.identity;
 
                 EmployeeWorkstation ws = stationGo.AddComponent<EmployeeWorkstation>();
+                Unregister(ws);
                 ws.workstationId   = fallbackId;
                 ws.workstationType = EmployeeWorkstationType.Cashier;
+                Register(ws);
                 // lookTarget left null — NPC will use the workstation's forward direction.
 
                 created++;
@@ -311,8 +319,10 @@ namespace FLOBUK.StoreSimulator
                 restockGo.transform.position = transform.position + RestockerFallbackOffset;
 
                 EmployeeWorkstation ws = restockGo.AddComponent<EmployeeWorkstation>();
+                Unregister(ws);
                 ws.workstationId   = "restocker_station_0";
                 ws.workstationType = EmployeeWorkstationType.Restocker;
+                Register(ws);
                 created++;
             }
 
@@ -359,6 +369,13 @@ namespace FLOBUK.StoreSimulator
                 case EmployeeRole.Restocker: return EmployeeWorkstationType.Restocker;
                 default:                    return EmployeeWorkstationType.Cashier;
             }
+        }
+
+        private static void SyncEmployeeAssignment(int employeeId, string workstationId)
+        {
+            EmployeeAssignment assignment = EntrepreneurEmployeeSystem.Instance?.GetAssignment(employeeId);
+            if (assignment != null)
+                assignment.workstationId = workstationId ?? string.Empty;
         }
     }
 }

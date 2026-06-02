@@ -2,7 +2,7 @@
 
 ## 1. Resumen Ejecutivo
 
-ShopMaster ya tiene una integración custom considerable sobre el asset base Store Simulator: Árbol del Emprendedor, app de expansión, app de empleados, sistema de ladrones, reportes extendidos, guardado complementario, inventario y varias apps de computadora. El estado general es **avance intermedio-alto en arquitectura**, pero **todavía incompleto en gameplay verificable**.
+ShopMaster ya tiene una integración custom considerable sobre el asset base adaptado por Isaac Victoria: Árbol del Emprendedor, app de expansión, app de empleados, sistema de ladrones, reportes extendidos, guardado complementario, inventario y varias apps de computadora. El estado general es **avance intermedio-alto en arquitectura**, pero **todavía incompleto en gameplay verificable**.
 
 Cumplimiento aproximado sobre 48 requerimientos auditados: **56% funcional aproximado**. Conteo: **14 cumplidos**, **26 parciales**, **4 no cumplidos**, **4 no verificables**.
 

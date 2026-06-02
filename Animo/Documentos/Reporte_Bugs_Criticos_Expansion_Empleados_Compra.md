@@ -43,7 +43,7 @@ La pestaña Expandir permitía comprar zonas (con validación de fondos y actual
 
 ### Causa raíz identificada
 - **Desconexión total entre `SupermarketExpansionSystem` y los objetos 3D de la escena.** El sistema de expansión nuevo (del Árbol del Emprendedor) compra zonas como datos puros pero nunca activa `ExpansionObject`, `StorageGrid`, ni crea nada en el mundo.
-- El `ExpansionObject` original de FLOBUK activa paredes/grids al recibir `UpgradeSystem.onUpgradePurchase`, pero ese evento no era disparado por el nuevo sistema.
+- El `ExpansionObject` base adaptado por Isaac Victoria activa paredes/grids al recibir `UpgradeSystem.onUpgradePurchase`, pero ese evento no era disparado por el nuevo sistema.
 
 ### Archivos tocados/creados
 - **Nuevo:** `Animo/Assets/Systems/Expansion/ExpansionRealWorldBridge.cs`

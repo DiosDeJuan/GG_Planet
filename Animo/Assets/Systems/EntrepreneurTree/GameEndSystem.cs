@@ -317,7 +317,7 @@ namespace FLOBUK.StoreSimulator
             lbl.fontSize          = 17f;
             lbl.color             = color;
             lbl.alignment         = TextAlignmentOptions.Center;
-            lbl.enableWordWrapping = true;
+            lbl.textWrappingMode = TextWrappingModes.Normal;
         }
 
         private static void BuildButton(Transform card, string label, Color bgColor, UnityEngine.Events.UnityAction onClick)

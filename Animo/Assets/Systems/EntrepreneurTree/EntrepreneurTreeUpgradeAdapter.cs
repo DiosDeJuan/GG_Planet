@@ -198,7 +198,8 @@ namespace FLOBUK.StoreSimulator
                 : 1f;
             speedMultiplier *= cashierMultiplier;
             speedMultiplier = Mathf.Max(MinSafeSpeedMultiplier, speedMultiplier);
-            CheckoutObject[] checkoutObjects = FindObjectsOfType<CheckoutObject>(true);
+            CheckoutObject[] checkoutObjects = FindObjectsByType<CheckoutObject>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
             HashSet<int> liveIds = new HashSet<int>();
             for (int i = 0; i < checkoutObjects.Length; i++)
             {

@@ -1,6 +1,7 @@
-﻿/*  This file is part of the "Store Simulator" project by FLOBUK.
+/*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
+/*  Adaptado por Isaac Victoria. */
 
 using UnityEngine;
 using UnityEditor;
@@ -29,7 +30,7 @@ namespace FLOBUK.StoreSimulator
 
             GUILayout.BeginHorizontal();
             GUILayout.Space(70);
-            GUILayout.Label("by FLOBUK");
+            GUILayout.Label("Adaptado por Isaac Victoria");
             GUILayout.EndHorizontal();
             GUILayout.Space(20);
 
