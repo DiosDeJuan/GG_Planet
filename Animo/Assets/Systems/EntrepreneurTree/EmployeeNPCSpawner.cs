@@ -332,8 +332,18 @@ namespace FLOBUK.StoreSimulator
 
         /// <summary>
         /// Logs comprehensive visual diagnostics for a newly spawned employee NPC.
-        /// This satisfies Tarea 6 visual proof requirements.
+        /// Output covers: employeeId, role, prefab name, spawn position, final position,
+        /// world-space scale, active renderer count, parent-active chain, NavMeshAgent status,
+        /// workstation ID and approximate distance to the main camera.
+        /// Emits [WARN] lines for any condition that would make the NPC invisible or non-functional.
+        /// Satisfies Tarea 6 visual proof requirements.
         /// </summary>
+        /// <param name="employeeId">Numeric ID of the hired employee.</param>
+        /// <param name="prefabName">Name of the prefab used for instantiation.</param>
+        /// <param name="spawnPosition">World-space position requested at instantiation time.</param>
+        /// <param name="npc">The instantiated NPC GameObject.</param>
+        /// <param name="role">Role assigned at spawn time (Cashier, Restocker or None).</param>
+        /// <param name="workstationId">ID of the workstation the NPC was sent to, or empty if none.</param>
         private static void LogSpawnDiagnostics(int employeeId, string prefabName,
             Vector3 spawnPosition, GameObject npc, EmployeeRole role, string workstationId)
         {

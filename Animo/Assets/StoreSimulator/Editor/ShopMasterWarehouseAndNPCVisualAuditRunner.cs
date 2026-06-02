@@ -606,7 +606,7 @@ namespace FLOBUK.StoreSimulator.Editor
                 {
                     NavMeshPath pathToShelf = new NavMeshPath();
                     bool shelfReachable = NavMesh.SamplePosition(shelf.transform.position, out hit, NavSampleRadius, NavMesh.AllAreas)
-                        && agent.CalculatePath(shelf.transform.position, pathToShelf)
+                        && agent.CalculatePath(hit.position, pathToShelf)
                         && pathToShelf.status == NavMeshPathStatus.PathComplete;
 
                     PassIf(shelfReachable,
