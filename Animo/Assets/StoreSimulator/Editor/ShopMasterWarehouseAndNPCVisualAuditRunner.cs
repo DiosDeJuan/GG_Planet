@@ -385,7 +385,7 @@ namespace FLOBUK.StoreSimulator.Editor
                     "Paquete '" + pkg.name + "' es alcanzable por NavMesh (dist=" +
                     (navOk ? Vector3.Distance(pos, hit.position).ToString("0.2") + "m" : "N/A") + ").");
                 if (!navOk)
-                    Fail("Paquete '" + pkg.name + "' está fuera del NavMesh — posiblemente dentro de pared o fueradel mapa.");
+                    Fail("Paquete '" + pkg.name + "' está fuera del NavMesh — posiblemente dentro de pared o fuera del mapa.");
             }
         }
 
