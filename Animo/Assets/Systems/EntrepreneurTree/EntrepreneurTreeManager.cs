@@ -55,6 +55,12 @@ namespace FLOBUK.StoreSimulator
         /// <summary>Current spendable progress-point balance.</summary>
         public int currentPoints { get; private set; }
 
+        /// <summary>
+        /// The highest business level for which a point has already been awarded.
+        /// Persisted to prevent awarding the same level-up point again after save/load.
+        /// </summary>
+        public int lastAwardedBusinessLevel { get; private set; }
+
         // Persisted set of unlocked node IDs.
         private HashSet<string> unlockedNodeIds = new HashSet<string>();
 
@@ -71,6 +77,38 @@ namespace FLOBUK.StoreSimulator
             Instance = this;
             EntrepreneurTreeDefinition.SynchronizeTreeData(treeData);
             EnsureDefaultUnlockedNodes();
+        }
+
+        void OnEnable()
+        {
+            StoreDatabase.onLevelUpdate += OnBusinessLevelUp;
+        }
+
+        void OnDisable()
+        {
+            StoreDatabase.onLevelUpdate -= OnBusinessLevelUp;
+        }
+
+        /// <summary>
+        /// Called whenever the business level increases.
+        /// Awards exactly +1 progress point per new level, never duplicating.
+        /// </summary>
+        private void OnBusinessLevelUp(int newLevel)
+        {
+            if (newLevel <= lastAwardedBusinessLevel)
+                return;
+
+            int levelsGained = newLevel - lastAwardedBusinessLevel;
+            int firstNewLevel = lastAwardedBusinessLevel + 1;
+            lastAwardedBusinessLevel = newLevel;
+
+            for (int i = 0; i < levelsGained; i++)
+            {
+                int awardedForLevel = firstNewLevel + i;
+                currentPoints += 1;
+                onPointsChanged?.Invoke(currentPoints, 1);
+                Debug.Log(LogPrefix + "Level-up bonus: +1 point awarded for reaching business level " + awardedForLevel + ". Total points: " + currentPoints);
+            }
         }
 
 
@@ -233,6 +271,7 @@ namespace FLOBUK.StoreSimulator
         {
             JSONNode data = new JSONObject();
             data["currentPoints"] = currentPoints;
+            data["lastAwardedBusinessLevel"] = lastAwardedBusinessLevel;
 
             JSONArray unlockedArray = new JSONArray();
             foreach (string id in unlockedNodeIds)
@@ -258,6 +297,7 @@ namespace FLOBUK.StoreSimulator
 
             unlockedNodeIds.Clear();
             currentPoints = 0;
+            lastAwardedBusinessLevel = 0;
 
             if (data == null || data.Count == 0)
             {
@@ -266,6 +306,7 @@ namespace FLOBUK.StoreSimulator
             }
 
             currentPoints = data["currentPoints"].AsInt;
+            lastAwardedBusinessLevel = data["lastAwardedBusinessLevel"].AsInt;
 
             JSONArray unlockedArray = data["unlockedNodes"].AsArray;
             for (int i = 0; i < unlockedArray.Count; i++)
@@ -399,6 +440,16 @@ namespace FLOBUK.StoreSimulator
             int delta = amount - Instance.currentPoints;
             Instance.currentPoints = amount;
             onPointsChanged?.Invoke(Instance.currentPoints, delta);
+        }
+
+        /// <summary>
+        /// Simulate a business level-up event for automated testing purposes only.
+        /// Mirrors the same logic as OnBusinessLevelUp without requiring StoreDatabase.
+        /// </summary>
+        public static void SimulateBusinessLevelUp(int newLevel)
+        {
+            if (Instance == null) return;
+            Instance.OnBusinessLevelUp(newLevel);
         }
 
 
