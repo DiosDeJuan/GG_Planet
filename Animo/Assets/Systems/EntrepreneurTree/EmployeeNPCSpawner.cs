@@ -79,9 +79,15 @@ namespace FLOBUK.StoreSimulator
 
         void Start()
         {
+            // Auto-resolve employeeSpawnPoint when not assigned in the Inspector.
+            // This component is added at runtime via AddComponent and cannot receive
+            // Inspector assignments.  WarehouseZoneBootstrap creates the zone in its
+            // Awake() (before this Start()) and also calls AssignEmployeeSpawnPoint(),
+            // but we do a second check here as a safety net.
+            if (employeeSpawnPoint == null)
+                employeeSpawnPoint = AutoDiscoverEmployeeSpawnPoint();
+
             // Auto-discover Customer prefabs from the scene if none are configured in the Inspector.
-            // This is needed because this component is added at runtime via AddComponent and
-            // cannot be configured in the Inspector.
             if (employeePrefabs == null || employeePrefabs.Length == 0)
                 employeePrefabs = AutoDiscoverCustomerPrefabs();
 
@@ -121,6 +127,52 @@ namespace FLOBUK.StoreSimulator
         }
 
         // ── Auto-discovery ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Searches the scene for a usable employee spawn point.
+        /// Priority:
+        ///   1. WarehouseZone/EmployeeSpawnPoint (path lookup)
+        ///   2. Any GameObject named "EmployeeSpawnPoint"
+        ///   3. DeliverySystem.deliveryStart (not ideal but better than a customer spawn)
+        ///   4. null — caller falls back to GetFallbackSpawnPosition()
+        /// </summary>
+        private static Transform AutoDiscoverEmployeeSpawnPoint()
+        {
+            // 1. WarehouseZone child (preferred).
+            GameObject byPath = GameObject.Find("WarehouseZone/EmployeeSpawnPoint");
+            if (byPath != null)
+            {
+                Debug.Log(LogPrefix + "AutoDiscover: EmployeeSpawnPoint found via path 'WarehouseZone/EmployeeSpawnPoint'.");
+                return byPath.transform;
+            }
+
+            // 2. Any GameObject named "EmployeeSpawnPoint".
+#if UNITY_2022_2_OR_NEWER
+            GameObject[] all = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+            GameObject[] all = Object.FindObjectsOfType<GameObject>(true);
+#endif
+            foreach (GameObject go in all)
+            {
+                if (go != null && go.name == "EmployeeSpawnPoint")
+                {
+                    Debug.Log(LogPrefix + "AutoDiscover: EmployeeSpawnPoint found by name at " + go.transform.position + ".");
+                    return go.transform;
+                }
+            }
+
+            // 3. DeliveryStart as fallback (still inside the store).
+            DeliverySystem ds = DeliverySystem.Instance;
+            if (ds != null && ds.deliveryStart != null)
+            {
+                Debug.LogWarning(LogPrefix + "[WARN] AutoDiscover: using DeliveryStart as employee spawn fallback "
+                    + "— create a WarehouseZone/EmployeeSpawnPoint for a proper spawn location.");
+                return ds.deliveryStart;
+            }
+
+            Debug.LogWarning(LogPrefix + "[WARN] AutoDiscover: no EmployeeSpawnPoint found — NPC will use position fallback.");
+            return null;
+        }
 
         /// <summary>
         /// Finds distinct Customer GameObjects in the scene and returns their root
@@ -313,6 +365,19 @@ namespace FLOBUK.StoreSimulator
                 }
             }
 
+            // Snap to nearest NavMesh point so the NPC's NavMeshAgent lands on a valid surface.
+            NavMeshHit navHit;
+            if (NavMesh.SamplePosition(position, out navHit, 5f, NavMesh.AllAreas))
+            {
+                position = navHit.position;
+            }
+            else
+            {
+                Debug.LogWarning(LogPrefix + "[WARN] No NavMesh found within 5m of spawn position "
+                    + position + " for employee #" + employeeId
+                    + " — NPC may not be on NavMesh. Rebuild NavMesh in Unity Editor.");
+            }
+
             GameObject npc = Instantiate(prefab, position, rotation);
             npc.name = "Employee_" + employeeId + "_NPC";
 
@@ -445,14 +510,16 @@ namespace FLOBUK.StoreSimulator
 
         private Vector3 GetFallbackSpawnPosition()
         {
-            if (CustomerSystem.Instance != null &&
-                CustomerSystem.Instance.spawnLocations != null &&
-                CustomerSystem.Instance.spawnLocations.Length > 0 &&
-                CustomerSystem.Instance.spawnLocations[0] != null)
+            // Priority 1: DeliveryStart — inside the store/warehouse area.
+            if (DeliverySystem.Instance != null && DeliverySystem.Instance.deliveryStart != null)
             {
-                return CustomerSystem.Instance.spawnLocations[0].position;
+                Debug.LogWarning(LogPrefix + "[WARN] employeeSpawnPoint not assigned — using DeliveryStart as fallback spawn.");
+                return DeliverySystem.Instance.deliveryStart.position;
             }
 
+            // Priority 2: This component's own transform (GameSystems object, usually at origin).
+            Debug.LogWarning(LogPrefix + "[WARN] employeeSpawnPoint not assigned and DeliveryStart unavailable "
+                + "— using GameSystems position as last resort.");
             return transform.position;
         }
 

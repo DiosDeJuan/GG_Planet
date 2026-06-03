@@ -137,6 +137,7 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EmployeeCashierCoordinator>();
                 systems.AddComponent<EmployeeNPCSpawner>();
                 systems.AddComponent<EmployeeWorkstationRegistry>();
+                systems.AddComponent<WarehouseZoneBootstrap>();
             }
             else
             {
@@ -209,6 +210,8 @@ namespace FLOBUK.StoreSimulator
                 systems.AddComponent<EmployeeNPCSpawner>();
             if (systems.GetComponent<EmployeeWorkstationRegistry>() == null)
                 systems.AddComponent<EmployeeWorkstationRegistry>();
+            if (systems.GetComponent<WarehouseZoneBootstrap>() == null)
+                systems.AddComponent<WarehouseZoneBootstrap>();
         }
 
 
