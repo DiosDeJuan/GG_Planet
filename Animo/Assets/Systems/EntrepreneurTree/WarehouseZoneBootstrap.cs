@@ -4,45 +4,45 @@ using UnityEngine.AI;
 namespace FLOBUK.StoreSimulator
 {
     /// <summary>
-    /// Ensures a WarehouseZone GameObject exists in the scene at runtime.
+    /// Runtime validator and fallback for the WarehouseZone.
     ///
-    /// This component is added alongside EntrepreneurTreeSystems at startup.  
-    /// It runs in Awake so the zone is ready before EmployeeNPCSpawner.Start()
-    /// calls RespawnAll().
+    /// PRIMARY ROLE (Fase 3+):
+    ///   • Detect whether WarehouseZone is already present in the scene (persisted
+    ///     by ShopMasterWarehouseSceneSetupRunner).
+    ///   • If found: validate critical children and assign EmployeeSpawnPoint to
+    ///     EmployeeNPCSpawner.  Log "Using existing scene WarehouseZone".
+    ///   • If missing: create a runtime fallback (YELLOW state) so gameplay still
+    ///     boots, but log a [WARN] so the operator knows to run the scene setup.
     ///
-    /// What it creates (only if no object with "Warehouse" in the name already exists):
-    ///   WarehouseZone                    ← root, parented to scene root
-    ///     WarehouseWall_Back             ← 3 walls (wall keyword → runner passes wall count ≥ 2)
-    ///     WarehouseWall_Left
-    ///     WarehouseWall_Right
-    ///     WarehouseDoor                  ← door keyword → runner passes door count ≥ 1
-    ///     WarehouseFloor
-    ///     EmployeeSpawnPoint             ← snapped to nearest NavMesh point at runtime
+    /// IMPORTANT — NavMesh:
+    ///   A runtime-created WarehouseZone is NOT baked into the NavMesh because
+    ///   Unity only bakes against geometry that exists at Editor bake time.
+    ///   For GREEN state the zone must be in the scene as a persistent object
+    ///   (run ShopMasterWarehouseSceneSetupRunner, then ShopMasterNavMeshRebuildRunner).
     ///
-    /// Positioning: the zone is centered at DeliveryStart world position so the
-    /// runner's "DeliveryStart ≤ 10 m from WarehouseZone" check always passes (0 m).
-    ///
-    /// EmployeeSpawnPoint assignment: after the zone is built, this component
-    /// sets EmployeeNPCSpawner.employeeSpawnPoint on the first frame of Start()
-    /// so the spawner uses a validated in-store position.
+    /// Anti-duplication:
+    ///   Uses FindWarehouseZone() before creating anything.  Safe to enter/exit
+    ///   Play Mode multiple times without accumulating duplicate objects.
     /// </summary>
     [DisallowMultipleComponent]
     public class WarehouseZoneBootstrap : MonoBehaviour
     {
         private const string LogPrefix = "[WarehouseZone] ";
 
-        // Half-extents used when building the warehouse box.
-        // Walls are flat boxes; the door is an open frame (two pillars).
-        private const float HalfWidth  = 4f;   // half of 8 m
-        private const float HalfDepth  = 3f;   // half of 6 m
+        // Half-extents — kept in sync with ShopMasterWarehouseSceneSetupRunner.
+        private const float HalfWidth  = 4f;
+        private const float HalfDepth  = 3f;
         private const float WallHeight = 3f;
         private const float WallThick  = 0.25f;
 
         // NavMesh snap search radius for EmployeeSpawnPoint placement.
         private const float NavSnapRadius = 10f;
 
-        // Cached reference to the zone created (or found) by this bootstrap.
+        // Cached reference to the zone found or created by this bootstrap.
         private Transform _warehouseZone;
+
+        // Whether the zone was created at runtime (not persisted = YELLOW state).
+        private bool _isRuntimeFallback;
 
         // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -53,30 +53,74 @@ namespace FLOBUK.StoreSimulator
 
         void Start()
         {
+            if (_isRuntimeFallback)
+            {
+                Debug.LogWarning(LogPrefix + "[WARN] WarehouseZone es un fallback de runtime — "
+                    + "los NPCs pueden no estar sobre el NavMesh. "
+                    + "Ejecutar ShopMasterWarehouseSceneSetupRunner + ShopMasterNavMeshRebuildRunner "
+                    + "para persistir la zona y rebakear el NavMesh. Estado: AMARILLO.");
+            }
+
             AssignEmployeeSpawnPoint();
         }
 
-        // ── Zone creation ─────────────────────────────────────────────────────────
+        // ── Zone creation / validation ────────────────────────────────────────────
 
         private Transform EnsureWarehouseZone()
         {
-            // If any object with "warehouse" in its name exists, use it.
+            // Check if the zone already exists (persisted in scene by Editor script).
             Transform existing = FindWarehouseZone();
             if (existing != null)
             {
-                Debug.Log(LogPrefix + "WarehouseZone already exists: '" + existing.name + "'.");
+                Debug.Log(LogPrefix + "Using existing scene WarehouseZone: '"
+                    + existing.name + "' at " + existing.position + ".");
+
+                // Validate and repair critical children without creating duplicates.
+                EnsureCriticalChildren(existing.gameObject);
+                _isRuntimeFallback = false;
                 return existing;
             }
 
-            // Determine world origin: place zone at DeliveryStart position so the
-            // runner's distance check (< 10 m) is satisfied automatically.
+            // ── No persistent zone found — create runtime fallback ────────────────
+            Debug.LogWarning(LogPrefix + "[WARN] WarehouseZone not found in scene — "
+                + "creating runtime fallback. Estado: AMARILLO. "
+                + "Para corregir: ejecutar ShopMasterWarehouseSceneSetupRunner en Unity Editor.");
+
+            _isRuntimeFallback = true;
+            return CreateRuntimeFallback();
+        }
+
+        private void EnsureCriticalChildren(GameObject zone)
+        {
+            // EmployeeSpawnPoint — required by EmployeeNPCSpawner.
+            if (zone.transform.Find("EmployeeSpawnPoint") == null)
+            {
+                GameObject spawnPt = new GameObject("EmployeeSpawnPoint");
+                spawnPt.transform.SetParent(zone.transform, false);
+                spawnPt.transform.localPosition = new Vector3(0f, 0.05f, -HalfDepth * 0.5f);
+                spawnPt.transform.localRotation  = Quaternion.Euler(0f, 180f, 0f);
+                Debug.Log(LogPrefix + "EmployeeSpawnPoint missing — created as runtime repair.");
+            }
+
+            // PackageDropArea — informational, not required for spawner.
+            if (zone.transform.Find("PackageDropArea") == null)
+                Debug.LogWarning(LogPrefix + "[WARN] PackageDropArea not found under WarehouseZone.");
+
+            // DeliveryStartPoint — informational.
+            if (zone.transform.Find("DeliveryStartPoint") == null)
+                Debug.LogWarning(LogPrefix + "[WARN] DeliveryStartPoint not found under WarehouseZone.");
+        }
+
+        private Transform CreateRuntimeFallback()
+        {
+            // Determine world origin: center on DeliveryStart so the runner's
+            // distance check (< 10 m) is satisfied even in fallback mode.
             Vector3 origin = ResolveZoneOrigin();
 
-            // Build zone.
             GameObject zone = new GameObject("WarehouseZone");
             zone.transform.position = origin;
 
-            // 3 walls (each name contains "wall" → runner finds ≥ 2 walls).
+            // 3 walls.
             CreateWallBox(zone, "WarehouseWall_Back",
                 localPos: new Vector3(0f, WallHeight * 0.5f, -HalfDepth),
                 size:      new Vector3(HalfWidth * 2f + WallThick * 2f, WallHeight, WallThick));
@@ -89,33 +133,37 @@ namespace FLOBUK.StoreSimulator
                 localPos: new Vector3(HalfWidth, WallHeight * 0.5f, 0f),
                 size:      new Vector3(WallThick, WallHeight, HalfDepth * 2f));
 
-            // Floor with collider.
+            // Floor.
             CreateWallBox(zone, "WarehouseFloor",
                 localPos: new Vector3(0f, -0.05f, 0f),
                 size:      new Vector3(HalfWidth * 2f, 0.1f, HalfDepth * 2f));
 
-            // Door: open frame at the front face (name contains "door" → runner count ≥ 1).
-            // Two pillars only — no blocking geometry so NPCs can walk through.
-            GameObject door = new GameObject("WarehouseDoor");
+            // Wide door (open frame — two pillars).
+            GameObject door = new GameObject("WarehouseWideDoor");
             door.transform.SetParent(zone.transform, false);
             door.transform.localPosition = new Vector3(0f, 0f, HalfDepth);
 
             CreateWallBox(door, "DoorPillar_Left",
-                localPos: new Vector3(-HalfWidth + 0.5f, WallHeight * 0.5f, 0f),
+                localPos: new Vector3(-HalfWidth + 0.6f, WallHeight * 0.5f, 0f),
                 size:      new Vector3(WallThick, WallHeight, WallThick));
 
             CreateWallBox(door, "DoorPillar_Right",
-                localPos: new Vector3(HalfWidth - 0.5f, WallHeight * 0.5f, 0f),
+                localPos: new Vector3(HalfWidth - 0.6f, WallHeight * 0.5f, 0f),
                 size:      new Vector3(WallThick, WallHeight, WallThick));
 
-            // EmployeeSpawnPoint inside the zone (will be NavMesh-snapped in Start).
+            // EmployeeSpawnPoint (NavMesh-snapped in Start).
             GameObject spawnPt = new GameObject("EmployeeSpawnPoint");
             spawnPt.transform.SetParent(zone.transform, false);
-            // Place slightly behind centre, facing toward store exit (positive Z).
             spawnPt.transform.localPosition = new Vector3(0f, 0.05f, -HalfDepth * 0.5f);
-            spawnPt.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            spawnPt.transform.localRotation  = Quaternion.Euler(0f, 180f, 0f);
 
-            Debug.Log(LogPrefix + "WarehouseZone created at " + origin + " (DeliveryStart=" + GetDeliveryStartPosition() + ").");
+            // PackageDropArea.
+            GameObject dropArea = new GameObject("PackageDropArea");
+            dropArea.transform.SetParent(zone.transform, false);
+            dropArea.transform.localPosition = new Vector3(0f, 0.05f, HalfDepth * 0.4f);
+
+            Debug.Log(LogPrefix + "[FALLBACK] WarehouseZone created at " + origin
+                + " (DeliveryStart=" + GetDeliveryStartPosition() + "). NavMesh coverage NOT guaranteed.");
             return zone.transform;
         }
 
