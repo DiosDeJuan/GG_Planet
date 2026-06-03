@@ -99,13 +99,15 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             int levelsGained = newLevel - lastAwardedBusinessLevel;
+            int firstNewLevel = lastAwardedBusinessLevel + 1;
             lastAwardedBusinessLevel = newLevel;
 
             for (int i = 0; i < levelsGained; i++)
             {
+                int awardedForLevel = firstNewLevel + i;
                 currentPoints += 1;
                 onPointsChanged?.Invoke(currentPoints, 1);
-                Debug.Log(LogPrefix + "Level-up bonus: +1 point awarded for reaching business level " + (lastAwardedBusinessLevel - levelsGained + i + 1) + ". Total points: " + currentPoints);
+                Debug.Log(LogPrefix + "Level-up bonus: +1 point awarded for reaching business level " + awardedForLevel + ". Total points: " + currentPoints);
             }
         }
 
