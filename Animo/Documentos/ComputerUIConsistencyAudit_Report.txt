@@ -1,0 +1,63 @@
+# ShopMaster Entrepreneur Tree exact audit - consistency
+2026-06-04 01:13:37 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-04 01:13:48 PASS: Computer interactable exists.
+2026-06-04 01:13:48 PASS: Computer opens in Play Mode.
+2026-06-04 01:13:48 PASS: UpgradesUIController exists.
+2026-06-04 01:13:48 PASS: Computer tab opens panel: Expandir
+2026-06-04 01:13:48 PASS: Open Entrepreneur Tree button exists.
+2026-06-04 01:13:48 PASS: Compra panel exists.
+2026-06-04 01:13:48 PASS: Empleados panel exists.
+2026-06-04 01:13:48 PASS: Expandir panel exists.
+2026-06-04 01:13:48 PASS: Tree panel exists.
+2026-06-04 01:13:48 PASS: Tree text is not empty: Title
+2026-06-04 01:13:48 PASS: Tree text is not empty: PointsText
+2026-06-04 01:13:48 PASS: Tree text is not empty: Text
+2026-06-04 01:13:48 PASS: Tree text is not empty: NodeTitleText
+2026-06-04 01:13:48 PASS: Tree text is not empty: NodeDescriptionText
+2026-06-04 01:13:48 PASS: Tree text is not empty: NodeCostText
+2026-06-04 01:13:48 PASS: Tree text is not empty: RequirementsText
+2026-06-04 01:13:48 PASS: Tree text is not empty: Text
+2026-06-04 01:13:48 PASS: Tree text is not empty: Text
+2026-06-04 01:13:48 PASS: Tree text is not empty: Text
+2026-06-04 01:13:48 PASS: Tree text is not empty: Text
+2026-06-04 01:13:48 PASS: Tree text is not empty: Text
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: Tree text is not empty: Label
+2026-06-04 01:13:48 PASS: No default white buttons inside tree.
+2026-06-04 01:13:48 PASS: Legacy expansion panel is hidden while tree is active.
+2026-06-04 01:13:48 Audit finished. Failures=0

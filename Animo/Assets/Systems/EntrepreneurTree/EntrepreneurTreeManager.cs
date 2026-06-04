@@ -9,6 +9,24 @@ using SimpleJSON;
 
 namespace FLOBUK.StoreSimulator
 {
+    public enum EntrepreneurTreeUnlockResult
+    {
+        Success,
+        AlreadyUnlocked,
+        MissingPoints,
+        MissingRequirement,
+        InvalidNode
+    }
+
+    public struct EntrepreneurTreeUnlockResponse
+    {
+        public EntrepreneurTreeUnlockResult result;
+        public string message;
+        public NodeData node;
+
+        public bool success => result == EntrepreneurTreeUnlockResult.Success;
+    }
+
     /// <summary>
     /// Singleton manager for the Entrepreneur Tree system.
     ///
@@ -146,7 +164,7 @@ namespace FLOBUK.StoreSimulator
 
             if (node.isUnlocked)
             {
-                UIGame.Instance?.ShowMessage(node.title + " is already unlocked.");
+                UIGame.Instance?.ShowMessage(node.title + " ya esta desbloqueado.");
                 return false;
             }
 
@@ -165,9 +183,84 @@ namespace FLOBUK.StoreSimulator
             onPointsChanged?.Invoke(Instance.currentPoints, -node.cost);
             onNodeUnlocked?.Invoke(node);
             Instance.DispatchTypedNodeUnlocked(node);
-            UIGame.AddNotification("Unlocked: " + node.title, node.icon, Color.green);
+            UIGame.AddNotification("Desbloqueo completado: " + node.title + ".", node.icon, Color.green);
 
             return true;
+        }
+
+        public static EntrepreneurTreeUnlockResponse TryUnlockNodeDetailed(string nodeId)
+        {
+            EntrepreneurTreeUnlockResponse response = EvaluateUnlock(nodeId);
+            if (Instance == null)
+                return response;
+
+            if (!response.success)
+            {
+                if (response.result == EntrepreneurTreeUnlockResult.InvalidNode)
+                    Debug.LogWarning(LogPrefix + response.message);
+                UIGame.Instance?.ShowMessage(response.message);
+                return response;
+            }
+
+            NodeData node = response.node;
+            Instance.currentPoints -= node.cost;
+            node.isUnlocked = true;
+            Instance.unlockedNodeIds.Add(nodeId);
+
+            onPointsChanged?.Invoke(Instance.currentPoints, -node.cost);
+            onNodeUnlocked?.Invoke(node);
+            Instance.DispatchTypedNodeUnlocked(node);
+            UIGame.AddNotification(response.message, node.icon, Color.green);
+
+            return response;
+        }
+
+        public static EntrepreneurTreeUnlockResponse EvaluateUnlock(string nodeId)
+        {
+            EntrepreneurTreeUnlockResponse response = new EntrepreneurTreeUnlockResponse
+            {
+                result = EntrepreneurTreeUnlockResult.InvalidNode,
+                message = "El Arbol del Emprendedor no esta disponible.",
+                node = null
+            };
+
+            if (Instance == null || Instance.treeData == null)
+                return response;
+
+            NodeData node = Instance.treeData.GetNodeById(nodeId);
+            response.node = node;
+            if (node == null)
+            {
+                response.message = "Nodo desconocido: " + nodeId;
+                return response;
+            }
+
+            if (node.isUnlocked)
+            {
+                response.result = EntrepreneurTreeUnlockResult.AlreadyUnlocked;
+                response.message = "Este nodo ya esta desbloqueado.";
+                return response;
+            }
+
+            List<string> missingNames = Instance.GetMissingRequirementNames(node);
+            if (missingNames.Count > 0)
+            {
+                response.result = EntrepreneurTreeUnlockResult.MissingRequirement;
+                response.message = "No puedes desbloquear este nodo. Requiere desbloquear: " + string.Join(", ", missingNames) + ".";
+                return response;
+            }
+
+            if (Instance.currentPoints < node.cost)
+            {
+                int missingPoints = Mathf.Max(0, node.cost - Instance.currentPoints);
+                response.result = EntrepreneurTreeUnlockResult.MissingPoints;
+                response.message = "No tienes puntos suficientes. Faltan " + missingPoints + " punto" + (missingPoints == 1 ? "" : "s") + ".";
+                return response;
+            }
+
+            response.result = EntrepreneurTreeUnlockResult.Success;
+            response.message = "Desbloqueo completado: " + node.title + ".";
+            return response;
         }
 
 
@@ -220,7 +313,8 @@ namespace FLOBUK.StoreSimulator
 
             if (Instance.currentPoints < node.cost)
             {
-                reason = "No tienes puntos de progreso suficientes.";
+                int missingPoints = Mathf.Max(0, node.cost - Instance.currentPoints);
+                reason = "Faltan " + missingPoints + " punto" + (missingPoints == 1 ? "" : "s");
                 return false;
             }
 

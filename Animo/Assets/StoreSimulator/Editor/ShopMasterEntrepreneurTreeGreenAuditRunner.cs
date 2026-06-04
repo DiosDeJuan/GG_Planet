@@ -133,22 +133,22 @@ namespace FLOBUK.StoreSimulator.Editor
 
             NodeUI employeeNode = FindNode("employee_1");
             NodeUI basic2 = FindNode("product_basic_2");
-            PassIf(employeeNode != null && employeeNode.titleLabel.text.Contains(ComputerUITheme.LabelBlocked),
+            PassIf(employeeNode != null && employeeNode.titleLabel.text.Contains("BLOQUEADO"),
                 "RQF4 locked node renders blocked visual state.");
             int points = EntrepreneurTreeManager.GetAvailablePoints();
             employeeNode?.OnPointerClick(null);
             PassIf(!EntrepreneurTreeManager.IsNodeUnlocked("employee_1") &&
                    EntrepreneurTreeManager.GetAvailablePoints() == points,
                 "RQF36 blocked node click cannot skip prerequisite or spend points.");
-            PassIf(basic2 != null && basic2.titleLabel.text.Contains(ComputerUITheme.LabelReady),
+            PassIf(basic2 != null && basic2.titleLabel.text.Contains("DISPONIBLE"),
                 "RQF4 eligible node renders available visual state.");
-            basic2?.OnPointerClick(null);
+            UnlockNodeThroughDetail(upgrades, basic2);
             PassIf(EntrepreneurTreeManager.IsNodeUnlocked("product_basic_2") &&
                    EntrepreneurTreeManager.GetAvailablePoints() == points - 1 &&
-                   basic2.titleLabel.text.Contains(ComputerUITheme.LabelOk),
-                "RQF4 real node click unlocks, spends one point and renders unlocked state.");
-            FindNode("product_spices_1")?.OnPointerClick(null);
-            FindNode("employee_1")?.OnPointerClick(null);
+                   basic2.titleLabel.text.Contains("DESBLOQUEADO"),
+                "RQF4 real node detail button unlocks, spends one point and renders unlocked state.");
+            UnlockNodeThroughDetail(upgrades, FindNode("product_spices_1"));
+            UnlockNodeThroughDetail(upgrades, FindNode("employee_1"));
 
             RunOrdersUI();
             RunEmployeesUI();
@@ -452,9 +452,22 @@ namespace FLOBUK.StoreSimulator.Editor
         {
             NodeUI[] nodes = UnityEngine.Object.FindObjectsByType<NodeUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             for (int i = 0; i < nodes.Length; i++)
+                if (nodes[i] != null && nodes[i].gameObject.activeInHierarchy && nodes[i].data != null && nodes[i].data.id == id)
+                    return nodes[i];
+
+            for (int i = 0; i < nodes.Length; i++)
                 if (nodes[i] != null && nodes[i].data != null && nodes[i].data.id == id)
                     return nodes[i];
             return null;
+        }
+
+        private static void UnlockNodeThroughDetail(UpgradesUIController upgrades, NodeUI node)
+        {
+            if (upgrades == null || node == null)
+                return;
+
+            node.OnPointerClick(null);
+            upgrades.infoUnlockButton?.onClick.Invoke();
         }
 
         private static void InvokeTab(string label, string panelName)

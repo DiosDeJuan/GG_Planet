@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -15,9 +15,9 @@ MonoBehaviour:
   id: product_spices_1
   nodeType: 0
   title: Especias 1
-  description: Desbloquea sección inicial de especias.
+  description: Desbloquea secciÃ³n inicial de especias.
   icon: {fileID: 0}
-  cost: 2
+  cost: 1
   requiredNodeIds:
   - product_basic_2
   uiPosition: {x: -860.0, y: -20.0}

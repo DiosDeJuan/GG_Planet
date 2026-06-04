@@ -38,7 +38,7 @@ namespace FLOBUK.StoreSimulator.Editor
     public static class ShopMasterNavMeshRebuildRunner
     {
         private const string ScenePath = "Assets/StoreSimulator/Scenes/Game.unity";
-        private const string LogPath   = "Documentos/Unity_NavMeshRebuild.log";
+        private const string LogPath   = "Documentos/NavMeshRebuild_Report.txt";
 
         public static void Run()
         {
@@ -201,8 +201,15 @@ namespace FLOBUK.StoreSimulator.Editor
                 Debug.LogError("[NavMeshRebuild] Finished with failures: " + failures);
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(LogPath) ?? ".");
-            File.WriteAllText(LogPath, log.ToString());
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(LogPath) ?? ".");
+                File.WriteAllText(LogPath, log.ToString());
+            }
+            catch (IOException ioEx)
+            {
+                Debug.LogWarning("[NavMeshRebuild] Could not write standalone report because the log file is in use: " + ioEx.Message);
+            }
 
             EditorApplication.Exit(failures == 0 ? 0 : 1);
         }

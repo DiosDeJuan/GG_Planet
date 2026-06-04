@@ -1,0 +1,26 @@
+# ShopMaster Final Integration Audit - Phase 4
+2026-06-03 04:01:58 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 04:02:09 Running Phase 4 integration smoke audit.
+2026-06-03 04:02:09 PASS: Baseline Phase 3 runner evidence remains green.
+2026-06-03 04:02:09 PASS: RQF27 physical restocker evidence: NPC reached storage, picked stock, reached shelf and placed one product.
+2026-06-03 04:02:09 PASS: Entrepreneur Tree manager exists in Game.unity.
+2026-06-03 04:02:09 PASS: Employee hiring, visual NPC and restock coordinator are connected in Game.unity.
+2026-06-03 04:02:09 PASS: RQF22 expansion system keeps the documented 15 percent customer-demand bonus.
+2026-06-03 04:02:09 PASS: RQF28 pricing system is present in Game.unity.
+2026-06-03 04:02:09 PASS: RQF23/RQF24 real manual cash desk exists in Game.unity.
+2026-06-03 04:02:09 PASS: RQF34 daily stats database exists in Game.unity.
+2026-06-03 04:02:09 PASS: RQNF19 settings UI exists in Game.unity.
+2026-06-03 04:02:09 PASS: Computer opens through its real player interaction.
+2026-06-03 04:02:09 PASS: Runtime UI contains active interactable buttons after opening the computer.
+2026-06-03 04:02:09 Starting basic six-second FPS sample in Game.unity.
+2026-06-03 04:02:15 MEASURED: Basic Game.unity FPS sample average=2121.57, minimum=23.87, maximum=3314.54, frames=12815.
+2026-06-03 04:02:15 YELLOW: RQNF1/RQNF2 - A basic editor FPS sample was captured. Minimum-hardware certification still requires a representative Windows test machine and a loaded gameplay scenario.
+2026-06-03 04:02:15 YELLOW: RQF21/RQNF3 - Atomic save and backup recovery are green from Phase 3; complete Game.unity unload/reload reconstruction remains pending.
+2026-06-03 04:02:15 YELLOW: RQF5/RQF6/RQF7/RQF22 - Expansion backend, prices and 15 percent demand bonus exist; full player-driven UI purchase, real zone navigation and persisted reload remain pending.
+2026-06-03 04:02:15 YELLOW: RQF23/RQF24 - Real cash desk exists and automated timing remains green; player-driven terminal and cash denomination clicks remain pending.
+2026-06-03 04:02:15 YELLOW: RQF28/RQF29/RQNF10-RQNF15 - Pricing UI and formulas remain connected; a complete customer purchase altered through the real price input remains pending.
+2026-06-03 04:02:15 YELLOW: RQF34/RQF35/RQNF5 - Daily stats and seven-second waiting code exist; real day closure and observed customer abandonment remain pending.
+2026-06-03 04:02:15 YELLOW: RQNF6 - Shelf compatibility is connected; player-driven valid and invalid placement attempts remain pending.
+2026-06-03 04:02:15 YELLOW: RQNF16/RQNF17/RQNF18 - Computer opens and runtime buttons exist; visual QA at 1280x720, 1366x768 and 1920x1080 remains pending.
+2026-06-03 04:02:15 YELLOW: RQNF19 - Settings UI exists; resolution, volume, brightness and controls persistence across restart remain pending.
+2026-06-03 04:02:15 Audit finished. Failures=0

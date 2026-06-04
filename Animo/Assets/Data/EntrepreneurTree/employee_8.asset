@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -15,9 +15,9 @@ MonoBehaviour:
   id: employee_8
   nodeType: 1
   title: Empleado 8
-  description: Gestión de caja extendida.
+  description: GestiÃ³n de caja extendida.
   icon: {fileID: 0}
-  cost: 3
+  cost: 1
   requiredNodeIds:
   - product_sodas
   uiPosition: {x: -80.0, y: -700.0}

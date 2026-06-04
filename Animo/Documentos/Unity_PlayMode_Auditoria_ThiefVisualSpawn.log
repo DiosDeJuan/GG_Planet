@@ -1,0 +1,22 @@
+# ShopMaster Seguridad y Ladrones Audit - ThiefVisualSpawn
+2026-06-03 04:28:08 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 04:28:18 PASS: EntrepreneurTreeManager presente.
+2026-06-03 04:28:18 PASS: EntrepreneurTreeSecurityAdapter presente.
+2026-06-03 04:28:18 PASS: ShoplifterSystem presente.
+2026-06-03 04:28:18 PASS: StatsDatabase presente.
+2026-06-03 04:28:18 PASS: StoreDatabase presente.
+2026-06-03 04:28:18 PASS: CustomerSystem presente.
+2026-06-03 04:28:18 PASS: ProductInventorySystem presente.
+2026-06-03 04:28:18 === RQF13 thief visual spawn ===
+2026-06-03 04:28:18 PASS: RQF13 ladron real generado desde cliente/NPC existente.
+2026-06-03 04:28:18 PASS: RQF13 ladron conserva componentes reales de cliente y navegacion.
+2026-06-03 04:28:18 PASS: RQF13 ladron tiene renderers visibles.
+2026-06-03 04:28:18 PASS: RQF13 ladron tiene indicador visual flotante.
+2026-06-03 04:28:18 PASS: RQF13 ladron tiene gorra negra visual.
+2026-06-03 04:28:18 PASS: RQF13 ladron tiene mochila visual.
+2026-06-03 04:28:18 PASS: RQF13 ladron aparece sobre NavMesh real.
+2026-06-03 04:28:18 PASS: RQF13/RQF14 ladron visual puede iniciar intento de robo real.
+2026-06-03 04:28:18 PASS: RQF14 ladron visual registra productos robados y valor objetivo real.
+2026-06-03 04:28:18 PASS: RQF13 ladron experto/especial no aparece sin lujo/electrodomesticos desbloqueados.
+2026-06-03 04:28:18 PASS: RQF13 productos premium desbloqueados habilitan seleccion de tipos avanzados sin romper spawn.
+2026-06-03 04:28:18 Audit finished. Failures=0

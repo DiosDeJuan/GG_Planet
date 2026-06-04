@@ -1,0 +1,24 @@
+# ShopMaster Seguridad y Ladrones Audit - SecurityUnlock
+2026-06-03 04:23:35 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 04:23:48 PASS: EntrepreneurTreeManager presente.
+2026-06-03 04:23:48 PASS: EntrepreneurTreeSecurityAdapter presente.
+2026-06-03 04:23:48 PASS: ShoplifterSystem presente.
+2026-06-03 04:23:48 PASS: StatsDatabase presente.
+2026-06-03 04:23:48 PASS: StoreDatabase presente.
+2026-06-03 04:23:48 PASS: CustomerSystem presente.
+2026-06-03 04:23:48 PASS: ProductInventorySystem presente.
+2026-06-03 04:23:48 === RQF11/RQF12 security unlock chain ===
+2026-06-03 04:23:48 PASS: RQF10/RQF11 inicia sin seguridad automatica desbloqueada.
+2026-06-03 04:23:48 PASS: RQF12 security_1 rechaza requisito faltante employee_7 sin gastar puntos.
+2026-06-03 04:23:48 PASS: RQF12 security_1 desbloquea despues de employee_7.
+2026-06-03 04:23:48 PASS: RQF11 Nivel 1 activa Camaras con 33% de arresto automatico.
+2026-06-03 04:23:48 PASS: RQF11 Nivel 1 muestra evidencia visual de camaras.
+2026-06-03 04:23:48 PASS: RQF12 security_2 rechaza requisito faltante employee_8 sin gastar puntos.
+2026-06-03 04:23:48 PASS: RQF12 security_2 desbloquea despues de employee_8.
+2026-06-03 04:23:48 PASS: RQF11 Nivel 2 activa Guardias con 66% de arresto automatico.
+2026-06-03 04:23:48 PASS: RQF11 Nivel 2 muestra evidencia visual de guardias.
+2026-06-03 04:23:48 PASS: RQF12 security_3 rechaza requisito faltante employee_14 sin gastar puntos.
+2026-06-03 04:23:48 PASS: RQF12 security_3 desbloquea despues de employee_14.
+2026-06-03 04:23:48 PASS: RQF11 Nivel 3 activa Alarmas/arcos con 99% de arresto automatico.
+2026-06-03 04:23:48 PASS: RQF11 Nivel 3 muestra evidencia visual de alarmas/arcos.
+2026-06-03 04:23:48 Audit finished. Failures=0

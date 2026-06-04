@@ -148,7 +148,7 @@ namespace FLOBUK.StoreSimulator.Editor
                 "CHECK-07: Level up otorgó +1 punto. Antes=" + pointsBefore7 + " Después=" + mgr.currentPoints);
 
             // ── CHECK 8 — No duplica puntos al recargar ───────────────────────────
-            SimpleJSON.JSONNode snapshot = mgr.SaveToJSON();
+            var snapshot = mgr.SaveToJSON();
             int savedPoints8 = snapshot["currentPoints"].AsInt;
             int savedLevel8  = snapshot["lastAwardedBusinessLevel"].AsInt;
             mgr.LoadFromJSON(snapshot);
@@ -233,7 +233,7 @@ namespace FLOBUK.StoreSimulator.Editor
                 "CHECK-18: ItemDatabase existe (equipamiento/muebles accesibles).");
 
             // ── CHECK 19 — Guardado/carga preserva estado ────────────────────────
-            SimpleJSON.JSONNode snapshot19 = mgr.SaveToJSON();
+            var snapshot19 = mgr.SaveToJSON();
             PassIf(snapshot19["currentPoints"] != null,
                 "CHECK-19a: SaveToJSON exporta currentPoints.");
             PassIf(snapshot19["lastAwardedBusinessLevel"] != null,

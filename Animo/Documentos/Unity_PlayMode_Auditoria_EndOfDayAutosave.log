@@ -1,0 +1,16 @@
+# ShopMaster Reportes/Guardado/Pagos Audit - EndOfDayAutosave
+2026-06-03 05:55:46 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 05:55:56 PASS: SaveGameSystem presente.
+2026-06-03 05:55:56 PASS: StoreDatabase presente.
+2026-06-03 05:55:56 PASS: DayCycleSystem presente.
+2026-06-03 05:55:56 PASS: CustomerSystem presente.
+2026-06-03 05:55:56 PASS: StatsDatabase presente.
+2026-06-03 05:55:56 PASS: SupermarketExpansionSystem presente.
+2026-06-03 05:55:56 PASS: UIGame presente para fin de dia/notificaciones.
+2026-06-03 05:55:56 === RQF21 autosave al finalizar dia ===
+2026-06-03 05:55:57 PASS: RQF21 UIGame conserva LeaveToNext como cierre real del dia.
+2026-06-03 05:55:57 PASS: RQF21 el cierre del dia dispara SaveGameSystem.dataSaveEvent.
+2026-06-03 05:55:57 PASS: RQF21 autosave escribe save.dat en persistentDataPath.
+2026-06-03 05:55:57 PASS: RQF21 autosave persiste StoreDatabase, DayCycleSystem, CustomerSystem y StatsDatabase.
+2026-06-03 05:55:57 PASS: RQF21 autosave conserva estadisticas del dia, incluyendo robos.
+2026-06-03 05:55:57 Audit finished. Failures=0

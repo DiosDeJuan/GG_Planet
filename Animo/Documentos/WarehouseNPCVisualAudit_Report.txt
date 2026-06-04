@@ -1,0 +1,49 @@
+# ShopMaster Warehouse & NPC Visual Audit
+2026-06-03 23:34:19 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 23:34:32 === FASE 1: Baseline y sistemas previos ===
+2026-06-03 23:34:32 PASS: Runner Fase 3 sigue en verde (Failures=0 encontrado en log).
+2026-06-03 23:34:32 PASS: Runner Fase 4 sigue en verde (Failures=0 encontrado en log).
+2026-06-03 23:34:32 === FASE 2: Escena cargada — sistemas base ===
+2026-06-03 23:34:32 PASS: EntrepreneurTreeManager presente en escena.
+2026-06-03 23:34:32 PASS: EntrepreneurEmployeeSystem presente.
+2026-06-03 23:34:32 PASS: EmployeeNPCSpawner presente.
+2026-06-03 23:34:32 PASS: EmployeeRestockCoordinator presente.
+2026-06-03 23:34:32 PASS: EmployeeWorkstationRegistry presente.
+2026-06-03 23:34:32 PASS: DeliverySystem presente.
+2026-06-03 23:34:32 PASS: DeliverySystem.deliveryStart asignado (no null).
+2026-06-03 23:34:32 PASS: CustomerSystem presente.
+2026-06-03 23:34:32 PASS: Al menos una CashDesk en escena.
+2026-06-03 23:34:32 === FASE 3: Zona de almacén / carga ===
+2026-06-03 23:34:32 PASS: Zona de almacén existe en escena (objeto con keyword 'Warehouse' encontrado).
+2026-06-03 23:34:32 PASS: Zona de almacén tiene al menos 2 paredes (3 encontradas).
+2026-06-03 23:34:32 PASS: Zona de almacén tiene al menos 1 puerta grande (10 encontradas).
+2026-06-03 23:34:32 PASS: DeliveryStart está a 11m del centro del almacén (≤10m requerido).
+2026-06-03 23:34:32 === FASE 4: Spawn de pedidos ===
+2026-06-03 23:34:32   DeliveryStart: 'DeliveryStartPoint' pos=(10.00, 0.05, 8.85)
+2026-06-03 23:34:32 PASS: DeliveryStart no está bajo el piso (Y=02).
+2026-06-03 23:34:32 PASS: DeliveryStart tiene NavMesh cercano a 5m (punto más cercano: (10.00, 0.05, 10.40)).
+2026-06-03 23:34:32 PASS: DeliverySystem.packagePrefab asignado.
+2026-06-03 23:34:32 === FASE 5: Simular compra y verificar paquete ===
+2026-06-03 23:34:32 PASS: Compra de prueba realizada para 'Leche' (costo=630 cents).
+2026-06-03 23:34:36 === FASE 6: Paquete en escena — accesibilidad ===
+2026-06-03 23:34:36 PASS: Hay 1 paquete(s) en escena.
+2026-06-03 23:34:36   Paquete 'Box(Clone)' pos=(10.00, 0.00, 8.85) count=9
+2026-06-03 23:34:36 PASS: Paquete 'Box(Clone)' no está bajo el piso (Y=02).
+2026-06-03 23:34:36 PASS: Paquete 'Box(Clone)' es alcanzable por NavMesh (dist=22m).
+2026-06-03 23:34:36 === FASE 7: NPCs visuales ===
+2026-06-03 23:34:36 PASS: Empleado #1 contratado en prueba de auditoría.
+2026-06-03 23:34:36 PASS: Empleado #1 asignado como Surtidor para auditoria visual.
+2026-06-03 23:34:40 === FASE 8: Diagnóstico visual de NPCs ===
+2026-06-03 23:34:40   NPCs totales: 1 | con renderer: 1 | en NavMesh: 1 | escala anormal: 0
+2026-06-03 23:34:40 PASS: Todos los NPCs (1) tienen renderer activo y son visibles.
+2026-06-03 23:34:40 PASS: Todos los NPCs (1) tienen NavMeshAgent en NavMesh.
+2026-06-03 23:34:40 === FASE 9: NavMesh — rutas NPC ===
+2026-06-03 23:34:40 PASS: NPC 'Employee_1_NPC' puede navegar al almacén/DeliveryStart.
+2026-06-03 23:34:40   Ruta almacén resuelta en (5.40, 0.05, 8.55) desde target (10.00, 0.05, 8.85).
+2026-06-03 23:34:40 PASS: NPC 'Employee_1_NPC' puede navegar a la caja registradora.
+2026-06-03 23:34:40 PASS: NPC 'Employee_1_NPC' puede navegar al anaquel.
+2026-06-03 23:34:40 === FASE 10: Surtidor — ruta a pickup ===
+2026-06-03 23:34:40 YELLOW: [RESTOCKER] Surtidor terminó la tarea pero LastTaskCompletedVisualRoute=false (posiblemente no había stock suficiente o NavMesh inválido).
+2026-06-03 23:34:40 === FASE 11: Validación final de consola ===
+2026-06-03 23:34:40 === FIN ===
+2026-06-03 23:34:40 Audit finished. Failures=0

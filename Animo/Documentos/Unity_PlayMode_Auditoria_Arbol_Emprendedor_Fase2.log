@@ -1,0 +1,52 @@
+# ShopMaster Entrepreneur Tree Green Audit - Phase 2
+2026-06-04 01:16:37 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-04 01:16:49 Running Phase 2 integrated Play Mode audit.
+2026-06-04 01:16:49 PASS: RQF3 computer interactable exists in Game.unity.
+2026-06-04 01:16:49 PASS: RQF3 player flow opens the real laptop interactable.
+2026-06-04 01:16:49 PASS: EntrepreneurTreeManager exists.
+2026-06-04 01:16:49 PASS: RQF3 Tree UI controller exists.
+2026-06-04 01:16:49 PASS: Real computer tab button 'EXPANDIR' activates panel 'Expandir'.
+2026-06-04 01:16:49 PASS: RQF3 real Open Entrepreneur Tree button exists.
+2026-06-04 01:16:49 PASS: RQF3 real tree button activates EntrepreneurTreeRoot.
+2026-06-04 01:16:49 PASS: RQF4 locked node renders blocked visual state.
+2026-06-04 01:16:49 PASS: RQF36 blocked node click cannot skip prerequisite or spend points.
+2026-06-04 01:16:49 PASS: RQF4 eligible node renders available visual state.
+2026-06-04 01:16:49 PASS: RQF4 real node detail button unlocks, spends one point and renders unlocked state.
+2026-06-04 01:16:49 PASS: Real computer tab button 'COMPRA' activates panel 'Compra'.
+2026-06-04 01:16:49 PASS: RQNF18 COMPRA tab button activates real Orders panel.
+2026-06-04 01:16:49 PASS: Orders UI controller is attached to active panel.
+2026-06-04 01:16:49 PASS: RQNF7 starter product has an interactable real UI buy button.
+2026-06-04 01:16:49 PASS: RQNF7 insufficient funds click shows a clear UI message.
+2026-06-04 01:16:49 PASS: RQNF9 real UI purchase creates a delivery package.
+2026-06-04 01:16:49 PASS: RQNF7 real UI purchase deducts exact cost.
+2026-06-04 01:16:50 PASS: Real computer tab button 'EMPLEADOS' activates panel 'Empleados'.
+2026-06-04 01:16:50 PASS: RQF25 EMPLEADOS tab activates real panel.
+2026-06-04 01:16:50 PASS: RQF25 real employee app open button works.
+2026-06-04 01:16:50 PASS: RQF25 unlocked employee is hireable in real UI.
+2026-06-04 01:16:50 PASS: RQF25 real hire button updates roster and deducts cost.
+2026-06-04 01:16:50 PASS: RQF8 hired employee creates visible NavMesh NPC.
+2026-06-04 01:16:50 PASS: RQF8 hired employee has resolvable stable cashier workstation.
+2026-06-04 01:16:50 PASS: Real computer tab button 'AYUDA' activates panel 'Instrucciones'.
+2026-06-04 01:16:50 PASS: RQNF20 AYUDA tab exposes in-game instructions for tree and connected gameplay.
+2026-06-04 01:16:50 PASS: RQF18 security level 3 applies 99% automatic arrest chance.
+2026-06-04 01:16:50 PASS: RQF11 cameras, guards and gate visuals activate by security level.
+2026-06-04 01:16:50 PASS: RQF11 security visuals do not block NavMesh gameplay.
+2026-06-04 01:16:50 PASS: RQF26 real CashDesk exists.
+2026-06-04 01:16:50 PASS: RQF28 Charismatic multiplier is exactly 1.05 before cashier sale.
+2026-06-04 01:16:50 PASS: RQF26 real cashier checkout starts on real desk and customer cart.
+2026-06-04 01:16:58 PASS: RQF26 cashier completes automated checkout within expected card timing window.
+2026-06-04 01:16:58 PASS: RQF26 cashier sale credits money with one Charismatic 1.05 application.
+2026-06-04 01:16:58 PASS: RQF28 Caffeine and Charismatic remain 1.10 and 1.05 without stacking.
+2026-06-04 01:16:58 PASS: RQF27 compatible empty shelf placement exists.
+2026-06-04 01:16:58 PASS: RQF27 product assignment to real shelf slot succeeds.
+2026-06-04 01:16:58 PASS: RQF27 restocker task moves one real package item into assigned shelf.
+2026-06-04 01:16:58 PASS: RQF13 common real customer begins theft with real cart item.
+2026-06-04 01:16:58 PASS: RQF17 manual capture restores real product and grants progress points.
+2026-06-04 01:16:58 PASS: RQF14 escaped thief loses exact value of reserved real product.
+2026-06-04 01:16:58 PASS: RQF18 security level 3 automatically arrests and restores real product.
+2026-06-04 01:16:58 PASS: RQF18 daily report records manual capture, escape and automatic arrest.
+2026-06-04 01:16:58 PASS: RQF21 temporary base save is written to disk.
+2026-06-04 01:16:58 PASS: RQF21 entrepreneur tree auxiliary save is written to disk.
+2026-06-04 01:16:58 PASS: RQNF3 disk reload restores tree points, hired employee and role.
+2026-06-04 01:16:58 PASS: RQNF3 disk reload preserves upgrades without stacking and restores security.
+2026-06-04 01:16:58 Audit finished. Failures=0

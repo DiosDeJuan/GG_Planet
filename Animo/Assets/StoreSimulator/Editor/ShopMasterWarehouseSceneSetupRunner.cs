@@ -23,6 +23,7 @@
 using System;
 using System.IO;
 using System.Text;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -38,7 +39,15 @@ namespace FLOBUK.StoreSimulator.Editor
     {
         // ── Paths ─────────────────────────────────────────────────────────────────
         private const string ScenePath = "Assets/StoreSimulator/Scenes/Game.unity";
-        private const string LogPath   = "Documentos/Unity_WarehouseSceneSetup.log";
+        private const string LogPath   = "Documentos/WarehouseSceneSetup_Report.txt";
+        private const string StoreWallPrefabPath = "Assets/StoreSimulator/Prefabs/Environment/Store_Wall.prefab";
+        private const string StoreWall2PrefabPath = "Assets/StoreSimulator/Prefabs/Environment/Store_Wall2.prefab";
+        private const string StoreFloorPrefabPath = "Assets/StoreSimulator/Prefabs/Environment/Store_Floor5.prefab";
+        private const string StoreDoorPrefabPath = "Assets/StoreSimulator/Prefabs/Environment/Store_Door.prefab";
+        private const string RoofFlatPrefabPath = "Assets/StoreSimulator/Prefabs/Environment/Roof_Flat.prefab";
+        private const string RoadLampPrefabPath = "Assets/StoreSimulator/Prefabs/Environment/Road_Lamp.prefab";
+        private const string RoadContainerPrefabPath = "Assets/StoreSimulator/Prefabs/Environment/Road_Container.prefab";
+        private const string ShelfBoxedPrefabPath = "Assets/StoreSimulator/Prefabs/Storage/Shelf_Boxed.prefab";
 
         // ── Geometry constants — must match WarehouseZoneBootstrap values ─────────
         private const float HalfWidth  = 4f;
@@ -78,7 +87,10 @@ namespace FLOBUK.StoreSimulator.Editor
 
                 // ── 2. Ensure all required children ───────────────────────────────
                 if (warehouseZone != null)
+                {
                     EnsureWarehouseChildren(warehouseZone, log);
+                    ReassignDeliveryStart(warehouseZone, log);
+                }
 
                 // ── 3. Expand NavMeshSurface to cover the whole store ─────────────
                 ExpandNavMeshSurface(log, ref failures);
@@ -108,6 +120,7 @@ namespace FLOBUK.StoreSimulator.Editor
             {
                 Log(log, "[OK] WarehouseZone ya existe en escena: '" + existing.name
                     + "' pos=" + existing.transform.position);
+                RebuildWarehouseChildren(existing, log);
                 return existing;
             }
 
@@ -163,6 +176,8 @@ namespace FLOBUK.StoreSimulator.Editor
             deliveryPt.transform.SetParent(zone.transform, false);
             deliveryPt.transform.localPosition = Vector3.zero; // zone is already at WarehouseOrigin
 
+            RebuildWarehouseChildren(zone, log);
+
             Log(log, "[CREATED] WarehouseZone en " + WarehouseOrigin + " con "
                 + zone.transform.childCount + " hijos.");
 
@@ -188,6 +203,92 @@ namespace FLOBUK.StoreSimulator.Editor
         }
 
         // ── NavMesh surface expansion ─────────────────────────────────────────────
+
+        private static void RebuildWarehouseChildren(GameObject zone, StringBuilder log)
+        {
+            if (zone == null)
+                return;
+
+            for (int i = zone.transform.childCount - 1; i >= 0; i--)
+                UnityEngine.Object.DestroyImmediate(zone.transform.GetChild(i).gameObject);
+
+            CreatePrefabPart(zone, "WarehouseFloor", StoreFloorPrefabPath,
+                new Vector3(0f, 0f, 0f), Quaternion.identity, new Vector3(4.2f, 1f, 3.2f), true);
+            CreatePrefabPart(zone, "WarehouseWall_Back", StoreWallPrefabPath,
+                new Vector3(0f, 1.5f, -HalfDepth), Quaternion.identity, new Vector3(4.4f, 1f, 1f), true);
+            CreatePrefabPart(zone, "WarehouseWall_Left", StoreWall2PrefabPath,
+                new Vector3(-HalfWidth, 1.5f, 0f), Quaternion.Euler(0f, 90f, 0f), new Vector3(3.2f, 1f, 1f), true);
+            CreatePrefabPart(zone, "WarehouseWall_Right", StoreWall2PrefabPath,
+                new Vector3(HalfWidth, 1.5f, 0f), Quaternion.Euler(0f, 90f, 0f), new Vector3(3.2f, 1f, 1f), true);
+            CreatePrefabPart(zone, "WarehouseRoof", RoofFlatPrefabPath,
+                new Vector3(0f, WallHeight + 0.05f, 0f), Quaternion.identity, new Vector3(4.2f, 1f, 3.2f), false);
+
+            GameObject door = new GameObject("WarehouseWideDoor");
+            door.transform.SetParent(zone.transform, false);
+            door.transform.localPosition = new Vector3(0f, 0f, HalfDepth);
+            CreatePrefabPart(door, "CargoDoor_Left_Open", StoreDoorPrefabPath,
+                new Vector3(-HalfWidth + 0.75f, 0f, 0f), Quaternion.Euler(0f, 90f, 0f), Vector3.one, false);
+            CreatePrefabPart(door, "CargoDoor_Right_Open", StoreDoorPrefabPath,
+                new Vector3(HalfWidth - 0.75f, 0f, 0f), Quaternion.Euler(0f, -90f, 0f), Vector3.one, false);
+            CreateBox(door, "CargoDoorFrame_Top",
+                localPos: new Vector3(0f, WallHeight - 0.15f, 0f),
+                size: new Vector3(HalfWidth * 2f, 0.25f, 0.25f));
+            GameObject trigger = new GameObject("CargoPassageTrigger");
+            trigger.transform.SetParent(door.transform, false);
+            trigger.transform.localPosition = new Vector3(0f, 1.1f, 0.15f);
+            BoxCollider passage = trigger.AddComponent<BoxCollider>();
+            passage.isTrigger = true;
+            passage.size = new Vector3(5.2f, 2.2f, 1.0f);
+
+            CreatePrefabPart(zone, "WarehouseRack_Left", ShelfBoxedPrefabPath,
+                new Vector3(-2.8f, 0f, -1.25f), Quaternion.Euler(0f, 90f, 0f), new Vector3(0.9f, 0.9f, 0.9f), true);
+            CreatePrefabPart(zone, "WarehouseRack_Right", ShelfBoxedPrefabPath,
+                new Vector3(2.8f, 0f, -1.25f), Quaternion.Euler(0f, -90f, 0f), new Vector3(0.9f, 0.9f, 0.9f), true);
+            CreatePrefabPart(zone, "CargoContainer_Backdrop", RoadContainerPrefabPath,
+                new Vector3(0f, 0f, -3.85f), Quaternion.Euler(0f, 90f, 0f), new Vector3(0.75f, 0.75f, 0.75f), true);
+            CreatePrefabPart(zone, "CargoLamp_Left", RoadLampPrefabPath,
+                new Vector3(-3.4f, 0f, 2.1f), Quaternion.identity, Vector3.one, false);
+            CreatePrefabPart(zone, "CargoLamp_Right", RoadLampPrefabPath,
+                new Vector3(3.4f, 0f, 2.1f), Quaternion.identity, Vector3.one, false);
+
+            CreateDropMarker(zone, "PackageDropArea", new Vector3(0f, 0.04f, 1.35f), new Vector3(4.8f, 0.08f, 1.5f));
+            CreateSign(zone, "Sign_Almacen", "ALMACEN", new Vector3(0f, 2.45f, 3.15f), Quaternion.Euler(0f, 180f, 0f), 1.6f);
+            CreateSign(zone, "Sign_Pedidos", "PEDIDOS / CARGA", new Vector3(0f, 0.25f, 1.35f), Quaternion.Euler(90f, 0f, 0f), 1.1f);
+
+            CreateNamedChild(zone, "EmployeeSpawnPoint",
+                new Vector3(0f, 0.05f, -HalfDepth * 0.5f),
+                Quaternion.Euler(0f, 180f, 0f));
+            CreateNamedChild(zone, "DeliveryStartPoint", new Vector3(0f, 0.05f, 1.35f), Quaternion.identity);
+
+            EditorUtility.SetDirty(zone);
+            Log(log, "[OK] WarehouseZone reconstruida con prefabs del asset base, puerta abierta, senaletica y zona de pedidos.");
+        }
+
+        private static void ReassignDeliveryStart(GameObject warehouseZone, StringBuilder log)
+        {
+            DeliverySystem delivery = UnityEngine.Object.FindAnyObjectByType<DeliverySystem>();
+            Transform deliveryStart = warehouseZone != null
+                ? warehouseZone.transform.Find("DeliveryStartPoint")
+                : null;
+
+            if (delivery == null)
+            {
+                Log(log, "[WARN] DeliverySystem no encontrado; no se pudo reasignar DeliveryStartPoint.");
+                return;
+            }
+
+            if (deliveryStart == null)
+            {
+                Log(log, "[WARN] DeliveryStartPoint no encontrado dentro de WarehouseZone.");
+                return;
+            }
+
+            delivery.deliveryStart = deliveryStart;
+            delivery.deliveryDirection = new Vector2(1.2f, 0f);
+            delivery.totalDeliveries = Mathf.Max(delivery.totalDeliveries, 4);
+            EditorUtility.SetDirty(delivery);
+            Log(log, "[OK] DeliverySystem.deliveryStart reasignado a WarehouseZone/DeliveryStartPoint.");
+        }
 
         private static void ExpandNavMeshSurface(StringBuilder log, ref int failures)
         {
@@ -225,12 +326,22 @@ namespace FLOBUK.StoreSimulator.Editor
         private static GameObject FindByKeyword(string keyword)
         {
             string kw = keyword.ToLower();
+            if (kw == "warehouse")
+            {
+                GameObject exact = GameObject.Find("WarehouseZone");
+                if (exact != null)
+                    return exact;
+            }
+
 #if UNITY_2022_2_OR_NEWER
             GameObject[] all = UnityEngine.Object.FindObjectsByType<GameObject>(
                 FindObjectsInactive.Include, FindObjectsSortMode.None);
 #else
             GameObject[] all = UnityEngine.Object.FindObjectsOfType<GameObject>(true);
 #endif
+            foreach (GameObject go in all)
+                if (go != null && go.name.ToLower().Contains(kw) && go.transform.parent == null)
+                    return go;
             foreach (GameObject go in all)
                 if (go != null && go.name.ToLower().Contains(kw))
                     return go;
@@ -253,6 +364,74 @@ namespace FLOBUK.StoreSimulator.Editor
             child.transform.localRotation = localRot;
             EditorUtility.SetDirty(child);
             Log(log, "  [CREATED] '" + childName + "' creado en local " + localPos);
+        }
+
+        private static GameObject CreateNamedChild(GameObject parent, string childName, Vector3 localPos, Quaternion localRot)
+        {
+            GameObject child = new GameObject(childName);
+            child.transform.SetParent(parent.transform, false);
+            child.transform.localPosition = localPos;
+            child.transform.localRotation = localRot;
+            EditorUtility.SetDirty(child);
+            return child;
+        }
+
+        private static GameObject CreatePrefabPart(GameObject parent, string name, string prefabPath,
+            Vector3 localPos, Quaternion localRot, Vector3 localScale, bool keepColliders)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            GameObject part = prefab != null
+                ? (GameObject)PrefabUtility.InstantiatePrefab(prefab)
+                : GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+            part.name = name;
+            part.transform.SetParent(parent.transform, false);
+            part.transform.localPosition = localPos;
+            part.transform.localRotation = localRot;
+            part.transform.localScale = localScale;
+
+            if (!keepColliders)
+            {
+                Collider[] colliders = part.GetComponentsInChildren<Collider>(true);
+                for (int i = 0; i < colliders.Length; i++)
+                    colliders[i].enabled = false;
+            }
+
+            EditorUtility.SetDirty(part);
+            return part;
+        }
+
+        private static void CreateDropMarker(GameObject parent, string name, Vector3 localPos, Vector3 size)
+        {
+            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            marker.name = name;
+            marker.transform.SetParent(parent.transform, false);
+            marker.transform.localPosition = localPos;
+            marker.transform.localScale = size;
+            Collider collider = marker.GetComponent<Collider>();
+            if (collider != null)
+                collider.isTrigger = true;
+            Renderer renderer = marker.GetComponent<Renderer>();
+            if (renderer != null)
+                renderer.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/StoreSimulator/Materials/GridPlacement.mat");
+            EditorUtility.SetDirty(marker);
+        }
+
+        private static void CreateSign(GameObject parent, string name, string text, Vector3 localPos, Quaternion localRot, float fontSize)
+        {
+            GameObject sign = new GameObject(name);
+            sign.transform.SetParent(parent.transform, false);
+            sign.transform.localPosition = localPos;
+            sign.transform.localRotation = localRot;
+
+            TextMeshPro tmp = sign.AddComponent<TextMeshPro>();
+            tmp.text = text;
+            tmp.fontSize = fontSize;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
+
+            EditorUtility.SetDirty(sign);
         }
 
         private static void CreateBox(GameObject parent, string name, Vector3 localPos, Vector3 size)
@@ -295,8 +474,15 @@ namespace FLOBUK.StoreSimulator.Editor
                 Debug.LogError("[WarehouseSetup] Finished with failures: " + failures);
             }
 
-            Directory.CreateDirectory(Path.GetDirectoryName(LogPath) ?? ".");
-            File.WriteAllText(LogPath, log.ToString());
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(LogPath) ?? ".");
+                File.WriteAllText(LogPath, log.ToString());
+            }
+            catch (IOException ioEx)
+            {
+                Debug.LogWarning("[WarehouseSetup] Could not write standalone report because the log file is in use: " + ioEx.Message);
+            }
 
             EditorApplication.Exit(failures == 0 ? 0 : 1);
         }

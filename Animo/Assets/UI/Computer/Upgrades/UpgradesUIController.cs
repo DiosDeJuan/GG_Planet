@@ -13,6 +13,12 @@ namespace FLOBUK.StoreSimulator
     public class UpgradesUIController : MonoBehaviour
     {
         private const string LogPrefix = "[EntrepreneurTree] ";
+        private const float NodeWidth = 210f;
+        private const float NodeHeight = 112f;
+        private const float ColumnSpacing = 260f;
+        private const float RowSpacing = 142f;
+        private const float ColumnTop = -110f;
+        private const float HeaderY = -40f;
 
         [Header("Tree Canvas")]
         public RectTransform treeScrollContent;
@@ -42,6 +48,7 @@ namespace FLOBUK.StoreSimulator
         private ScrollRect treeScrollRect;
         private Button openTreeButton;
         private Button backToLegacyButton;
+        private string lastDetailMessage = "Selecciona un nodo para ver sus detalles.";
 
         private bool treeBuilt;
         private bool treeEventsBound;
@@ -124,6 +131,14 @@ namespace FLOBUK.StoreSimulator
             TreeData tree = EntrepreneurTreeManager.Instance.treeData;
             int createdNodes = 0;
             int createdLines = 0;
+            Dictionary<TreeNodeType, int> columnRows = new Dictionary<TreeNodeType, int>
+            {
+                { TreeNodeType.Product, 0 },
+                { TreeNodeType.Employee, 0 },
+                { TreeNodeType.Security, 0 },
+                { TreeNodeType.Improvement, 0 }
+            };
+            CreateColumnHeaders();
             Debug.Log(LogPrefix + "Tree data loaded: " + (tree != null && tree.nodes != null ? tree.nodes.Count : 0) + " nodes.");
 
             for (int i = 0; i < tree.nodes.Count; i++)
@@ -137,8 +152,10 @@ namespace FLOBUK.StoreSimulator
                     continue;
 
                 RectTransform rt = nodeObj.GetComponent<RectTransform>();
-                rt.anchoredPosition = nodeData.uiPosition;
-                Debug.Log(LogPrefix + "Rendering node: " + nodeData.id + " at " + nodeData.uiPosition.x + "/" + nodeData.uiPosition.y + ".");
+                int row = columnRows.ContainsKey(nodeData.nodeType) ? columnRows[nodeData.nodeType] : 0;
+                rt.anchoredPosition = GetColumnNodePosition(nodeData.nodeType, row);
+                columnRows[nodeData.nodeType] = row + 1;
+                Debug.Log(LogPrefix + "Rendering node: " + nodeData.id + " at " + rt.anchoredPosition.x + "/" + rt.anchoredPosition.y + ".");
 
                 NodeUI nodeUI = nodeObj.GetComponent<NodeUI>();
                 if (nodeUI == null)
@@ -188,12 +205,55 @@ namespace FLOBUK.StoreSimulator
             Debug.Log(LogPrefix + "Tree render complete: " + createdNodes + " nodes, " + createdLines + " connections.");
         }
 
+        private void CreateColumnHeaders()
+        {
+            CreateColumnHeader(TreeNodeType.Product, "Productos");
+            CreateColumnHeader(TreeNodeType.Employee, "Empleados");
+            CreateColumnHeader(TreeNodeType.Security, "Seguridad");
+            CreateColumnHeader(TreeNodeType.Improvement, "Mejoras");
+        }
+
+        private void CreateColumnHeader(TreeNodeType type, string label)
+        {
+            GameObject header = CreateUIObject("ColumnHeader_" + label, nodesContainer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            RectTransform rt = header.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(NodeWidth, 34f);
+            rt.anchoredPosition = new Vector2(GetColumnX(type), HeaderY);
+            Image bg = header.AddComponent<Image>();
+            bg.color = ComputerUITheme.GetNodeAccent(type);
+            TMP_Text text = CreateTextObject("Text", header.transform, label.ToUpperInvariant(), ComputerUITheme.FontSmall, TextAlignmentOptions.Center,
+                Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+            text.color = ComputerUITheme.TextPrimary;
+        }
+
+        private static Vector2 GetColumnNodePosition(TreeNodeType type, int row)
+        {
+            return new Vector2(GetColumnX(type), ColumnTop - (row * RowSpacing));
+        }
+
+        private static float GetColumnX(TreeNodeType type)
+        {
+            switch (type)
+            {
+                case TreeNodeType.Employee:
+                    return ColumnSpacing;
+                case TreeNodeType.Security:
+                    return ColumnSpacing * 2f;
+                case TreeNodeType.Improvement:
+                    return ColumnSpacing * 3f;
+                default:
+                    return 0f;
+            }
+        }
+
 
         public void ShowNodeInfo(NodeData node)
         {
             if (node == null || infoPanel == null)
                 return;
 
+            if (currentInfoNode == null || currentInfoNode.id != node.id)
+                lastDetailMessage = EntrepreneurTreeManager.EvaluateUnlock(node.id).message;
             currentInfoNode = node;
 
             if (infoTitle)
@@ -204,74 +264,54 @@ namespace FLOBUK.StoreSimulator
 
             if (infoDescription)
             {
-                string typeLabel = "Tipo: " + GetNodeTypeLabel(node.nodeType);
-
-                // For employee nodes, append hire status from EntrepreneurEmployeeSystem.
                 string employeeStatus = BuildEmployeeStatusLine(node);
-                string body = typeLabel;
+                string body =
+                    "Tipo: " + GetNodeTypeLabel(node.nodeType) + "\n" +
+                    "Estado: " + GetNodeStateText(node) + "\n" +
+                    "Costo: " + node.cost + " punto" + (node.cost == 1 ? "" : "s") + "\n" +
+                    "Puntos disponibles: " + EntrepreneurTreeManager.GetAvailablePoints() + " puntos\n" +
+                    "Requisito: " + BuildRequirementText(node) + "\n" +
+                    "Beneficio: " + (string.IsNullOrEmpty(node.description) ? "Sin descripcion." : node.description) + "\n" +
+                    "Sistema afectado: " + BuildSystemAffectedText(node);
                 if (!string.IsNullOrEmpty(employeeStatus))
                     body += "\n" + employeeStatus;
-                if (!string.IsNullOrEmpty(node.description))
-                    body += "\n" + node.description;
 
                 infoDescription.text = body;
             }
 
             if (infoCost)
             {
-                if (node.isUnlocked)
-                {
-                    infoCost.text  = "Estado: " + ComputerUITheme.LabelOk + " Desbloqueado";
-                    infoCost.color = ComputerUITheme.TextSuccess;
-                }
-                else
-                {
-                    infoCost.text  = "Costo: " + node.cost + " punto" + (node.cost != 1 ? "s" : "");
-                    infoCost.color = ComputerUITheme.TextPrimary;
-                }
+                infoCost.text = "Mensaje: " + BuildDetailMessage(node);
+                infoCost.color = node.isUnlocked ? ComputerUITheme.TextSuccess : ComputerUITheme.TextWarning;
             }
 
             if (infoRequirements)
             {
-                if (node.requiredNodeIds == null || node.requiredNodeIds.Count == 0)
-                {
-                    infoRequirements.text  = "Sin requisitos";
-                    infoRequirements.color = ComputerUITheme.TextMuted;
-                }
-                else
-                {
-                    StringBuilder sb = new StringBuilder("Requisitos:\n");
-                    for (int i = 0; i < node.requiredNodeIds.Count; i++)
-                    {
-                        string reqId = node.requiredNodeIds[i];
-                        NodeData reqNode = EntrepreneurTreeManager.Instance != null && EntrepreneurTreeManager.Instance.treeData != null
-                            ? EntrepreneurTreeManager.Instance.treeData.GetNodeById(reqId)
-                            : null;
-
-                        string title   = reqNode != null ? reqNode.title : reqId;
-                        bool   unlocked = reqNode != null && reqNode.isUnlocked;
-                        sb.Append(unlocked ? ComputerUITheme.LabelOk : "[NO]")
-                          .Append(" ")
-                          .Append(title);
-                        if (i < node.requiredNodeIds.Count - 1)
-                            sb.AppendLine();
-                    }
-                    infoRequirements.text  = sb.ToString();
-                    infoRequirements.color = ComputerUITheme.TextSecondary;
-                }
+                infoRequirements.text = BuildRequirementStatusBlock(node);
+                infoRequirements.color = ComputerUITheme.TextSecondary;
             }
 
             if (infoUnlockButton)
             {
-                infoUnlockButton.gameObject.SetActive(!node.isUnlocked);
-                bool canUnlock = EntrepreneurTreeManager.CanUnlockNode(node.id);
+                infoUnlockButton.gameObject.SetActive(true);
+                EntrepreneurTreeUnlockResponse unlockState = EntrepreneurTreeManager.EvaluateUnlock(node.id);
+                bool canUnlock = unlockState.success;
                 infoUnlockButton.interactable = canUnlock;
 
                 Image buttonImage = infoUnlockButton.targetGraphic as Image;
                 if (buttonImage != null)
-                    buttonImage.color = canUnlock
-                        ? ComputerUITheme.ButtonPositive
-                        : ComputerUITheme.ButtonDisabled;
+                    buttonImage.color = node.isUnlocked
+                        ? ComputerUITheme.NodeUnlockedBg
+                        : canUnlock ? ComputerUITheme.ButtonPositive : ComputerUITheme.ButtonDisabled;
+
+                TMP_Text buttonText = infoUnlockButton.GetComponentInChildren<TMP_Text>(true);
+                if (buttonText != null)
+                {
+                    buttonText.text = node.isUnlocked ? "YA DESBLOQUEADO" : canUnlock ? "DESBLOQUEAR" : "BLOQUEADO";
+                    buttonText.enableAutoSizing = true;
+                    buttonText.fontSizeMin = 10f;
+                    buttonText.fontSizeMax = ComputerUITheme.FontBody;
+                }
             }
 
             infoPanel.SetActive(true);
@@ -320,6 +360,109 @@ namespace FLOBUK.StoreSimulator
                 + "  |  Puesto: " + wsText;
         }
 
+        private static string GetNodeStateText(NodeData node)
+        {
+            if (node == null)
+                return "Bloqueado";
+            if (node.isUnlocked)
+                return "Desbloqueado";
+            return EntrepreneurTreeManager.CanUnlockNode(node.id) ? "Disponible" : "Bloqueado";
+        }
+
+        private static string BuildRequirementText(NodeData node)
+        {
+            if (node == null || node.requiredNodeIds == null || node.requiredNodeIds.Count == 0)
+                return "Ninguno";
+
+            return "Requiere: " + string.Join(", ", GetRequirementTitles(node));
+        }
+
+        private static string BuildRequirementStatusBlock(NodeData node)
+        {
+            if (node == null || node.requiredNodeIds == null || node.requiredNodeIds.Count == 0)
+                return "Requisito: Ninguno";
+
+            StringBuilder sb = new StringBuilder("Requisitos:\n");
+            for (int i = 0; i < node.requiredNodeIds.Count; i++)
+            {
+                string reqId = node.requiredNodeIds[i];
+                NodeData req = EntrepreneurTreeManager.Instance != null && EntrepreneurTreeManager.Instance.treeData != null
+                    ? EntrepreneurTreeManager.Instance.treeData.GetNodeById(reqId)
+                    : null;
+                sb.Append(req != null && req.isUnlocked ? "[OK] " : "[NO] ")
+                  .Append(req != null ? req.title : reqId);
+                if (i < node.requiredNodeIds.Count - 1)
+                    sb.AppendLine();
+            }
+
+            return sb.ToString();
+        }
+
+        private static List<string> GetRequirementTitles(NodeData node)
+        {
+            List<string> titles = new List<string>();
+            if (node == null || node.requiredNodeIds == null)
+                return titles;
+
+            for (int i = 0; i < node.requiredNodeIds.Count; i++)
+            {
+                string reqId = node.requiredNodeIds[i];
+                NodeData req = EntrepreneurTreeManager.Instance != null && EntrepreneurTreeManager.Instance.treeData != null
+                    ? EntrepreneurTreeManager.Instance.treeData.GetNodeById(reqId)
+                    : null;
+                titles.Add(req != null ? req.title : reqId);
+            }
+
+            return titles;
+        }
+
+        private static string BuildSystemAffectedText(NodeData node)
+        {
+            if (node == null)
+                return "Mejoras";
+            switch (node.nodeType)
+            {
+                case TreeNodeType.Product:
+                    return "Compra/Productos";
+                case TreeNodeType.Employee:
+                    return "Empleados";
+                case TreeNodeType.Security:
+                    return "Seguridad";
+                case TreeNodeType.Improvement:
+                    return "Mejoras";
+                default:
+                    return "Mejoras";
+            }
+        }
+
+        private string BuildDetailMessage(NodeData node)
+        {
+            if (!string.IsNullOrEmpty(lastDetailMessage) && currentInfoNode == node)
+                return lastDetailMessage;
+
+            EntrepreneurTreeUnlockResponse state = EntrepreneurTreeManager.EvaluateUnlock(node != null ? node.id : string.Empty);
+            return state.message;
+        }
+
+        private static string BuildActivationMessage(NodeData node)
+        {
+            if (node == null)
+                return string.Empty;
+            switch (node.nodeType)
+            {
+                case TreeNodeType.Product:
+                    return "Producto disponible en Compra.";
+                case TreeNodeType.Employee:
+                    return "Empleado disponible en la app Empleados.";
+                case TreeNodeType.Security:
+                    return "Nivel de seguridad activado.";
+                case TreeNodeType.Improvement:
+                    return "Mejora aplicada correctamente.";
+                default:
+                    return string.Empty;
+            }
+        }
+
 
         public void HideNodeInfo()
         {
@@ -333,7 +476,14 @@ namespace FLOBUK.StoreSimulator
             if (currentInfoNode == null)
                 return;
 
-            EntrepreneurTreeManager.TryUnlockNode(currentInfoNode.id);
+            EntrepreneurTreeUnlockResponse response = EntrepreneurTreeManager.TryUnlockNodeDetailed(currentInfoNode.id);
+            lastDetailMessage = response.message;
+            if (response.success)
+            {
+                string activation = BuildActivationMessage(currentInfoNode);
+                if (!string.IsNullOrEmpty(activation))
+                    lastDetailMessage += "\n" + activation;
+            }
             ShowNodeInfo(currentInfoNode);
         }
 
@@ -344,7 +494,7 @@ namespace FLOBUK.StoreSimulator
                 pointsLabel.text = "Puntos disponibles: " + total;
 
             if (infoPanel && infoPanel.activeSelf && currentInfoNode != null && infoUnlockButton)
-                infoUnlockButton.interactable = EntrepreneurTreeManager.CanUnlockNode(currentInfoNode.id);
+                ShowNodeInfo(currentInfoNode);
         }
 
 
@@ -529,8 +679,8 @@ namespace FLOBUK.StoreSimulator
             rootBg.color = ComputerUITheme.RootBg;
 
             RectTransform rootRT = rootObj.GetComponent<RectTransform>();
-            rootRT.offsetMin = Vector2.zero;
-            rootRT.offsetMax = Vector2.zero;
+            rootRT.offsetMin = new Vector2(20f, 20f);
+            rootRT.offsetMax = new Vector2(-20f, -20f);
 
             GameObject header = CreateUIObject("Header", rootObj.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f));
             RectTransform headerRT = header.GetComponent<RectTransform>();
@@ -538,7 +688,7 @@ namespace FLOBUK.StoreSimulator
             Image headerBg = header.AddComponent<Image>();
             headerBg.color = ComputerUITheme.HeaderBg;
 
-            TMP_Text titleTmp = CreateTextObject("Title", header.transform, "Árbol del Emprendedor", ComputerUITheme.FontTitle, TextAlignmentOptions.Left,
+            TMP_Text titleTmp = CreateTextObject("Title", header.transform, "ARBOL DEL EMPRENDEDOR", ComputerUITheme.FontTitle, TextAlignmentOptions.Left,
                 new Vector2(0f, 0f), new Vector2(0.6f, 1f), new Vector2(0f, 0.5f), new Vector2(20f, 0f), new Vector2(-20f, 0f));
             titleTmp.color = ComputerUITheme.TextPrimary;
 
@@ -557,7 +707,7 @@ namespace FLOBUK.StoreSimulator
 
             GameObject info = CreateUIObject("InfoPanel", rootObj.transform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f));
             RectTransform infoRT = info.GetComponent<RectTransform>();
-            infoRT.sizeDelta = new Vector2(360f, -(ComputerUITheme.HeaderHeight + 28f));
+            infoRT.sizeDelta = new Vector2(380f, -(ComputerUITheme.HeaderHeight + 28f));
             infoRT.anchoredPosition = new Vector2(-10f, -(ComputerUITheme.HeaderHeight * 0.5f + 4f));
             Image infoBg = info.AddComponent<Image>();
             infoBg.color = ComputerUITheme.PanelDarkBg;
@@ -573,19 +723,19 @@ namespace FLOBUK.StoreSimulator
             ContentSizeFitter infoFitter = info.AddComponent<ContentSizeFitter>();
             infoFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
 
-            infoTitle = CreateTextObject("NodeTitleText", info.transform, "", ComputerUITheme.FontHeader, TextAlignmentOptions.Left,
+            infoTitle = CreateTextObject("NodeTitleText", info.transform, "Selecciona un nodo", ComputerUITheme.FontHeader, TextAlignmentOptions.Left,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
             infoTitle.color = ComputerUITheme.TextPrimary;
 
-            infoDescription = CreateTextObject("NodeDescriptionText", info.transform, "", ComputerUITheme.FontBody, TextAlignmentOptions.TopLeft,
+            infoDescription = CreateTextObject("NodeDescriptionText", info.transform, "Tipo: -\nEstado: -\nCosto: -\nPuntos disponibles: -\nRequisito: -\nBeneficio: -\nSistema afectado: -", ComputerUITheme.FontBody, TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
             infoDescription.color = ComputerUITheme.TextSecondary;
 
-            infoCost = CreateTextObject("NodeCostText", info.transform, "", ComputerUITheme.FontBody, TextAlignmentOptions.Left,
+            infoCost = CreateTextObject("NodeCostText", info.transform, "Mensaje: Selecciona un nodo para ver sus detalles.", ComputerUITheme.FontBody, TextAlignmentOptions.Left,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
             infoCost.color = ComputerUITheme.TextPrimary;
 
-            infoRequirements = CreateTextObject("RequirementsText", info.transform, "", ComputerUITheme.FontSmall, TextAlignmentOptions.TopLeft,
+            infoRequirements = CreateTextObject("RequirementsText", info.transform, "Requisito: Ninguno", ComputerUITheme.FontSmall, TextAlignmentOptions.TopLeft,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
             infoRequirements.color = ComputerUITheme.TextSecondary;
 
@@ -603,8 +753,8 @@ namespace FLOBUK.StoreSimulator
 
             GameObject treeScroll = CreateUIObject("TreeScrollView", rootObj.transform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0.5f, 0.5f));
             RectTransform scrollRT = treeScroll.GetComponent<RectTransform>();
-            scrollRT.offsetMin = new Vector2(18f, 18f);
-            scrollRT.offsetMax = new Vector2(-380f, -(ComputerUITheme.HeaderHeight + 8f));
+            scrollRT.offsetMin = new Vector2(20f, 20f);
+            scrollRT.offsetMax = new Vector2(-400f, -(ComputerUITheme.HeaderHeight + 20f));
 
             Image scrollBg = treeScroll.AddComponent<Image>();
             scrollBg.color = ComputerUITheme.CardBg;
@@ -624,8 +774,8 @@ namespace FLOBUK.StoreSimulator
 
             GameObject content = CreateUIObject("Content", viewport.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f));
             treeScrollContent = content.GetComponent<RectTransform>();
-            treeScrollContent.sizeDelta = new Vector2(2600f, 1400f);
-            treeScrollContent.anchoredPosition = new Vector2(140f, -140f);
+            treeScrollContent.sizeDelta = new Vector2(1040f, 2700f);
+            treeScrollContent.anchoredPosition = new Vector2(20f, -20f);
 
             scrollRect.viewport = viewportRT;
             scrollRect.content = treeScrollContent;
@@ -688,7 +838,7 @@ namespace FLOBUK.StoreSimulator
 
             GameObject nodeObj = CreateUIObject("Node", nodesContainer, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             RectTransform rt = nodeObj.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(180f, 88f);
+            rt.sizeDelta = new Vector2(NodeWidth, NodeHeight);
 
             Image background = nodeObj.AddComponent<Image>();
             background.color = new Color(0.35f, 0.35f, 0.35f, 1f);
@@ -703,7 +853,7 @@ namespace FLOBUK.StoreSimulator
             Image iconImage = iconObj.AddComponent<Image>();
             iconImage.raycastTarget = false;
 
-            TMP_Text label = CreateTextObject("Label", nodeObj.transform, "", 18, TextAlignmentOptions.Left,
+            TMP_Text label = CreateTextObject("Label", nodeObj.transform, "", 15, TextAlignmentOptions.Left,
                 new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, 0f), new Vector2(-12f, 0f));
 
             nodeUI.background = background;
@@ -729,8 +879,8 @@ namespace FLOBUK.StoreSimulator
                 nodeUI = nodeObj.AddComponent<NodeUI>();
 
             RectTransform rt = nodeObj.GetComponent<RectTransform>();
-            if (rt != null && rt.sizeDelta.sqrMagnitude <= 0.01f)
-                rt.sizeDelta = new Vector2(180f, 88f);
+            if (rt != null)
+                rt.sizeDelta = new Vector2(Mathf.Max(rt.sizeDelta.x, NodeWidth), Mathf.Max(rt.sizeDelta.y, NodeHeight));
 
             Transform iconTransform = nodeObj.transform.Find("Icon");
             Image iconImage = iconTransform != null ? iconTransform.GetComponent<Image>() : null;
@@ -747,7 +897,7 @@ namespace FLOBUK.StoreSimulator
             TMP_Text label = FindText(nodeObj.transform, "Label");
             if (label == null)
             {
-                label = CreateTextObject("Label", nodeObj.transform, "", 18, TextAlignmentOptions.Left,
+                label = CreateTextObject("Label", nodeObj.transform, "", 15, TextAlignmentOptions.Left,
                     new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0.5f), new Vector2(64f, 0f), new Vector2(-12f, 0f));
             }
 

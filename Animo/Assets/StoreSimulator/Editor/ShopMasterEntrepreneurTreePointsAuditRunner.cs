@@ -114,7 +114,7 @@ namespace FLOBUK.StoreSimulator.Editor
                 "B3-06: Repetir misma simulación de nivel NO duplica puntos. Puntos=" + mgr.currentPoints);
 
             // ── PRUEBA 5 — Simular guardar y recargar (JSON round-trip) ───────────
-            SimpleJSON.JSONNode savedData = mgr.SaveToJSON();
+            var savedData = mgr.SaveToJSON();
             PassIf(savedData != null && savedData["currentPoints"] != null,
                 "B3-07: SaveToJSON incluye currentPoints.");
             PassIf(savedData != null && savedData["lastAwardedBusinessLevel"] != null,

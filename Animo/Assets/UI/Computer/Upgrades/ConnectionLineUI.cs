@@ -60,6 +60,7 @@ namespace FLOBUK.StoreSimulator
             UpdateColor();
 
             EntrepreneurTreeManager.onNodeUnlocked += OnNodeUnlocked;
+            EntrepreneurTreeManager.onPointsChanged += OnPointsChanged;
         }
 
 
@@ -112,11 +113,13 @@ namespace FLOBUK.StoreSimulator
 
 
         private void OnNodeUnlocked(NodeData _) => UpdateColor();
+        private void OnPointsChanged(int total, int change) => UpdateColor();
 
 
         void OnDestroy()
         {
             EntrepreneurTreeManager.onNodeUnlocked -= OnNodeUnlocked;
+            EntrepreneurTreeManager.onPointsChanged -= OnPointsChanged;
         }
     }
 }

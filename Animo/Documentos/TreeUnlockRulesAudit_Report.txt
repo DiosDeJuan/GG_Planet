@@ -1,0 +1,15 @@
+# ShopMaster Entrepreneur Tree exact audit - rules
+2026-06-04 01:10:59 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-04 01:11:11 PASS: Computer interactable exists.
+2026-06-04 01:11:11 PASS: Computer opens in Play Mode.
+2026-06-04 01:11:11 PASS: UpgradesUIController exists.
+2026-06-04 01:11:11 PASS: Computer tab opens panel: Expandir
+2026-06-04 01:11:11 PASS: Open Entrepreneur Tree button exists.
+2026-06-04 01:11:11 PASS: Tree data exists.
+2026-06-04 01:11:11 PASS: security_1 requires employee_7.
+2026-06-04 01:11:11 PASS: security_2 requires employee_8.
+2026-06-04 01:11:11 PASS: security_3 requires employee_14.
+2026-06-04 01:11:11 PASS: upgrade_caffeine requires product_fresh_2.
+2026-06-04 01:11:11 PASS: upgrade_charismatic requires employee_15.
+2026-06-04 01:11:11 PASS: Starter node costs 0 and all other nodes cost 1.
+2026-06-04 01:11:12 Audit finished. Failures=0

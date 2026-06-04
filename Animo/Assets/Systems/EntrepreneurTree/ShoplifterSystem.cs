@@ -95,7 +95,7 @@ namespace FLOBUK.StoreSimulator
             agent.Initialize(this, customer, type);
             activeAgents[id] = agent;
             StatsDatabase.RegisterThiefAppeared();
-            ShowShoplifterNotification("Ladron detectado en la tienda.", new Color(0.92f, 0.16f, 0.16f));
+            ShowShoplifterNotification("Ladron detectado.", new Color(0.92f, 0.16f, 0.16f));
             Debug.Log(LogPrefix + (isForced ? "[AdminMode] " : "") + "Assigned thief type " + type + " to customer " + id);
         }
 
@@ -175,7 +175,7 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             StatsDatabase.RegisterThiefDetected(agent.stolenValue, agent.stolenProductsCount, agent.stolenItems);
-            ShowShoplifterNotification("Ladron detectado. Valor robado: " + StoreDatabase.FromLongToStringMoney(agent.stolenValue),
+            ShowShoplifterNotification("Robo en progreso. Valor objetivo: " + StoreDatabase.FromLongToStringMoney(agent.stolenValue),
                 new Color(1f, 0.28f, 0.18f));
         }
 
@@ -200,9 +200,9 @@ namespace FLOBUK.StoreSimulator
             string securityName = EntrepreneurTreeSecurityAdapter.Instance != null
                 ? EntrepreneurTreeSecurityAdapter.Instance.GetSecuritySystemName()
                 : "Seguridad";
-            ShowShoplifterNotification(securityName + " detuvo un ladron automaticamente.", new Color(0.2f, 0.8f, 0.24f));
+            ShowShoplifterNotification("Arresto automatico exitoso: " + securityName + ".", new Color(0.2f, 0.8f, 0.24f));
             if (restoredCount > 0)
-                ShowShoplifterNotification("Productos recuperados: " + restoredCount, new Color(0.25f, 0.9f, 0.35f));
+                ShowShoplifterNotification("Ladron detenido: productos recuperados (" + restoredCount + ").", new Color(0.25f, 0.9f, 0.35f));
         }
 
 
@@ -224,7 +224,7 @@ namespace FLOBUK.StoreSimulator
             int pointReward = Mathf.Max(1, Mathf.FloorToInt(agent.stolenProductsCount * manualCaptureRewardFraction) + 1);
             EntrepreneurTreeManager.AddPoints(pointReward);
             Debug.Log(LogPrefix + "Manual capture completed. Restored=" + restoredCount + ", RewardPoints=" + pointReward);
-            ShowShoplifterNotification("Ladron detenido manualmente. +" + pointReward + " punto(s) de progreso.", new Color(0.2f, 0.82f, 0.28f));
+            ShowShoplifterNotification("Ladron detenido: productos recuperados. +" + pointReward + " punto(s).", new Color(0.2f, 0.82f, 0.28f));
 
             StatsDatabase.RegisterThiefManualArrest(restoredCount, restoredValue, agent.stolenItems);
             AchievementSystem.RegisterThiefCaptured();
@@ -244,7 +244,7 @@ namespace FLOBUK.StoreSimulator
                 StoreDatabase.AddRemoveMoney(-agent.stolenValue);
 
             StatsDatabase.RegisterThiefEscaped(agent.stolenValue, agent.stolenProductsCount, agent.stolenItems);
-            ShowShoplifterNotification("Ladron escapo con " + StoreDatabase.FromLongToStringMoney(agent.stolenValue) + " en productos.",
+            ShowShoplifterNotification("Ladron escapo: perdida de " + StoreDatabase.FromLongToStringMoney(agent.stolenValue) + ".",
                 new Color(0.75f, 0.15f, 0.12f));
         }
 
@@ -266,7 +266,12 @@ namespace FLOBUK.StoreSimulator
                 if (maxInt <= minInt)
                     return minInt;
 
-                return UnityEngine.Random.Range(minInt, maxInt + 1);
+                float multiplier = GetTargetValueProgressMultiplier(type);
+                long scaledMin = (long)Math.Round(minInt * multiplier);
+                long scaledMax = (long)Math.Round(maxInt * multiplier);
+                scaledMin = Math.Max(minInt, Math.Min(scaledMin, maxInt));
+                scaledMax = Math.Max(scaledMin, Math.Min(scaledMax, maxInt));
+                return UnityEngine.Random.Range((int)scaledMin, (int)scaledMax + 1);
             }
 
             return 10000;
@@ -348,6 +353,24 @@ namespace FLOBUK.StoreSimulator
             return Mathf.Lerp(baseThiefChance, maxThiefChance, combined);
         }
 
+        private float GetRobberyDifficulty01()
+        {
+            float dayFactor = DayCycleSystem.Instance != null ? DayCycleSystem.Instance.currentDay / 60f : 0f;
+            float levelFactor = StoreDatabase.Instance != null ? StoreDatabase.Instance.currentLevel / 20f : 0f;
+            int salesExpansions = SupermarketExpansionSystem.Instance != null
+                ? SupermarketExpansionSystem.Instance.GetPurchasedSalesExpansionCount()
+                : 0;
+            float expansionFactor = salesExpansions / 6f;
+            return Mathf.Clamp01(Mathf.Max(expansionFactor, (dayFactor + levelFactor + expansionFactor) / 3f));
+        }
+
+        private float GetTargetValueProgressMultiplier(ShoplifterType type)
+        {
+            float difficulty = GetRobberyDifficulty01();
+            float maxBonus = (type == ShoplifterType.Expert || type == ShoplifterType.Special) ? 0.65f : 0.35f;
+            return 1f + difficulty * maxBonus;
+        }
+
 
         private ShoplifterType ChooseThiefType()
         {
@@ -355,26 +378,30 @@ namespace FLOBUK.StoreSimulator
                 EntrepreneurTreeManager.IsNodeUnlocked("product_luxury_1") ||
                 EntrepreneurTreeManager.IsNodeUnlocked("product_appliances_1");
 
-            float specialChance = premiumTheftUnlocked ? specialBaseChance : 0f;
+            float difficulty = GetRobberyDifficulty01();
+            float specialChance = premiumTheftUnlocked ? specialBaseChance + difficulty * 0.07f : 0f;
             if (premiumTheftUnlocked && DayCycleSystem.Instance != null && DayCycleSystem.Instance.currentDay > 0)
                 specialChance += Mathf.Floor(DayCycleSystem.Instance.currentDay / 10f) * 0.01f;
-            specialChance = Mathf.Clamp01(specialChance);
+            specialChance = Mathf.Clamp(specialChance, 0f, 0.18f);
+            float scaledExpertChance = premiumTheftUnlocked ? Mathf.Clamp(expertChance + difficulty * 0.10f, 0f, 0.28f) : 0f;
+            float scaledSuspiciousChance = Mathf.Clamp(suspiciousChance + difficulty * 0.18f, 0f, 0.50f);
+            float scaledFastChance = Mathf.Clamp(fastChance + difficulty * 0.08f, 0f, 0.22f);
 
             float roll = UnityEngine.Random.value;
             if (roll <= specialChance)
                 return ShoplifterType.Special;
 
             roll -= specialChance;
-            if (premiumTheftUnlocked && roll <= expertChance)
+            if (premiumTheftUnlocked && roll <= scaledExpertChance)
                 return ShoplifterType.Expert;
 
             if (premiumTheftUnlocked)
-                roll -= expertChance;
-            if (roll <= fastChance)
+                roll -= scaledExpertChance;
+            if (roll <= scaledFastChance)
                 return ShoplifterType.Fast;
 
-            roll -= fastChance;
-            if (roll <= suspiciousChance)
+            roll -= scaledFastChance;
+            if (roll <= scaledSuspiciousChance)
                 return ShoplifterType.Suspicious;
 
             return ShoplifterType.Common;

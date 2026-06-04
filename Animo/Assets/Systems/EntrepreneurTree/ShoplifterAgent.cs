@@ -222,8 +222,8 @@ namespace FLOBUK.StoreSimulator
                 renderer.SetPropertyBlock(block);
             }
 
-            // Spawn a small floating sphere above the thief as a clear world-space warning indicator.
-            indicatorMaterial = SpawnFloatingIndicator(markerColor);
+            if (thiefType != ShoplifterType.Suspicious)
+                indicatorMaterial = SpawnFloatingIndicator(markerColor);
 
             // Add cap + backpack placeholder accessories so thieves are visually distinct.
             SpawnThiefAccessories(markerColor);
@@ -239,6 +239,12 @@ namespace FLOBUK.StoreSimulator
             // Try to find the character's head transform by name convention.
             // Common names in humanoid character rigs: "Head", "head", "Bip001 Head", "mixamorig:Head".
             Transform headBone = FindBoneByName(transform, "head") ?? FindBoneByName(transform, "Head");
+            Transform capParent = headBone != null ? headBone : transform;
+            if (thiefType == ShoplifterType.Suspicious)
+            {
+                SpawnGlasses(capParent, headBone != null ? Vector3.forward * 0.07f : new Vector3(0f, 1.68f, 0.18f));
+                return;
+            }
 
             // Cap — a flattened cylinder placed on/near the head.
             float capRadius = 0.115f;
@@ -246,8 +252,6 @@ namespace FLOBUK.StoreSimulator
             Vector3 capLocalPos = headBone != null
                 ? Vector3.zero + Vector3.up * 0.12f   // just above head bone
                 : new Vector3(0f, 1.75f, 0f);          // world-space fallback offset
-
-            Transform capParent = headBone != null ? headBone : transform;
 
             GameObject cap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             cap.name = "Thief_Cap";
@@ -260,6 +264,9 @@ namespace FLOBUK.StoreSimulator
                 Object.Destroy(capCol);
 
             ApplyPrimitiveMaterial(cap, new Color(0.12f, 0.12f, 0.12f)); // dark cap
+
+            if (thiefType != ShoplifterType.Expert && thiefType != ShoplifterType.Special)
+                return;
 
             // Backpack — a small box on the character's back.
             float bpWidth  = 0.18f;
@@ -277,6 +284,33 @@ namespace FLOBUK.StoreSimulator
                 Object.Destroy(bpCol);
 
             ApplyPrimitiveMaterial(backpack, accentColor);
+        }
+
+
+        private void SpawnGlasses(Transform parent, Vector3 localPosition)
+        {
+            GameObject glasses = new GameObject("Thief_Glasses");
+            glasses.transform.SetParent(parent, false);
+            glasses.transform.localPosition = localPosition;
+
+            CreateGlassesLens(glasses.transform, "Lens_L", new Vector3(-0.045f, 0f, 0f));
+            CreateGlassesLens(glasses.transform, "Lens_R", new Vector3(0.045f, 0f, 0f));
+        }
+
+
+        private void CreateGlassesLens(Transform parent, string name, Vector3 localPosition)
+        {
+            GameObject lens = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            lens.name = name;
+            lens.transform.SetParent(parent, false);
+            lens.transform.localPosition = localPosition;
+            lens.transform.localScale = new Vector3(0.055f, 0.028f, 0.012f);
+
+            Collider col = lens.GetComponent<Collider>();
+            if (col != null)
+                Object.Destroy(col);
+
+            ApplyPrimitiveMaterial(lens, new Color(0.06f, 0.06f, 0.07f));
         }
 
 

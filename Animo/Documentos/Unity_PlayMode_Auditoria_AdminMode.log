@@ -1,0 +1,19 @@
+# ShopMaster Ladrones Avanzados Audit - AdminMode
+2026-06-03 04:58:47 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 04:58:56 PASS: ShoplifterSystem presente.
+2026-06-03 04:58:56 PASS: EntrepreneurTreeManager presente.
+2026-06-03 04:58:56 PASS: EntrepreneurTreeSecurityAdapter presente.
+2026-06-03 04:58:56 PASS: CustomerSystem presente.
+2026-06-03 04:58:56 PASS: StoreDatabase presente.
+2026-06-03 04:58:56 PASS: StatsDatabase presente.
+2026-06-03 04:58:56 PASS: ProductInventorySystem presente.
+2026-06-03 04:58:56 PASS: UIGame/notificaciones presente.
+2026-06-03 04:58:56 === Modo Admin robbery test ===
+2026-06-03 04:58:56 PASS: Admin permite fijar dinero inicial.
+2026-06-03 04:58:56 PASS: Admin permite agregar puntos del Arbol.
+2026-06-03 04:58:56 PASS: Admin se resetea tras aplicar dinero/puntos.
+2026-06-03 04:58:56 PASS: Admin permite desbloquear seguridad.
+2026-06-03 04:58:56 PASS: Admin permite simular expansiones de venta.
+2026-06-03 04:58:56 PASS: Admin se resetea tras aplicar y no contamina gameplay normal.
+2026-06-03 04:58:56 PASS: Admin permite forzar ladron especial usando sistemas reales.
+2026-06-03 04:58:56 Audit finished. Failures=0

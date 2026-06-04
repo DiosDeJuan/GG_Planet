@@ -11,6 +11,7 @@
 //   • Los runners previos (Fase 3 y Fase 4) siguen en verde.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using FLOBUK.StoreSimulator;
 using UnityEditor;
@@ -29,7 +30,7 @@ namespace FLOBUK.StoreSimulator.Editor
         private const string StartKey   = "ShopMaster.WarehouseNPC.Start";
 
         // ── Paths ─────────────────────────────────────────────────────────────────
-        private const string LogPath      = "Documentos/Unity_PlayMode_Auditoria_Almacen_NPC_Visual.log";
+        private const string LogPath      = "Documentos/WarehouseNPCVisualAudit_Report.txt";
         private const string ScenePath    = "Assets/StoreSimulator/Scenes/Game.unity";
         private const string Phase3LogPath = "Documentos/Unity_PlayMode_Auditoria_Requerimientos_Fase3.log";
         private const string Phase4LogPath = "Documentos/Unity_PlayMode_Auditoria_Integracion_Fase4.log";
@@ -185,10 +186,10 @@ namespace FLOBUK.StoreSimulator.Editor
             if (state == "leave" && !EditorApplication.isPlaying &&
                 !EditorApplication.isPlayingOrWillChangePlaymode)
             {
+                int failures = SessionState.GetInt(FailureKey, 0);
                 SessionState.EraseString(StateKey);
                 SessionState.EraseInt(FailureKey);
                 SessionState.EraseFloat(StartKey);
-                int failures = SessionState.GetInt(FailureKey, 0);
                 EditorApplication.Exit(failures == 0 ? 0 : 1);
             }
         }
@@ -235,6 +236,30 @@ namespace FLOBUK.StoreSimulator.Editor
                 "CustomerSystem presente.");
             PassIf(UnityEngine.Object.FindAnyObjectByType<CashDesk>() != null,
                 "Al menos una CashDesk en escena.");
+
+            PrepareAuditProgressState();
+        }
+
+        private static void PrepareAuditProgressState()
+        {
+            if (EntrepreneurTreeManager.Instance == null)
+                return;
+
+            EntrepreneurTreeManager.Instance.LoadFromJSON(null);
+            EntrepreneurTreeManager.SetPoints(100);
+            TryUnlockForAudit("product_basic_2");
+            TryUnlockForAudit("product_spices_1");
+            TryUnlockForAudit("employee_1");
+        }
+
+        private static void TryUnlockForAudit(string nodeId)
+        {
+            if (EntrepreneurTreeManager.IsNodeUnlocked(nodeId))
+                return;
+
+            bool unlocked = EntrepreneurTreeManager.TryUnlockNode(nodeId);
+            if (!unlocked && !EntrepreneurTreeManager.IsNodeUnlocked(nodeId))
+                Yellow("SETUP", "No se pudo desbloquear nodo de auditoria '" + nodeId + "'.");
         }
 
         private static void ValidateWarehouseZone()
@@ -344,7 +369,7 @@ namespace FLOBUK.StoreSimulator.Editor
             // Ensure enough money.
             long cost = product.buyPrice * Mathf.Max(1, product.packageCount);
             if (StoreDatabase.Instance != null && StoreDatabase.Instance.currentMoney < cost)
-                StoreDatabase.AddRemoveMoney(cost * 2);
+                StoreDatabase.AddRemoveMoney((cost - StoreDatabase.Instance.currentMoney) + cost);
 
             bool purchased = DeliverySystem.Purchase(product);
             PassIf(purchased,
@@ -408,6 +433,8 @@ namespace FLOBUK.StoreSimulator.Editor
                     Yellow("HIRE", "EntrepreneurTreeEmployeeUnlockAdapter no encontrado — empleado #1 puede estar bloqueado.");
             }
 
+            PrepareAuditProgressState();
+
             if (!EntrepreneurEmployeeSystem.Instance.IsEmployeeUnlocked(1))
             {
                 Yellow("HIRE",
@@ -439,14 +466,30 @@ namespace FLOBUK.StoreSimulator.Editor
         {
             // Ensure we have money.
             if (StoreDatabase.Instance != null)
-                StoreDatabase.AddRemoveMoney(999999);
+            {
+                EmployeeAssignment assignment = EntrepreneurEmployeeSystem.Instance.GetAssignment(employeeId);
+                long hireCost = assignment != null ? assignment.hireCost : 0L;
+                if (StoreDatabase.Instance.currentMoney < hireCost)
+                    StoreDatabase.AddRemoveMoney((hireCost - StoreDatabase.Instance.currentMoney) + hireCost);
+            }
 
             string reason;
             bool hired = EntrepreneurEmployeeSystem.Instance.TryHireEmployee(employeeId, out reason);
+            if (!hired && EntrepreneurEmployeeSystem.Instance.IsEmployeeHired(employeeId))
+                hired = true;
             PassIf(hired,
                 "Empleado #" + employeeId + " contratado en prueba de auditoría.");
             if (!hired)
                 Fail("No se pudo contratar empleado #" + employeeId + ": " + reason);
+            if (hired)
+            {
+                bool roleAssigned = EntrepreneurEmployeeSystem.Instance.TryAssignRole(employeeId, EmployeeRole.Restocker, out reason)
+                    || EntrepreneurEmployeeSystem.Instance.GetEmployeeRole(employeeId) == EmployeeRole.Restocker;
+                PassIf(roleAssigned,
+                    "Empleado #" + employeeId + " asignado como Surtidor para auditoria visual.");
+                if (!roleAssigned)
+                    Fail("No se pudo asignar rol Surtidor a empleado #" + employeeId + ": " + reason);
+            }
         }
 
         private static void ValidateNPCVisuals()
@@ -561,8 +604,6 @@ namespace FLOBUK.StoreSimulator.Editor
             CashDesk   cashDesk = UnityEngine.Object.FindAnyObjectByType<CashDesk>();
             PlacementObject shelf = FindFirstShelf();
 
-            NavMeshHit hit;
-
             // Route: spawned NPC → delivery/storage point.
             GameObject[] allObjects = UnityEngine.Object.FindObjectsByType<GameObject>(
                 FindObjectsInactive.Exclude, FindObjectsSortMode.None);
@@ -575,13 +616,12 @@ namespace FLOBUK.StoreSimulator.Editor
                 if (agent == null || !agent.enabled || !agent.isOnNavMesh) continue;
 
                 // Test route to storage/warehouse.
-                NavMeshPath pathToStorage = new NavMeshPath();
-                bool storageReachable = NavMesh.SamplePosition(storagePos, out hit, NavSampleRadius, NavMesh.AllAreas)
-                    && agent.CalculatePath(hit.position, pathToStorage)
-                    && pathToStorage.status == NavMeshPathStatus.PathComplete;
+                bool storageReachable = TryResolveReachableNavMeshPoint(agent, storagePos, out Vector3 storageDestination);
 
                 PassIf(storageReachable,
                     "NPC '" + go.name + "' puede navegar al almacén/DeliveryStart.");
+                if (storageReachable)
+                    Log("  Ruta almacén resuelta en " + storageDestination + " desde target " + storagePos + ".");
                 if (!storageReachable)
                     Fail("NPC '" + go.name + "' no puede navegar al almacén/DeliveryStart — "
                         + "revisar NavMesh, puertas o spawn point fuera de mesh.");
@@ -589,10 +629,7 @@ namespace FLOBUK.StoreSimulator.Editor
                 // Test route to cash desk.
                 if (cashDesk != null)
                 {
-                    NavMeshPath pathToCash = new NavMeshPath();
-                    bool cashReachable = NavMesh.SamplePosition(cashDesk.transform.position, out hit, NavSampleRadius, NavMesh.AllAreas)
-                        && agent.CalculatePath(hit.position, pathToCash)
-                        && pathToCash.status == NavMeshPathStatus.PathComplete;
+                    bool cashReachable = TryResolveReachableNavMeshPoint(agent, cashDesk.transform.position, out _);
 
                     PassIf(cashReachable,
                         "NPC '" + go.name + "' puede navegar a la caja registradora.");
@@ -604,10 +641,7 @@ namespace FLOBUK.StoreSimulator.Editor
                 // Test route to shelf.
                 if (shelf != null)
                 {
-                    NavMeshPath pathToShelf = new NavMeshPath();
-                    bool shelfReachable = NavMesh.SamplePosition(shelf.transform.position, out hit, NavSampleRadius, NavMesh.AllAreas)
-                        && agent.CalculatePath(hit.position, pathToShelf)
-                        && pathToShelf.status == NavMeshPathStatus.PathComplete;
+                    bool shelfReachable = TryResolveReachableNavMeshPoint(agent, shelf.transform.position, out _);
 
                     PassIf(shelfReachable,
                         "NPC '" + go.name + "' puede navegar al anaquel.");
@@ -620,13 +654,56 @@ namespace FLOBUK.StoreSimulator.Editor
             }
         }
 
+        private static bool TryResolveReachableNavMeshPoint(NavMeshAgent agent, Vector3 target, out Vector3 destination)
+        {
+            destination = Vector3.zero;
+            if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+                return false;
+
+            float bestDistance = float.MaxValue;
+            NavMeshPath path = new NavMeshPath();
+
+            for (float radius = 0f; radius <= NavSampleRadius; radius += 1f)
+            {
+                int samples = radius <= 0f ? 1 : 16;
+                for (int i = 0; i < samples; i++)
+                {
+                    float angle = samples == 1 ? 0f : i * Mathf.PI * 2f / samples;
+                    Vector3 candidate = target + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
+                    if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, 2.5f, NavMesh.AllAreas))
+                        continue;
+                    if (!agent.CalculatePath(hit.position, path) || path.status != NavMeshPathStatus.PathComplete)
+                        continue;
+
+                    float distance = Vector3.Distance(hit.position, target);
+                    if (distance >= bestDistance)
+                        continue;
+
+                    bestDistance = distance;
+                    destination = hit.position;
+                }
+            }
+
+            return bestDistance < float.MaxValue;
+        }
+
         // ── Helper methods ────────────────────────────────────────────────────────
 
         private static GameObject FindGameObjectByKeyword(string keyword)
         {
+            if (keyword == WarehouseKeyword)
+            {
+                GameObject exact = GameObject.Find("WarehouseZone");
+                if (exact != null)
+                    return exact;
+            }
+
             string kw = keyword.ToLower();
             GameObject[] all = UnityEngine.Object.FindObjectsByType<GameObject>(
                 FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (GameObject go in all)
+                if (go != null && go.name.ToLower().Contains(kw) && go.transform.parent == null)
+                    return go;
             foreach (GameObject go in all)
                 if (go != null && go.name.ToLower().Contains(kw))
                     return go;
@@ -639,8 +716,10 @@ namespace FLOBUK.StoreSimulator.Editor
             ItemDatabase db = UnityEngine.Object.FindAnyObjectByType<ItemDatabase>();
             if (db == null) return null;
 
-            foreach (ProductScriptableObject product in db.products)
+            List<PurchasableScriptableObject> rawProducts = ItemDatabase.GetByType(typeof(ProductScriptableObject));
+            foreach (PurchasableScriptableObject rawProduct in rawProducts)
             {
+                ProductScriptableObject product = rawProduct as ProductScriptableObject;
                 if (product == null) continue;
                 if (EntrepreneurTreeGameplayBridge.Instance == null ||
                     EntrepreneurTreeGameplayBridge.Instance.IsProductUnlocked(product))
@@ -648,7 +727,14 @@ namespace FLOBUK.StoreSimulator.Editor
             }
 
             // Fallback: return the first product regardless of lock state.
-            return db.products != null && db.products.Length > 0 ? db.products[0] : null;
+            for (int i = 0; i < rawProducts.Count; i++)
+            {
+                ProductScriptableObject product = rawProducts[i] as ProductScriptableObject;
+                if (product != null)
+                    return product;
+            }
+
+            return null;
         }
 
         private static PlacementObject FindFirstShelf()

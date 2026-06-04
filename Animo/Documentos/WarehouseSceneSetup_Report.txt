@@ -1,0 +1,14 @@
+=== ShopMasterWarehouseSceneSetupRunner ===
+Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+Escena abierta correctamente.
+[OK] WarehouseZone ya existe en escena: 'WarehouseZone' pos=(10.00, 0.00, 7.50)
+[OK] WarehouseZone reconstruida con prefabs del asset base, puerta abierta, senaletica y zona de pedidos.
+  [OK] 'EmployeeSpawnPoint' ya existe.
+  [OK] 'PackageDropArea' ya existe.
+  [OK] 'DeliveryStartPoint' ya existe.
+[OK] DeliverySystem.deliveryStart reasignado a WarehouseZone/DeliveryStartPoint.
+[WARN] Unity.AI.Navigation no disponible en este contexto — NavMeshSurface.collectObjects no se pudo cambiar a All. Actualizar manualmente en Inspector: Navigation → CollectObjects → All.
+Escena guardada correctamente: Assets/StoreSimulator/Scenes/Game.unity
+
+Finished. Failures=0
+RESULTADO: OK — escena actualizada. Ejecutar ShopMasterNavMeshRebuildRunner a continuación.

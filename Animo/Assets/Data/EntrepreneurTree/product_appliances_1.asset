@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: product_appliances_1
   nodeType: 0
-  title: Electrodomésticos 1
-  description: Inicia la línea de electrodomésticos.
+  title: ElectrodomÃ©sticos 1
+  description: Inicia la lÃ­nea de electrodomÃ©sticos.
   icon: {fileID: 0}
-  cost: 5
+  cost: 1
   requiredNodeIds:
   - product_fresh_2
   uiPosition: {x: -80.0, y: -20.0}

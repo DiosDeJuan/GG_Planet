@@ -177,6 +177,7 @@ namespace FLOBUK.StoreSimulator
             Toggle prepareSalesTestToggle     = CreateToggleRow(scrollContent.transform, "Prueba de ventas (dinero+stock+cajero)");
             Toggle completeAchievementsToggle = CreateToggleRow(scrollContent.transform, "Completar todos los logros");
             Toggle forceShoplifterToggle      = CreateToggleRow(scrollContent.transform, "Forzar ladrón (próximo cliente)");
+            TMP_Dropdown shoplifterTypeDropdown = CreateShoplifterTypeDropdown(scrollContent.transform);
             Toggle triggerMonopolyToggle      = CreateToggleRow(scrollContent.transform, "Simular final de monopolio");
             Toggle triggerBankruptcyToggle    = CreateToggleRow(scrollContent.transform, "Simular bancarrota (Game Over)");
 
@@ -213,6 +214,7 @@ namespace FLOBUK.StoreSimulator
                     prepareSalesTestToggle,
                     completeAchievementsToggle,
                     forceShoplifterToggle,
+                    shoplifterTypeDropdown,
                     triggerMonopolyToggle,
                     triggerBankruptcyToggle);
             });
@@ -232,6 +234,7 @@ namespace FLOBUK.StoreSimulator
             Toggle prepareSalesTest,
             Toggle completeAchievements,
             Toggle forceShoplifter,
+            TMP_Dropdown shoplifterTypeDropdown,
             Toggle triggerMonopoly,
             Toggle triggerBankruptcy)
         {
@@ -263,6 +266,7 @@ namespace FLOBUK.StoreSimulator
             AdminSessionConfig.prepareSalesTest   = prepareSalesTest != null && prepareSalesTest.isOn;
             AdminSessionConfig.completeAllAchievements = completeAchievements != null && completeAchievements.isOn;
             AdminSessionConfig.forceShoplifterSpawn    = forceShoplifter != null && forceShoplifter.isOn;
+            AdminSessionConfig.forcedShoplifterType    = ResolveShoplifterType(shoplifterTypeDropdown);
             AdminSessionConfig.triggerMonopolyTest     = triggerMonopoly != null && triggerMonopoly.isOn;
             AdminSessionConfig.triggerBankruptcyTest   = triggerBankruptcy != null && triggerBankruptcy.isOn;
 
@@ -283,7 +287,8 @@ namespace FLOBUK.StoreSimulator
                       $"allTree: {AdminSessionConfig.unlockEntireTree}, " +
                       $"testStock: {AdminSessionConfig.giveTestStock}, " +
                       $"testExpansions: {AdminSessionConfig.buyTestExpansions}, " +
-                      $"salesTest: {AdminSessionConfig.prepareSalesTest}");
+                      $"salesTest: {AdminSessionConfig.prepareSalesTest}, " +
+                      $"shoplifterType: {AdminSessionConfig.forcedShoplifterType}");
 
             // Start a fresh game (same flow as clicking "New Game").
             UIIntro intro = Object.FindAnyObjectByType<UIIntro>();
@@ -464,6 +469,83 @@ namespace FLOBUK.StoreSimulator
             toggle.isOn      = false;
 
             return toggle;
+        }
+
+        private static TMP_Dropdown CreateShoplifterTypeDropdown(Transform parent)
+        {
+            GameObject row = new GameObject("DropdownRow_TipoLadron", typeof(RectTransform), typeof(CanvasRenderer));
+            row.transform.SetParent(parent, false);
+            LayoutElement rowLE = row.AddComponent<LayoutElement>();
+            rowLE.preferredHeight = 40f;
+            HorizontalLayoutGroup rowHLG = row.AddComponent<HorizontalLayoutGroup>();
+            rowHLG.spacing = 12f;
+            rowHLG.childControlWidth = false;
+            rowHLG.childForceExpandWidth = false;
+            rowHLG.childControlHeight = true;
+            rowHLG.childForceExpandHeight = true;
+
+            GameObject lblGO = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            lblGO.transform.SetParent(row.transform, false);
+            LayoutElement lblLE = lblGO.AddComponent<LayoutElement>();
+            lblLE.preferredWidth = 190f;
+            TextMeshProUGUI lblTxt = lblGO.GetComponent<TextMeshProUGUI>();
+            lblTxt.text = "Tipo de ladrón:";
+            lblTxt.fontSize = 16f;
+            lblTxt.color = new Color(0.85f, 0.85f, 0.85f);
+            lblTxt.alignment = TextAlignmentOptions.MidlineLeft;
+
+            GameObject dropdownGO = new GameObject("ShoplifterTypeDropdown", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            dropdownGO.transform.SetParent(row.transform, false);
+            LayoutElement dropdownLE = dropdownGO.AddComponent<LayoutElement>();
+            dropdownLE.preferredWidth = 230f;
+            Image bg = dropdownGO.GetComponent<Image>();
+            bg.color = new Color(0.16f, 0.20f, 0.28f, 1f);
+
+            TMP_Dropdown dropdown = dropdownGO.AddComponent<TMP_Dropdown>();
+            dropdown.targetGraphic = bg;
+            dropdown.options.Clear();
+            dropdown.options.Add(new TMP_Dropdown.OptionData("Común"));
+            dropdown.options.Add(new TMP_Dropdown.OptionData("Sospechoso"));
+            dropdown.options.Add(new TMP_Dropdown.OptionData("Rápido"));
+            dropdown.options.Add(new TMP_Dropdown.OptionData("Experto"));
+            dropdown.options.Add(new TMP_Dropdown.OptionData("Especial"));
+
+            GameObject labelGO = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            labelGO.transform.SetParent(dropdownGO.transform, false);
+            RectTransform labelRT = labelGO.GetComponent<RectTransform>();
+            labelRT.anchorMin = Vector2.zero;
+            labelRT.anchorMax = Vector2.one;
+            labelRT.offsetMin = new Vector2(10f, 0f);
+            labelRT.offsetMax = new Vector2(-28f, 0f);
+            TextMeshProUGUI label = labelGO.GetComponent<TextMeshProUGUI>();
+            label.fontSize = 16f;
+            label.color = Color.white;
+            label.alignment = TextAlignmentOptions.MidlineLeft;
+            dropdown.captionText = label;
+
+            dropdown.value = 0;
+            dropdown.RefreshShownValue();
+            return dropdown;
+        }
+
+        private static ShoplifterType ResolveShoplifterType(TMP_Dropdown dropdown)
+        {
+            if (dropdown == null)
+                return ShoplifterType.Common;
+
+            switch (dropdown.value)
+            {
+                case 1:
+                    return ShoplifterType.Suspicious;
+                case 2:
+                    return ShoplifterType.Fast;
+                case 3:
+                    return ShoplifterType.Expert;
+                case 4:
+                    return ShoplifterType.Special;
+                default:
+                    return ShoplifterType.Common;
+            }
         }
 
         private static Button CreateCardButton(string name, Transform parent, string label, Color bgColor)

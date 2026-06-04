@@ -69,7 +69,14 @@ namespace FLOBUK.StoreSimulator
             data       = nodeData;
             controller = ctrl;
 
-            if (titleLabel)              titleLabel.text = nodeData.title;
+            if (titleLabel)
+            {
+                titleLabel.enableAutoSizing = true;
+                titleLabel.fontSizeMin = 10f;
+                titleLabel.fontSizeMax = 15f;
+                titleLabel.textWrappingMode = TextWrappingModes.Normal;
+                titleLabel.overflowMode = TextOverflowModes.Ellipsis;
+            }
             if (iconImage && nodeData.icon) iconImage.sprite  = nodeData.icon;
 
             Refresh();
@@ -108,7 +115,8 @@ namespace FLOBUK.StoreSimulator
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            controller?.HideNodeInfo();
+            // Keep the selected node detail visible so the player can read requirements
+            // and use the unlock button without racing the hover state.
         }
 
 
@@ -118,10 +126,7 @@ namespace FLOBUK.StoreSimulator
         {
             if (data == null) return;
 
-            EntrepreneurTreeManager.TryUnlockNode(data.id);
-            // Refresh happens via the onNodeUnlocked / onPointsChanged events below,
-            // but calling it directly here removes one frame of visual delay.
-            Refresh();
+            controller?.ShowNodeInfo(data);
         }
 
 
@@ -150,10 +155,9 @@ namespace FLOBUK.StoreSimulator
             if (background) background.color = fillColor;
             if (titleLabel)
             {
-                string statusPrefix = unlocked ? ComputerUITheme.LabelOk + " "
-                                    : available ? ComputerUITheme.LabelReady + " "
-                                    : ComputerUITheme.LabelBlocked + " ";
-                titleLabel.text  = data != null ? statusPrefix + data.title : titleLabel.text;
+                titleLabel.text  = data != null
+                    ? data.title + "\n" + GetTypeLabel(data.nodeType) + "\nCosto: " + data.cost + " punto" + (data.cost == 1 ? "" : "s") + "\n" + GetStateText(unlocked, available)
+                    : titleLabel.text;
                 titleLabel.color = unlocked || available ? ComputerUITheme.TextPrimary : ComputerUITheme.TextMuted;
             }
 
@@ -164,6 +168,30 @@ namespace FLOBUK.StoreSimulator
         private static Color GetTypeColor(TreeNodeType type)
         {
             return ComputerUITheme.GetNodeAccent(type);
+        }
+
+        private static string GetTypeLabel(TreeNodeType type)
+        {
+            switch (type)
+            {
+                case TreeNodeType.Employee:
+                    return "Empleado";
+                case TreeNodeType.Security:
+                    return "Seguridad";
+                case TreeNodeType.Improvement:
+                    return "Mejora";
+                default:
+                    return "Producto";
+            }
+        }
+
+        private static string GetStateText(bool unlocked, bool available)
+        {
+            if (unlocked)
+                return "DESBLOQUEADO";
+            if (available)
+                return "DISPONIBLE";
+            return "BLOQUEADO";
         }
 
 

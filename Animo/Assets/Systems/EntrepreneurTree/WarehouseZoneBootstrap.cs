@@ -241,13 +241,20 @@ namespace FLOBUK.StoreSimulator
 
         private static Transform FindWarehouseZone()
         {
+            GameObject exact = GameObject.Find("WarehouseZone");
+            if (exact != null)
+                return exact.transform;
+
 #if UNITY_2022_2_OR_NEWER
             GameObject[] all = Object.FindObjectsByType<GameObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 #else
             GameObject[] all = Object.FindObjectsOfType<GameObject>(true);
 #endif
             foreach (GameObject go in all)
-                if (go != null && go.name.ToLower().Contains("warehouse"))
+                if (go != null && go.name.ToLower().Contains("warehouse") && go.transform.parent == null)
+                    return go.transform;
+            foreach (GameObject go in all)
+                if (go != null && go.name.ToLower().Contains("warehousezone"))
                     return go.transform;
             return null;
         }

@@ -1,0 +1,18 @@
+# ShopMaster Ladrones Avanzados Audit - DifficultyScaling
+2026-06-03 04:55:07 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 04:55:16 PASS: ShoplifterSystem presente.
+2026-06-03 04:55:16 PASS: EntrepreneurTreeManager presente.
+2026-06-03 04:55:16 PASS: EntrepreneurTreeSecurityAdapter presente.
+2026-06-03 04:55:16 PASS: CustomerSystem presente.
+2026-06-03 04:55:16 PASS: StoreDatabase presente.
+2026-06-03 04:55:16 PASS: StatsDatabase presente.
+2026-06-03 04:55:16 PASS: ProductInventorySystem presente.
+2026-06-03 04:55:16 PASS: UIGame/notificaciones presente.
+2026-06-03 04:55:16 === RQF16 escalado de dificultad ===
+2026-06-03 04:55:16 PASS: RQF16 probabilidad inicial equivale a 1 ladron por 25 clientes.
+2026-06-03 04:55:16 PASS: RQF16 probabilidad inicial respeta tope de 6.5%.
+2026-06-03 04:55:16 PASS: RQF16 expansiones de venta aumentan progresivamente la probabilidad de robo.
+2026-06-03 04:55:16 PASS: RQF16 probabilidad escalada no supera 6.5%.
+2026-06-03 04:55:16 PASS: RQF16 valor objetivo crece con progreso dentro de limite especial.
+2026-06-03 04:55:16 PASS: RQF16 etapas avanzadas producen sospechosos y tipos premium.
+2026-06-03 04:55:16 Audit finished. Failures=0

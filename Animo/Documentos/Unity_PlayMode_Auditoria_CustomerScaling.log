@@ -1,0 +1,17 @@
+# ShopMaster Reportes/Guardado/Pagos Audit - CustomerScaling
+2026-06-03 05:56:59 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 05:57:09 PASS: SaveGameSystem presente.
+2026-06-03 05:57:09 PASS: StoreDatabase presente.
+2026-06-03 05:57:09 PASS: DayCycleSystem presente.
+2026-06-03 05:57:09 PASS: CustomerSystem presente.
+2026-06-03 05:57:09 PASS: StatsDatabase presente.
+2026-06-03 05:57:09 PASS: SupermarketExpansionSystem presente.
+2026-06-03 05:57:09 PASS: UIGame presente para fin de dia/notificaciones.
+2026-06-03 05:57:09 === RQF22 clientela por expansion ===
+2026-06-03 05:57:09 PASS: RQF22 partida base no aplica bono extra de clientela.
+2026-06-03 05:57:09 PASS: RQF22 rango base diario queda entre 50 y 75 clientes.
+2026-06-03 05:57:09 PASS: RQF22 cada expansion de venta comprada aplica +15% al multiplicador.
+2026-06-03 05:57:09 PASS: RQF22 el plan diario escalado sube por encima de 50-75 tras expansiones.
+2026-06-03 05:57:09 PASS: RQF22 PlanDailyCustomers usa el multiplicador real de SupermarketExpansionSystem.
+2026-06-03 05:57:09 PASS: RQF22 spawn distribuido conserva limite simultaneo seguro y ritmo real.
+2026-06-03 05:57:09 Audit finished. Failures=0

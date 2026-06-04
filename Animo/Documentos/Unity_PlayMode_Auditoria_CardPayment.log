@@ -1,0 +1,14 @@
+# ShopMaster Reportes/Guardado/Pagos Audit - CardPayment
+2026-06-03 05:58:08 Opening scene: Assets/StoreSimulator/Scenes/Game.unity
+2026-06-03 05:58:18 PASS: SaveGameSystem presente.
+2026-06-03 05:58:18 PASS: StoreDatabase presente.
+2026-06-03 05:58:18 PASS: DayCycleSystem presente.
+2026-06-03 05:58:18 PASS: CustomerSystem presente.
+2026-06-03 05:58:18 PASS: StatsDatabase presente.
+2026-06-03 05:58:18 PASS: SupermarketExpansionSystem presente.
+2026-06-03 05:58:18 PASS: UIGame presente para fin de dia/notificaciones.
+2026-06-03 05:58:18 === RQF23 pago con tarjeta ===
+2026-06-03 05:58:18 PASS: RQF23 tarjeta rechaza cobro incorrecto y mantiene cliente en cola.
+2026-06-03 05:58:18 PASS: RQF23 tarjeta cobra exactamente el total y libera al cliente.
+2026-06-03 05:58:18 PASS: RQF23 usa terminal real de la caja manual para tarjeta.
+2026-06-03 05:58:18 Audit finished. Failures=0
