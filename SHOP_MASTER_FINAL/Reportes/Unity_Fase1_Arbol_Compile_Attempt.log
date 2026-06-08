@@ -1,0 +1,29 @@
+2026-06-08 - Fase 1 Arbol del Emprendedor
+
+Intentos de Unity batchmode:
+
+1. Comando:
+   "C:\Program Files\Unity\Hub\Editor\6000.0.37f1\Editor\Unity.exe" -batchmode -quit -projectPath "C:\Users\ijuan\SHOP_MASTER_FINAL" -logFile "C:\Users\ijuan\SHOP_MASTER_FINAL\Reportes\Unity_Fase1_Arbol_Compile.log"
+
+   Resultado:
+   La primera invocacion no genero el archivo Reportes\Unity_Fase1_Arbol_Compile.log. Se detecto una instancia interactiva de Unity abierta sobre el mismo projectPath.
+
+2. Se cerro la instancia interactiva Unity.exe del proyecto para liberar el lock.
+
+3. Reintento con Start-Process -Wait y los mismos argumentos.
+
+   Resultado:
+   El comando excedio 600 segundos. Al revisar despues del timeout no quedo proceso Unity activo y no se genero Reportes\Unity_Fase1_Arbol_Compile.log.
+
+4. Reintento directo con:
+   "C:\Program Files\Unity\Hub\Editor\6000.0.37f1\Editor\Unity.exe" -batchmode -quit -projectPath "C:\Users\ijuan\SHOP_MASTER_FINAL" -logFile -
+
+   Resultado:
+   El ejecutable retorno codigo 0 sin emitir salida stdout.
+
+Validacion alternativa:
+- dotnet build .\SHOP_MASTER_FINAL.sln compilo correctamente con 0 advertencias y 0 errores.
+- Busqueda segura en Editor.log por patrones "error CS", "Compilation failed", "Scripts have compiler errors" y "warning CS" no encontro errores de compilacion C#.
+
+Estado:
+AMARILLO para Unity batchmode por falta de log batchmode dedicado.
