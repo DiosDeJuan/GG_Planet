@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -67,27 +68,117 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void Purchase(PurchasableScriptableObject purchasable)
         {
-            //get amount of products in the package
-            int amount = 1;
-            if (purchasable is ProductScriptableObject)
-                amount = (purchasable as ProductScriptableObject).packageCount;
-
-            if (!StoreDatabase.CanPurchase(purchasable.buyPrice * amount))
+            if (!TryPurchase(purchasable, out string message))
             {
-                UIGame.Instance.ShowMessage("Not enough money to purchase this item");
+                if (UIGame.Instance != null && !string.IsNullOrEmpty(message))
+                    UIGame.Instance.ShowMessage(message);
                 return;
             }
 
-            //subtract money
-            StoreDatabase.AddRemoveMoney(-purchasable.buyPrice * amount);
+            if (UIGame.Instance != null && !string.IsNullOrEmpty(message))
+                UIGame.Instance.ShowMessage(message);
+        }
+
+
+        public static bool TryPurchase(PurchasableScriptableObject purchasable, out string message)
+        {
+            if (!CanPurchaseWithMessage(purchasable, out message))
+                return false;
+
+            int amount = GetPackageAmount(purchasable);
+            long totalPrice = purchasable.buyPrice * amount;
 
             //spawn package and amount of items within that package
-            Vector3 deliveryPosition = Instance.GetDeliveryPosition();
-            GameObject newPackage = Instantiate(Instance.packagePrefab, deliveryPosition + new Vector3(0, 2, 0), Quaternion.identity);
-            PackageObject packageObject = newPackage.GetComponent<PackageObject>();
-            packageObject.Add(purchasable, amount);
+            try
+            {
+                Vector3 deliveryPosition = Instance.GetDeliveryPosition();
+                GameObject newPackage = Instantiate(Instance.packagePrefab, deliveryPosition + new Vector3(0, 2, 0), Quaternion.identity);
+                PackageObject packageObject = newPackage != null ? newPackage.GetComponent<PackageObject>() : null;
+                if (packageObject == null)
+                {
+                    message = "No se pudo crear el pedido porque falta el sistema de entrega/inventario.";
+                    Debug.LogError("[DeliverySystem] packagePrefab no tiene PackageObject. purchasable=" + GetProductContext(purchasable));
+                    return false;
+                }
 
-            onProductPurchase?.Invoke(purchasable as ProductScriptableObject);
+                packageObject.Add(purchasable, amount);
+            }
+            catch (Exception e)
+            {
+                message = "Error inesperado al procesar compra. Revisa consola para más detalles.";
+                Debug.LogError("[DeliverySystem] Compra fallida para " + GetProductContext(purchasable) + ". Exception: " + e);
+                return false;
+            }
+
+            //subtract money only after package creation succeeds
+            StoreDatabase.AddRemoveMoney(-totalPrice);
+
+            ProductScriptableObject product = purchasable as ProductScriptableObject;
+            onProductPurchase?.Invoke(product);
+            message = "Pedido realizado: " + GetProductContext(purchasable) + " x" + amount + ".";
+            return true;
+        }
+
+
+        public static bool CanPurchaseWithMessage(PurchasableScriptableObject purchasable, out string message)
+        {
+            if (purchasable == null)
+            {
+                message = "Producto no configurado correctamente: sin referencia. Revisar catálogo.";
+                return false;
+            }
+
+            ProductScriptableObject product = purchasable as ProductScriptableObject;
+            if (product != null)
+            {
+                if (!EntrepreneurProgress.IsProductUnlocked(product))
+                {
+                    message = EntrepreneurTreeDefinitions.GetProductLockedPurchaseMessage(product);
+                    return false;
+                }
+
+                if (!string.IsNullOrEmpty(product.requiredLicense))
+                {
+                    try
+                    {
+                        LicenseScriptableObject requiredLicense = ItemDatabase.GetById(typeof(LicenseScriptableObject), product.requiredLicense) as LicenseScriptableObject;
+                        if (requiredLicense != null && !requiredLicense.isPurchased)
+                        {
+                            message = "Producto bloqueado. Requiere licencia " + requiredLicense.title + ".";
+                            return false;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        message = "Producto no configurado correctamente: " + GetProductContext(product) + ". Revisar catálogo.";
+                        return false;
+                    }
+                }
+            }
+
+            if (StoreDatabase.Instance != null && purchasable.requiredLevel > StoreDatabase.Instance.currentLevel)
+            {
+                message = "Producto bloqueado. Requiere nivel " + purchasable.requiredLevel + ".";
+                return false;
+            }
+
+            if (!ValidateDeliveryDependencies(out message))
+                return false;
+
+            if (!ValidatePurchasableConfiguration(purchasable, out message))
+                return false;
+
+            int amount = GetPackageAmount(purchasable);
+            long totalPrice = purchasable.buyPrice * amount;
+            if (!StoreDatabase.CanPurchase(totalPrice))
+            {
+                long missingAmount = Mathf.Max(0, totalPrice - StoreDatabase.Instance.currentMoney);
+                message = "Fondos insuficientes. Faltan " + StoreDatabase.FromLongToStringMoney(missingAmount) + ".";
+                return false;
+            }
+
+            message = string.Empty;
+            return true;
         }
 
 
@@ -122,6 +213,70 @@ namespace FLOBUK.StoreSimulator
             }
 
             return lowestPosition;
+        }
+
+
+        private static bool ValidateDeliveryDependencies(out string message)
+        {
+            if (Instance == null || StoreDatabase.Instance == null || InteractionSystem.Instance == null || Instance.deliveryStart == null || Instance.packagePrefab == null)
+            {
+                message = "No se pudo crear el pedido porque falta el sistema de entrega/inventario.";
+                return false;
+            }
+
+            message = string.Empty;
+            return true;
+        }
+
+
+        private static bool ValidatePurchasableConfiguration(PurchasableScriptableObject purchasable, out string message)
+        {
+            if (string.IsNullOrWhiteSpace(purchasable.id) || string.IsNullOrWhiteSpace(purchasable.title))
+            {
+                message = "Producto no configurado correctamente: " + GetProductContext(purchasable) + ". Revisar catálogo.";
+                return false;
+            }
+
+            if (purchasable.buyPrice < 0)
+            {
+                message = "Producto no configurado correctamente: " + GetProductContext(purchasable) + ". Revisar catálogo.";
+                return false;
+            }
+
+            ProductScriptableObject product = purchasable as ProductScriptableObject;
+            if (product != null)
+            {
+                if (product.prefab == null || product.packageCount <= 0)
+                {
+                    message = "Producto no configurado correctamente: " + GetProductContext(product) + ". Revisar catálogo.";
+                    return false;
+                }
+            }
+
+            message = string.Empty;
+            return true;
+        }
+
+
+        private static int GetPackageAmount(PurchasableScriptableObject purchasable)
+        {
+            ProductScriptableObject product = purchasable as ProductScriptableObject;
+            return product != null ? product.packageCount : 1;
+        }
+
+
+        private static string GetProductContext(PurchasableScriptableObject purchasable)
+        {
+            if (purchasable == null)
+                return "sin_id";
+
+            if (!string.IsNullOrWhiteSpace(purchasable.title))
+                return purchasable.title;
+
+            if (!string.IsNullOrWhiteSpace(purchasable.id))
+                return purchasable.id;
+
+            return purchasable.name;
         }
 
 

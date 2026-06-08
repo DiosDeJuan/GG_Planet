@@ -4,6 +4,7 @@
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
 
 using TMPro;
+using UnityEngine.UI;
 
 namespace FLOBUK.StoreSimulator
 {
@@ -27,6 +28,24 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public TMP_Text marketPrice;
 
+        /// <summary>
+        /// Optional label for displaying current state like Disponible/Fondos insuficientes.
+        /// </summary>
+        public TMP_Text stateLabel;
+
+        /// <summary>
+        /// Optional button reference to disable purchases when blocked.
+        /// </summary>
+        public Button purchaseButton;
+
+
+        void Awake()
+        {
+            StoreDatabase.onMoneyUpdate += OnMoneyUpdate;
+            EntrepreneurProgress.onProgressChanged += OnProgressChanged;
+            UpgradeSystem.onUpgradePurchase += OnUpgradePurchase;
+        }
+
 
         /// <summary>
         /// Extend or override the base UIShopItem initialization.
@@ -44,29 +63,7 @@ namespace FLOBUK.StoreSimulator
             if (storePrice) storePrice.text = StoreDatabase.FromLongToStringMoney(product.storePrice);
             if (marketPrice) marketPrice.text = StoreDatabase.FromLongToStringMoney(product.marketPrice);
 
-            if (!lockedOverlay)
-                return;
-
-            if (!EntrepreneurProgress.IsProductUnlocked(product))
-            {
-                lockedOverlay.SetActive(true);
-                if (lockedMessage) lockedMessage.text = EntrepreneurTreeDefinitions.GetUnlockRequirementLabel(product);
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(product.requiredLicense))
-            {
-                LicenseScriptableObject requiredLicense = ItemDatabase.GetById(typeof(LicenseScriptableObject), product.requiredLicense) as LicenseScriptableObject;
-                if (requiredLicense != null)
-                {
-                    lockedOverlay.SetActive(!requiredLicense.isPurchased);
-                    if (lockedMessage) lockedMessage.text = "Requires License " + requiredLicense.title;
-                    return;
-                }
-            }
-
-            if (product.requiredLevel <= 0 || StoreDatabase.Instance.currentLevel >= product.requiredLevel)
-                lockedOverlay.SetActive(false);
+            UpdatePurchaseState(product);
         }
 
 
@@ -76,15 +73,93 @@ namespace FLOBUK.StoreSimulator
         public override void Purchase()
         {
             ProductScriptableObject product = purchasable as ProductScriptableObject;
-            if (product != null && !EntrepreneurProgress.IsProductUnlocked(product))
+            if (product == null)
             {
                 if (UIGame.Instance != null)
-                    UIGame.Instance.ShowMessage(EntrepreneurTreeDefinitions.GetUnlockRequirementLabel(product));
+                    UIGame.Instance.ShowMessage("Producto no configurado correctamente: sin referencia. Revisar catálogo.");
 
                 return;
             }
 
-            DeliverySystem.Purchase(purchasable);
+            if (DeliverySystem.TryPurchase(product, out string message))
+            {
+                if (UIGame.Instance != null)
+                    UIGame.Instance.ShowMessage(message);
+            }
+            else if (UIGame.Instance != null)
+            {
+                UIGame.Instance.ShowMessage(message);
+            }
+
+            UpdatePurchaseState(product);
+        }
+
+
+        private void OnMoneyUpdate(string money, string change)
+        {
+            ProductScriptableObject product = purchasable as ProductScriptableObject;
+            if (product != null)
+                UpdatePurchaseState(product);
+        }
+
+
+        private void OnProgressChanged()
+        {
+            ProductScriptableObject product = purchasable as ProductScriptableObject;
+            if (product != null)
+                UpdatePurchaseState(product);
+        }
+
+
+        private void OnUpgradePurchase(PurchasableScriptableObject otherPurchasable)
+        {
+            if (otherPurchasable is not LicenseScriptableObject)
+                return;
+
+            ProductScriptableObject product = purchasable as ProductScriptableObject;
+            if (product != null)
+                UpdatePurchaseState(product);
+        }
+
+
+        private void UpdatePurchaseState(ProductScriptableObject product)
+        {
+            bool canPurchase = DeliverySystem.CanPurchaseWithMessage(product, out string blockMessage);
+            bool treeLocked = !EntrepreneurProgress.IsProductUnlocked(product);
+
+            if (lockedOverlay)
+                lockedOverlay.SetActive(!canPurchase);
+
+            if (lockedMessage)
+                lockedMessage.text = canPurchase ? "Disponible" : blockMessage;
+
+            if (stateLabel)
+            {
+                if (canPurchase)
+                    stateLabel.text = "Disponible";
+                else if (treeLocked)
+                    stateLabel.text = "Bloqueado por Árbol";
+                else if (blockMessage.StartsWith("Fondos insuficientes"))
+                    stateLabel.text = "Fondos insuficientes";
+                else if (blockMessage.StartsWith("Producto no configurado"))
+                    stateLabel.text = "No configurado";
+                else
+                    stateLabel.text = "Bloqueado";
+            }
+
+            if (purchaseButton == null)
+                purchaseButton = GetComponentInChildren<Button>(true);
+
+            if (purchaseButton != null)
+                purchaseButton.interactable = canPurchase;
+        }
+
+
+        void OnDestroy()
+        {
+            StoreDatabase.onMoneyUpdate -= OnMoneyUpdate;
+            EntrepreneurProgress.onProgressChanged -= OnProgressChanged;
+            UpgradeSystem.onUpgradePurchase -= OnUpgradePurchase;
         }
     }
 }

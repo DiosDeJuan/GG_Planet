@@ -344,7 +344,26 @@ namespace FLOBUK.StoreSimulator
             { "1", DefaultUnlockedNodeId },
             { "2", DefaultUnlockedNodeId },
             { "3", DefaultUnlockedNodeId },
-            { "4", "productos_basicos_2" }
+            { "4", DefaultUnlockedNodeId }
+        };
+
+        private static readonly Dictionary<string, string> productNodeByKnownAlias = new Dictionary<string, string>
+        {
+            { "product_a", DefaultUnlockedNodeId },
+            { "product_b", DefaultUnlockedNodeId },
+            { "product_c", DefaultUnlockedNodeId },
+            { "product_d", DefaultUnlockedNodeId },
+            { "product_e", DefaultUnlockedNodeId },
+            { "product a", DefaultUnlockedNodeId },
+            { "product b", DefaultUnlockedNodeId },
+            { "product c", DefaultUnlockedNodeId },
+            { "product d", DefaultUnlockedNodeId },
+            { "product e", DefaultUnlockedNodeId },
+            { "leche", DefaultUnlockedNodeId },
+            { "sal", DefaultUnlockedNodeId },
+            { "agua", DefaultUnlockedNodeId },
+            { "pasta", DefaultUnlockedNodeId },
+            { "azucar", DefaultUnlockedNodeId }
         };
 
         private static readonly Dictionary<string, string> productNodeByNormalizedTitle = BuildProductTitleMap();
@@ -396,16 +415,32 @@ namespace FLOBUK.StoreSimulator
                 return string.Empty;
 
             string normalized = NormalizeText(product.title);
-            return productNodeByNormalizedTitle.TryGetValue(normalized, out string nodeId) ? nodeId : string.Empty;
+            if (productNodeByNormalizedTitle.TryGetValue(normalized, out string nodeId))
+                return nodeId;
+
+            string normalizedName = NormalizeText(product.name);
+            if (productNodeByKnownAlias.TryGetValue(normalizedName, out nodeId))
+                return nodeId;
+
+            return productNodeByKnownAlias.TryGetValue(normalized, out nodeId) ? nodeId : string.Empty;
         }
 
         public static string GetUnlockRequirementLabel(ProductScriptableObject product)
         {
             string nodeId = GetKnownProductNodeId(product);
             if (string.IsNullOrEmpty(nodeId))
-                return "Requiere desbloqueo en Árbol del Emprendedor";
+                return "Producto bloqueado. Desbloquea el nodo requerido en el Árbol del Emprendedor.";
 
-            return "Requiere " + GetDisplayName(nodeId);
+            return "Producto bloqueado. Desbloquea " + GetDisplayName(nodeId) + " en el Árbol del Emprendedor.";
+        }
+
+        public static string GetProductLockedPurchaseMessage(ProductScriptableObject product)
+        {
+            string nodeId = GetKnownProductNodeId(product);
+            if (string.IsNullOrEmpty(nodeId))
+                return "Producto bloqueado. Desbloquea el nodo requerido en el Árbol del Emprendedor.";
+
+            return "Producto bloqueado. Desbloquea " + GetDisplayName(nodeId) + " en el Árbol del Emprendedor.";
         }
 
         private static Dictionary<string, string> BuildProductTitleMap()
