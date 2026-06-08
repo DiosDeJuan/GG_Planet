@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,24 +14,74 @@ namespace FLOBUK.StoreSimulator
 
             Transform categories = FindRecursive(desktop.transform, "Categories");
             Transform navigation = FindRecursive(desktop.transform, "Navigation");
-            if (categories == null || navigation == null || FindRecursive(categories, "Entrepreneur Tree") != null)
+            if (categories == null || navigation == null)
                 return;
 
-            GameObject treePanel = new GameObject("Entrepreneur Tree", typeof(RectTransform));
-            treePanel.transform.SetParent(categories, false);
-            treePanel.SetActive(false);
-            EntrepreneurTreeUI treeUI = treePanel.AddComponent<EntrepreneurTreeUI>();
-            treeUI.Build();
+            Transform existingPanel = FindRecursive(categories, "Entrepreneur Tree");
+            GameObject treePanel;
+            if (existingPanel != null)
+            {
+                treePanel = existingPanel.gameObject;
+            }
+            else
+            {
+                treePanel = new GameObject("Entrepreneur Tree", typeof(RectTransform));
+                treePanel.transform.SetParent(categories, false);
+                treePanel.SetActive(false);
+                EntrepreneurTreeUI treeUI = treePanel.AddComponent<EntrepreneurTreeUI>();
+                treeUI.Build();
+            }
 
+            Button button = FindTreeButton(navigation);
+            if (button == null)
+                button = CreateTreeButton(navigation);
+
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
+            if (text != null)
+            {
+                text.text = "Árbol";
+                text.textWrappingMode = TextWrappingModes.NoWrap;
+            }
+
+            button.onClick.RemoveAllListeners();
+            UIShopCategoryHelper helper = categories.GetComponent<UIShopCategoryHelper>();
+            button.onClick.AddListener(() =>
+            {
+                if (helper != null)
+                    helper.Show(treePanel);
+                else
+                    treePanel.SetActive(true);
+            });
+        }
+
+        private static Button FindTreeButton(Transform navigation)
+        {
+            if (navigation == null)
+                return null;
+
+            for (int i = 0; i < navigation.childCount; i++)
+            {
+                Transform child = navigation.GetChild(i);
+                if (!child.name.Contains("Entrepreneur Tree"))
+                    continue;
+
+                return child.GetComponent<Button>();
+            }
+
+            return null;
+        }
+
+        private static Button CreateTreeButton(Transform navigation)
+        {
             Button templateButton = navigation.GetComponentInChildren<Button>(true);
             GameObject buttonObject;
             Button button;
+
             if (templateButton != null)
             {
                 buttonObject = Object.Instantiate(templateButton.gameObject, navigation, false);
                 buttonObject.name = "Button - Entrepreneur Tree";
                 button = buttonObject.GetComponent<Button>();
-                button.onClick.RemoveAllListeners();
             }
             else
             {
@@ -41,21 +92,7 @@ namespace FLOBUK.StoreSimulator
                 button = buttonObject.GetComponent<Button>();
             }
 
-            TMP_Text text = buttonObject.GetComponentInChildren<TMP_Text>(true);
-            if (text != null)
-            {
-                text.text = "Arbol";
-                text.textWrappingMode = TextWrappingModes.NoWrap;
-            }
-
-            UIShopCategoryHelper helper = categories.GetComponent<UIShopCategoryHelper>();
-            button.onClick.AddListener(() =>
-            {
-                if (helper != null)
-                    helper.Show(treePanel);
-                else
-                    treePanel.SetActive(true);
-            });
+            return button;
         }
 
         private static Transform FindRecursive(Transform parent, string name)

@@ -21,9 +21,9 @@ namespace FLOBUK.StoreSimulator
         }
 
         public static int ProgressPoints => progressPoints;
-        public static float EmployeeWorkSpeedMultiplier => IsUnlocked("mejora_cafeina") ? 1.1f : 1f;
-        public static float CashierRevenueMultiplier => IsUnlocked("mejora_carismatico") ? 1.05f : 1f;
-        public static int SecurityLevel => IsUnlocked("seguridad_3") ? 3 : IsUnlocked("seguridad_2") ? 2 : IsUnlocked("seguridad_1") ? 1 : 0;
+        public static int SecurityLevel => GetUnlockedSecurityLevel();
+        public static float EmployeeWorkSpeedMultiplier => IsUpgradeUnlocked("mejora_cafeina") ? 1.1f : 1f;
+        public static float CashierRevenueMultiplier => IsUpgradeUnlocked("mejora_carismatico") ? 1.05f : 1f;
 
         public static void ResetToDefaults()
         {
@@ -35,7 +35,7 @@ namespace FLOBUK.StoreSimulator
 
         public static bool IsUnlocked(string nodeId)
         {
-            return unlockedNodeIds.Contains(nodeId);
+            return !string.IsNullOrEmpty(nodeId) && unlockedNodeIds.Contains(nodeId);
         }
 
         public static bool IsProductUnlocked(ProductScriptableObject product)
@@ -43,42 +43,38 @@ namespace FLOBUK.StoreSimulator
             if (product == null)
                 return true;
 
-            string nodeId = EntrepreneurTreeDefinitions.GetKnownProductNodeId(product.id);
+            string nodeId = EntrepreneurTreeDefinitions.GetKnownProductNodeId(product);
             return string.IsNullOrEmpty(nodeId) || IsUnlocked(nodeId);
         }
 
         public static bool IsEmployeeUnlocked(int employeeNumber)
         {
-            if (employeeNumber <= 0)
-                return false;
-
-            return IsUnlocked("empleado_" + employeeNumber);
+            return employeeNumber > 0 && IsUnlocked("empleado_" + employeeNumber);
         }
 
         public static bool IsSecurityLevelUnlocked(int level)
         {
-            if (level <= 0)
-                return true;
-
-            return SecurityLevel >= level;
+            return level <= 0 || GetUnlockedSecurityLevel() >= level;
         }
 
         public static bool IsProductGroupUnlocked(string groupId)
         {
-            if (string.IsNullOrEmpty(groupId))
-                return false;
-
             EntrepreneurTreeNodeDefinition node = EntrepreneurTreeDefinitions.Get(groupId);
-            return node != null && node.Type == EntrepreneurTreeNodeType.Product && IsUnlocked(groupId);
+            return node != null && node.UnlockType == EntrepreneurTreeNodeUnlockType.ProductGroup && IsUnlocked(groupId);
         }
 
         public static bool IsUpgradeUnlocked(string upgradeId)
         {
-            if (string.IsNullOrEmpty(upgradeId))
-                return false;
-
             EntrepreneurTreeNodeDefinition node = EntrepreneurTreeDefinitions.Get(upgradeId);
-            return node != null && node.Type == EntrepreneurTreeNodeType.Upgrade && IsUnlocked(upgradeId);
+            return node != null && node.UnlockType == EntrepreneurTreeNodeUnlockType.Upgrade && IsUnlocked(upgradeId);
+        }
+
+        public static int GetUnlockedSecurityLevel()
+        {
+            if (IsUnlocked("seguridad_3")) return 3;
+            if (IsUnlocked("seguridad_2")) return 2;
+            if (IsUnlocked("seguridad_1")) return 1;
+            return 0;
         }
 
         public static float GetEmployeeSpeedMultiplier()
@@ -99,12 +95,14 @@ namespace FLOBUK.StoreSimulator
             if (IsUnlocked(node.Id))
                 return EntrepreneurTreeNodeState.Unlocked;
 
-            return ArePrerequisitesUnlocked(node) && progressPoints >= node.Cost ? EntrepreneurTreeNodeState.Available : EntrepreneurTreeNodeState.Locked;
+            return ArePrerequisitesUnlocked(node) && progressPoints >= node.Cost
+                ? EntrepreneurTreeNodeState.Available
+                : EntrepreneurTreeNodeState.Locked;
         }
 
         public static bool ArePrerequisitesUnlocked(EntrepreneurTreeNodeDefinition node)
         {
-            return node != null && node.Prerequisites.All(IsUnlocked);
+            return node != null && node.RequiredNodeIds.All(IsUnlocked);
         }
 
         public static List<string> GetMissingPrerequisites(EntrepreneurTreeNodeDefinition node)
@@ -112,7 +110,28 @@ namespace FLOBUK.StoreSimulator
             if (node == null)
                 return new List<string>();
 
-            return node.Prerequisites.Where(prerequisite => !IsUnlocked(prerequisite)).Select(EntrepreneurTreeDefinitions.GetTitle).ToList();
+            return node.RequiredNodeIds
+                .Where(requiredNodeId => !IsUnlocked(requiredNodeId))
+                .Select(EntrepreneurTreeDefinitions.GetDisplayName)
+                .ToList();
+        }
+
+        public static string GetNodeBlockReason(EntrepreneurTreeNodeDefinition node)
+        {
+            if (node == null)
+                return "Nodo no encontrado.";
+
+            if (IsUnlocked(node.Id))
+                return "Desbloqueado";
+
+            List<string> missing = GetMissingPrerequisites(node);
+            if (missing.Count > 0)
+                return "Falta: " + string.Join(", ", missing);
+
+            if (progressPoints < node.Cost)
+                return "Puntos insuficientes";
+
+            return "Disponible";
         }
 
         public static bool TryUnlock(string nodeId, out string message)
@@ -126,7 +145,7 @@ namespace FLOBUK.StoreSimulator
 
             if (IsUnlocked(node.Id))
             {
-                message = node.Title + " ya esta desbloqueado.";
+                message = node.DisplayName + " ya está desbloqueado.";
                 return false;
             }
 
@@ -143,28 +162,27 @@ namespace FLOBUK.StoreSimulator
                 return false;
             }
 
-            progressPoints -= node.Cost;
+            progressPoints -= Mathf.Max(0, node.Cost);
             unlockedNodeIds.Add(node.Id);
             Normalize();
-            message = node.Title + " desbloqueado.";
+            message = node.DisplayName + " desbloqueado.";
             onProgressChanged?.Invoke();
             return true;
         }
 
         public static string GetStateDescription(EntrepreneurTreeNodeDefinition node)
         {
-            switch (GetState(node))
-            {
-                case EntrepreneurTreeNodeState.Unlocked:
-                    return "Desbloqueado";
-                case EntrepreneurTreeNodeState.Available:
-                    return "Disponible";
-                default:
-                    List<string> missing = GetMissingPrerequisites(node);
-                    if (missing.Count > 0)
-                        return "Bloqueado\nFalta: " + string.Join(", ", missing);
-                    return "Bloqueado\nPuntos insuficientes";
-            }
+            EntrepreneurTreeNodeState state = GetState(node);
+            if (state == EntrepreneurTreeNodeState.Unlocked)
+                return "Desbloqueado";
+
+            if (state == EntrepreneurTreeNodeState.Available)
+                return "Disponible";
+
+            string reason = GetNodeBlockReason(node);
+            return reason.StartsWith("Falta:")
+                ? "Bloqueado\n" + reason
+                : "Bloqueado\nPuntos insuficientes";
         }
 
         public static JSONNode SaveToJSON()
@@ -175,11 +193,12 @@ namespace FLOBUK.StoreSimulator
             JSONArray unlocked = new JSONArray();
             foreach (string nodeId in unlockedNodeIds.OrderBy(id => id))
                 unlocked.Add(nodeId);
-
             data["unlockedNodeIds"] = unlocked;
-            data["securityLevel"] = SecurityLevel;
+
+            data["securityLevel"] = GetUnlockedSecurityLevel();
             data["employeeWorkSpeedMultiplier"] = EmployeeWorkSpeedMultiplier;
             data["cashierRevenueMultiplier"] = CashierRevenueMultiplier;
+            data["unlockedEmployeeCount"] = unlockedNodeIds.Count(id => id.StartsWith("empleado_", StringComparison.Ordinal));
             return data;
         }
 
@@ -187,15 +206,23 @@ namespace FLOBUK.StoreSimulator
         {
             ResetToDefaults();
             if (data == null || data.Count == 0)
+            {
+                Normalize();
+                onProgressChanged?.Invoke();
                 return;
+            }
 
             progressPoints = Mathf.Max(0, data["progressPoints"].AsInt);
+
             JSONArray unlocked = data["unlockedNodeIds"].AsArray;
-            for (int i = 0; i < unlocked.Count; i++)
+            if (unlocked != null)
             {
-                string nodeId = unlocked[i].Value;
-                if (EntrepreneurTreeDefinitions.Get(nodeId) != null)
-                    unlockedNodeIds.Add(nodeId);
+                for (int i = 0; i < unlocked.Count; i++)
+                {
+                    string nodeId = unlocked[i].Value;
+                    if (EntrepreneurTreeDefinitions.Get(nodeId) != null)
+                        unlockedNodeIds.Add(nodeId);
+                }
             }
 
             Normalize();
@@ -213,24 +240,24 @@ namespace FLOBUK.StoreSimulator
         {
             unlockedNodeIds.Add(EntrepreneurTreeDefinitions.DefaultUnlockedNodeId);
 
-            bool removed;
+            bool changed;
             do
             {
-                removed = false;
+                changed = false;
                 foreach (string nodeId in unlockedNodeIds.ToArray())
                 {
                     if (nodeId == EntrepreneurTreeDefinitions.DefaultUnlockedNodeId)
                         continue;
 
                     EntrepreneurTreeNodeDefinition node = EntrepreneurTreeDefinitions.Get(nodeId);
-                    if (node == null || !ArePrerequisitesUnlocked(node))
+                    if (node == null || !node.RequiredNodeIds.All(IsUnlocked))
                     {
                         unlockedNodeIds.Remove(nodeId);
-                        removed = true;
+                        changed = true;
                     }
                 }
             }
-            while (removed);
+            while (changed);
         }
     }
 }
