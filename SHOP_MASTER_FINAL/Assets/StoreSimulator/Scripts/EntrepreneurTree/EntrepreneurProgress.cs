@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -44,6 +45,50 @@ namespace FLOBUK.StoreSimulator
 
             string nodeId = EntrepreneurTreeDefinitions.GetKnownProductNodeId(product.id);
             return string.IsNullOrEmpty(nodeId) || IsUnlocked(nodeId);
+        }
+
+        public static bool IsEmployeeUnlocked(int employeeNumber)
+        {
+            if (employeeNumber <= 0)
+                return false;
+
+            return IsUnlocked("empleado_" + employeeNumber);
+        }
+
+        public static bool IsSecurityLevelUnlocked(int level)
+        {
+            if (level <= 0)
+                return true;
+
+            return SecurityLevel >= level;
+        }
+
+        public static bool IsProductGroupUnlocked(string groupId)
+        {
+            if (string.IsNullOrEmpty(groupId))
+                return false;
+
+            EntrepreneurTreeNodeDefinition node = EntrepreneurTreeDefinitions.Get(groupId);
+            return node != null && node.Type == EntrepreneurTreeNodeType.Product && IsUnlocked(groupId);
+        }
+
+        public static bool IsUpgradeUnlocked(string upgradeId)
+        {
+            if (string.IsNullOrEmpty(upgradeId))
+                return false;
+
+            EntrepreneurTreeNodeDefinition node = EntrepreneurTreeDefinitions.Get(upgradeId);
+            return node != null && node.Type == EntrepreneurTreeNodeType.Upgrade && IsUnlocked(upgradeId);
+        }
+
+        public static float GetEmployeeSpeedMultiplier()
+        {
+            return EmployeeWorkSpeedMultiplier;
+        }
+
+        public static float GetCashierSalesMultiplier()
+        {
+            return CashierRevenueMultiplier;
         }
 
         public static EntrepreneurTreeNodeState GetState(EntrepreneurTreeNodeDefinition node)
