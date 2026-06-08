@@ -686,7 +686,7 @@ namespace FLOBUK.StoreSimulator
             if (instanceId == 0)
                 return null;
 
-            T[] objects = FindObjectsByType<T>(FindObjectsSortMode.None);
+            T[] objects = UnityEngine.Object.FindObjectsByType<T>(FindObjectsSortMode.None);
             return objects.FirstOrDefault(obj => obj != null && obj.GetInstanceID() == instanceId);
         }
 
