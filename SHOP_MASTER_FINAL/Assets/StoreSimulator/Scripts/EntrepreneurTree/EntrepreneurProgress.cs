@@ -38,6 +38,11 @@ namespace FLOBUK.StoreSimulator
             return !string.IsNullOrEmpty(nodeId) && unlockedNodeIds.Contains(nodeId);
         }
 
+        public static bool IsNodeUnlocked(string nodeId)
+        {
+            return IsUnlocked(nodeId);
+        }
+
         public static bool IsProductUnlocked(ProductScriptableObject product)
         {
             if (product == null)
@@ -50,6 +55,13 @@ namespace FLOBUK.StoreSimulator
         public static bool IsEmployeeUnlocked(int employeeNumber)
         {
             return employeeNumber > 0 && IsUnlocked("empleado_" + employeeNumber);
+        }
+
+        public static List<int> GetUnlockedEmployees()
+        {
+            return Enumerable.Range(1, EmployeeSystem.MaxEmployees)
+                .Where(IsEmployeeUnlocked)
+                .ToList();
         }
 
         public static bool IsSecurityLevelUnlocked(int level)

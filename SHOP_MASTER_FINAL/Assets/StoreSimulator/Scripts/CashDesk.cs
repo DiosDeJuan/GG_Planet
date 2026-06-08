@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -154,6 +155,35 @@ namespace FLOBUK.StoreSimulator
                 anim.Play("CashRegister_Open");
             } 
             else terminal.SetInteractable(true);
+        }
+
+
+        public bool AutoProcessCurrentCustomer(float cashierSalesMultiplier = 1f)
+        {
+            if (customerQueue.Count == 0 || customerBag == null)
+                return false;
+
+            if (deskItems.Count > 0)
+            {
+                Scan(deskItems[0]);
+                return true;
+            }
+
+            if (customerQueue[0].currentStep != CustomerStep.Pay)
+                return false;
+
+            customerQueue[0].HasPaid();
+            long cartAmount = StoreDatabase.FromStringToLongMoney(cart.total.text);
+            OnBillCustomer(cart.total.text);
+
+            if (cashierSalesMultiplier > 1f)
+            {
+                long extraRevenue = Mathf.RoundToInt(cartAmount * (cashierSalesMultiplier - 1f));
+                if (extraRevenue > 0)
+                    StoreDatabase.AddRemoveMoney(extraRevenue);
+            }
+
+            return true;
         }
 
 
