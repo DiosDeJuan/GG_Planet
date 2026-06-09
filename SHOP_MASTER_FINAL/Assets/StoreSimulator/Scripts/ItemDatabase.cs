@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -107,6 +108,16 @@ namespace FLOBUK.StoreSimulator
 
 
         /// <summary>
+        /// Returns whether a purchasable exists without throwing when content data is incomplete.
+        /// </summary>
+        public static bool TryGetById(Type type, string id, out PurchasableScriptableObject purchasable)
+        {
+            purchasable = null;
+            return Instance != null && Instance.ids.ContainsKey(type) && !string.IsNullOrEmpty(id) && Instance.ids[type].TryGetValue(id, out purchasable);
+        }
+
+
+        /// <summary>
         /// Returns all purchasables on a specific level, filtered by their asset type.
         /// </summary>
         public static List<PurchasableScriptableObject> GetByLevel(Type type, int level)
@@ -149,7 +160,20 @@ namespace FLOBUK.StoreSimulator
         public static List<ProductScriptableObject> GetProductsRandom(int count)
         {
             List<ProductScriptableObject> filtered = new List<ProductScriptableObject>(Instance.availableProducts);
-            filtered.RemoveAll(product => !string.IsNullOrEmpty(product.requiredLicense) && !(GetById(typeof(LicenseScriptableObject), product.requiredLicense) as LicenseScriptableObject).isPurchased);
+            filtered.RemoveAll(product =>
+            {
+                if (string.IsNullOrEmpty(product.requiredLicense))
+                    return false;
+
+                if (!TryGetById(typeof(LicenseScriptableObject), product.requiredLicense, out PurchasableScriptableObject requiredLicense))
+                    return true;
+
+                return requiredLicense is not LicenseScriptableObject license || !license.isPurchased;
+            });
+            filtered.RemoveAll(product => !EntrepreneurProgress.IsProductUnlocked(product));
+
+            if (filtered.Count == 0)
+                return new List<ProductScriptableObject>();
 
             if (count == 1)
                 return new List<ProductScriptableObject>() { filtered[UnityEngine.Random.Range(0, filtered.Count)] };

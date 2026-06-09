@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 using System.Collections.Generic;
 using System.Linq;
 
@@ -100,6 +101,22 @@ namespace FLOBUK.StoreSimulator
             return node != null ? node.Title : id;
         }
 
+        public static bool TryGetProductNode(ProductScriptableObject product, out EntrepreneurTreeNodeDefinition node)
+        {
+            string nodeId = GetKnownProductNodeId(product);
+            node = string.IsNullOrEmpty(nodeId) ? null : Get(nodeId);
+            return node != null;
+        }
+
+        public static string GetKnownProductNodeId(ProductScriptableObject product)
+        {
+            if (product == null)
+                return string.Empty;
+
+            string nodeId = GetKnownProductNodeId(product.id);
+            return string.IsNullOrEmpty(nodeId) ? GetKnownProductNodeIdByName(product.title) : nodeId;
+        }
+
         public static string GetKnownProductNodeId(string productId)
         {
             switch (productId)
@@ -108,12 +125,106 @@ namespace FLOBUK.StoreSimulator
                 case "1":
                 case "2":
                 case "3":
-                    return DefaultUnlockedNodeId;
                 case "4":
-                    return "productos_basicos_2";
+                    return DefaultUnlockedNodeId;
                 default:
                     return string.Empty;
             }
+        }
+
+        private static string GetKnownProductNodeIdByName(string productTitle)
+        {
+            switch (NormalizeProductKey(productTitle))
+            {
+                case "product_a":
+                case "leche":
+                case "milk":
+                case "product_b":
+                case "sal":
+                case "salt":
+                case "product_c":
+                case "agua":
+                case "water":
+                case "product_d":
+                case "pasta":
+                case "product_e":
+                case "azucar":
+                case "sugar":
+                    return DefaultUnlockedNodeId;
+
+                case "harina":
+                case "arroz":
+                case "frijoles":
+                case "pan":
+                case "aceite":
+                    return "productos_basicos_2";
+
+                case "cafe":
+                case "huevo":
+                    return "productos_basicos_3";
+
+                case "lacteos":
+                case "lacteos_1":
+                case "queso":
+                case "yogurt":
+                case "mantequilla":
+                    return "lacteos_1";
+
+                case "especias":
+                case "pimienta":
+                case "oregano":
+                case "canela":
+                    return "especias_1";
+
+                case "manzana":
+                case "platano":
+                case "jitomate":
+                case "cebolla":
+                    return "productos_frescos_1";
+
+                case "uvas":
+                case "zanahoria":
+                case "ajo":
+                    return "productos_frescos_2";
+
+                case "jabon":
+                case "papel_higienico":
+                case "detergente":
+                case "pasta_dental":
+                    return "productos_higiene";
+
+                case "soda":
+                case "sodas":
+                case "refresco":
+                    return "sodas";
+
+                case "proteina":
+                case "proteina_1":
+                    return "proteina_1";
+
+                case "trufa":
+                case "chocolate_importado":
+                case "caviar":
+                    return "productos_lujo_1";
+
+                case "electrodomestico":
+                case "electrodomesticos":
+                    return "electrodomesticos_1";
+
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string NormalizeProductKey(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            return value.Trim()
+                .ToLowerInvariant()
+                .Replace(" ", "_")
+                .Replace("-", "_");
         }
     }
 }

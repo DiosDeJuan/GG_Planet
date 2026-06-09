@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -58,9 +59,13 @@ namespace FLOBUK.StoreSimulator
         void Awake()
         {
             StoreDatabase.onLevelUpdate += OnLevelUpdate;
+            StoreDatabase.onMoneyUpdate += OnMoneyUpdate;
 
             if (purchasable is ProductScriptableObject)
+            {
                 UpgradeSystem.onUpgradePurchase += OnUpgradePurchase;
+                EntrepreneurProgress.onProgressChanged += OnEntrepreneurProgressChanged;
+            }
         }
 
 
@@ -94,6 +99,27 @@ namespace FLOBUK.StoreSimulator
                 AddItems(level);
                 
             maxLevel = level;
+        }
+
+
+        //subscribed to money changes so product cards can update funds state.
+        private void OnMoneyUpdate(string money, string change)
+        {
+            RefreshItems();
+        }
+
+
+        //subscribed to Entrepreneur Tree changes so product cards unlock immediately.
+        private void OnEntrepreneurProgressChanged()
+        {
+            RefreshItems();
+        }
+
+
+        private void RefreshItems()
+        {
+            for (int i = 0; i < shopItems.Count; i++)
+                shopItems[i].Refresh();
         }
 
 
@@ -169,7 +195,9 @@ namespace FLOBUK.StoreSimulator
         void OnDestroy()
         {
             StoreDatabase.onLevelUpdate -= OnLevelUpdate;
+            StoreDatabase.onMoneyUpdate -= OnMoneyUpdate;
             UpgradeSystem.onUpgradePurchase -= OnUpgradePurchase;
+            EntrepreneurProgress.onProgressChanged -= OnEntrepreneurProgressChanged;
         }
     }
 }

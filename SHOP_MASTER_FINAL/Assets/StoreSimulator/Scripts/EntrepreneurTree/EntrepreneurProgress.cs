@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -42,8 +43,27 @@ namespace FLOBUK.StoreSimulator
             if (product == null)
                 return true;
 
-            string nodeId = EntrepreneurTreeDefinitions.GetKnownProductNodeId(product.id);
+            string nodeId = EntrepreneurTreeDefinitions.GetKnownProductNodeId(product);
             return string.IsNullOrEmpty(nodeId) || IsUnlocked(nodeId);
+        }
+
+        public static bool TryGetProductUnlockNode(ProductScriptableObject product, out EntrepreneurTreeNodeDefinition node)
+        {
+            return EntrepreneurTreeDefinitions.TryGetProductNode(product, out node);
+        }
+
+        public static bool TryGetProductLockedMessage(ProductScriptableObject product, out string message)
+        {
+            message = string.Empty;
+            if (product == null || IsProductUnlocked(product))
+                return false;
+
+            if (TryGetProductUnlockNode(product, out EntrepreneurTreeNodeDefinition node))
+                message = "Producto bloqueado. Desbloquea " + node.Title + " en el Arbol del Emprendedor.";
+            else
+                message = "Producto bloqueado. Desbloquea el nodo requerido en el Arbol del Emprendedor.";
+
+            return true;
         }
 
         public static EntrepreneurTreeNodeState GetState(EntrepreneurTreeNodeDefinition node)

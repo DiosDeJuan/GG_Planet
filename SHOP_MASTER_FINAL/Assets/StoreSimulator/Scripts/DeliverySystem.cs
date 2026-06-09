@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -67,14 +68,32 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void Purchase(PurchasableScriptableObject purchasable)
         {
+            if (purchasable == null)
+            {
+                UIGame.Instance.ShowMessage("Producto no configurado correctamente: sin referencia. Revisar catalogo.");
+                return;
+            }
+
+            if (purchasable is ProductScriptableObject product)
+            {
+                TryPurchaseProduct(product, out string productMessage);
+                UIGame.Instance.ShowMessage(productMessage);
+                return;
+            }
+
+            if (Instance == null || Instance.packagePrefab == null || Instance.deliveryStart == null)
+            {
+                UIGame.Instance.ShowMessage("No se pudo crear el pedido porque falta el sistema de entrega o inventario.");
+                return;
+            }
+
             //get amount of products in the package
             int amount = 1;
-            if (purchasable is ProductScriptableObject)
-                amount = (purchasable as ProductScriptableObject).packageCount;
 
             if (!StoreDatabase.CanPurchase(purchasable.buyPrice * amount))
             {
-                UIGame.Instance.ShowMessage("Not enough money to purchase this item");
+                long missing = purchasable.buyPrice * amount - StoreDatabase.Instance.currentMoney;
+                UIGame.Instance.ShowMessage("Fondos insuficientes. Faltan " + StoreDatabase.FromLongToStringMoney(missing) + ".");
                 return;
             }
 
@@ -85,9 +104,97 @@ namespace FLOBUK.StoreSimulator
             Vector3 deliveryPosition = Instance.GetDeliveryPosition();
             GameObject newPackage = Instantiate(Instance.packagePrefab, deliveryPosition + new Vector3(0, 2, 0), Quaternion.identity);
             PackageObject packageObject = newPackage.GetComponent<PackageObject>();
+            if (!IsPackageConfigured(packageObject))
+            {
+                Destroy(newPackage);
+                UIGame.Instance.ShowMessage("No se pudo crear el pedido porque falta el sistema de entrega o inventario.");
+                return;
+            }
+
             packageObject.Add(purchasable, amount);
 
             onProductPurchase?.Invoke(purchasable as ProductScriptableObject);
+        }
+
+
+        /// <summary>
+        /// Validates product purchase causes before spending money or spawning a delivery package.
+        /// </summary>
+        public static bool TryPurchaseProduct(ProductScriptableObject product, out string message)
+        {
+            message = string.Empty;
+
+            if (!IsProductConfigured(product))
+            {
+                message = "Producto no configurado correctamente: " + GetProductReference(product) + ". Revisar catalogo.";
+                return false;
+            }
+
+            if (EntrepreneurProgress.TryGetProductLockedMessage(product, out message))
+                return false;
+
+            if (Instance == null || Instance.packagePrefab == null || Instance.deliveryStart == null)
+            {
+                message = "No se pudo crear el pedido porque falta el sistema de entrega o inventario.";
+                return false;
+            }
+
+            long total = product.buyPrice * product.packageCount;
+            if (!StoreDatabase.CanPurchase(total))
+            {
+                long missing = total - StoreDatabase.Instance.currentMoney;
+                message = "Fondos insuficientes. Faltan " + StoreDatabase.FromLongToStringMoney(missing) + ".";
+                return false;
+            }
+
+            Vector3 deliveryPosition = Instance.GetDeliveryPosition();
+            GameObject newPackage = Instantiate(Instance.packagePrefab, deliveryPosition + new Vector3(0, 2, 0), Quaternion.identity);
+            PackageObject packageObject = newPackage.GetComponent<PackageObject>();
+            if (!IsPackageConfigured(packageObject))
+            {
+                Destroy(newPackage);
+                message = "No se pudo crear el pedido porque falta el sistema de entrega o inventario.";
+                return false;
+            }
+
+            StoreDatabase.AddRemoveMoney(-total);
+            packageObject.Add(product, product.packageCount);
+            onProductPurchase?.Invoke(product);
+
+            message = "Pedido realizado: " + product.title + " x" + product.packageCount + ".";
+            return true;
+        }
+
+
+        private static bool IsProductConfigured(ProductScriptableObject product)
+        {
+            return product != null &&
+                   !string.IsNullOrEmpty(product.id) &&
+                   !string.IsNullOrEmpty(product.title) &&
+                   product.icon != null &&
+                   product.prefab != null &&
+                   product.packageCount > 0 &&
+                   product.buyPrice >= 0;
+        }
+
+
+        private static bool IsPackageConfigured(PackageObject packageObject)
+        {
+            return packageObject != null &&
+                   packageObject.container != null &&
+                   packageObject.label != null;
+        }
+
+
+        private static string GetProductReference(ProductScriptableObject product)
+        {
+            if (product == null)
+                return "sin referencia";
+
+            if (!string.IsNullOrEmpty(product.title))
+                return product.title + "/" + product.id;
+
+            return string.IsNullOrEmpty(product.id) ? "sin id" : product.id;
         }
 
 

@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -36,25 +37,55 @@ namespace FLOBUK.StoreSimulator
             base.Initialize(purchasable);
 
             ProductScriptableObject product = purchasable as ProductScriptableObject;
+            if (product == null)
+            {
+                SetLockedState("No configurado");
+                return;
+            }
+
             if (totalPrice) totalPrice.text = StoreDatabase.FromLongToStringMoney(product.buyPrice * product.packageCount);
 
             if (storePrice) storePrice.text = StoreDatabase.FromLongToStringMoney(product.storePrice);
             if (marketPrice) marketPrice.text = StoreDatabase.FromLongToStringMoney(product.marketPrice);          
 
+            if (lockedOverlay != null && product.requiredLevel <= StoreDatabase.Instance.currentLevel)
+                lockedOverlay.SetActive(false);
+
+            if (!IsProductConfigured(product))
+            {
+                SetLockedState("No configurado");
+                return;
+            }
+
             if (lockedOverlay != null && !lockedOverlay.activeInHierarchy)
             {
-                if (!EntrepreneurProgress.IsProductUnlocked(product))
+                if (EntrepreneurProgress.TryGetProductLockedMessage(product, out string lockMessage))
                 {
-                    lockedOverlay.SetActive(true);
-                    lockedMessage.text = "Requires " + EntrepreneurTreeDefinitions.GetTitle(EntrepreneurTreeDefinitions.GetKnownProductNodeId(product.id));
+                    SetLockedState(lockMessage);
                     return;
                 }
 
                 if (!string.IsNullOrEmpty(product.requiredLicense))
                 {
-                    LicenseScriptableObject requiredLicense = ItemDatabase.GetById(typeof(LicenseScriptableObject), product.requiredLicense) as LicenseScriptableObject;
-                    lockedOverlay.SetActive(!requiredLicense.isPurchased);
-                    lockedMessage.text = "Requires License " + requiredLicense.title;
+                    if (!ItemDatabase.TryGetById(typeof(LicenseScriptableObject), product.requiredLicense, out PurchasableScriptableObject requiredLicense))
+                    {
+                        SetLockedState("Producto no configurado correctamente: " + product.title + "/" + product.id + ". Revisar catalogo.");
+                        return;
+                    }
+
+                    LicenseScriptableObject license = requiredLicense as LicenseScriptableObject;
+                    if (license == null || !license.isPurchased)
+                    {
+                        SetLockedState("Requiere licencia " + (license != null ? license.title : product.requiredLicense));
+                        return;
+                    }
+                }
+
+                long total = product.buyPrice * product.packageCount;
+                if (!StoreDatabase.CanPurchase(total))
+                {
+                    long missing = total - StoreDatabase.Instance.currentMoney;
+                    SetLockedState("Fondos insuficientes. Faltan " + StoreDatabase.FromLongToStringMoney(missing) + ".");
                 }
             }
         }
@@ -66,13 +97,43 @@ namespace FLOBUK.StoreSimulator
         public override void Purchase()
         {
             ProductScriptableObject product = purchasable as ProductScriptableObject;
-            if (!EntrepreneurProgress.IsProductUnlocked(product))
+            if (product == null)
             {
-                UIGame.Instance.ShowMessage("Requires " + EntrepreneurTreeDefinitions.GetTitle(EntrepreneurTreeDefinitions.GetKnownProductNodeId(product.id)));
+                UIGame.Instance.ShowMessage("Producto no configurado correctamente: sin referencia. Revisar catalogo.");
                 return;
             }
 
-            DeliverySystem.Purchase(purchasable);
+            else if (!IsProductConfigured(product))
+            {
+                UIGame.Instance.ShowMessage("Producto no configurado correctamente: " + product.title + "/" + product.id + ". Revisar catalogo.");
+                return;
+            }
+
+            DeliverySystem.TryPurchaseProduct(product, out string message);
+            UIGame.Instance.ShowMessage(message);
+            Initialize(product);
+        }
+
+
+        private void SetLockedState(string message)
+        {
+            if (lockedOverlay != null)
+                lockedOverlay.SetActive(true);
+
+            if (lockedMessage != null)
+                lockedMessage.text = message;
+        }
+
+
+        private static bool IsProductConfigured(ProductScriptableObject product)
+        {
+            return product != null &&
+                   !string.IsNullOrEmpty(product.id) &&
+                   !string.IsNullOrEmpty(product.title) &&
+                   product.icon != null &&
+                   product.prefab != null &&
+                   product.packageCount > 0 &&
+                   product.buyPrice >= 0;
         }
     }
 }
