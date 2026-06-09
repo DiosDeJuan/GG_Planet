@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -47,6 +48,11 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public bool isPlayerControlled { get; private set; }
 
+        /// <summary>
+        /// Stable employee id assigned to automate this cash desk.
+        /// </summary>
+        public string assignedEmployeeId { get; private set; }
+
         //previous camera position that should be transitioned back to when leaving
         private Vector3 prevCamPosition;
         //previous camera rotation that should be transitioned back to when leaving
@@ -55,6 +61,7 @@ namespace FLOBUK.StoreSimulator
         private Collider[] cols;
         //reference to Animation component
         private Animation anim;
+        private Coroutine automaticCheckoutRoutine;
 
 
         //initialize references
@@ -120,6 +127,9 @@ namespace FLOBUK.StoreSimulator
                     itemIndex++;
                 }
             }
+
+            if (HasAutomaticCashier())
+                automaticCheckoutRoutine = StartCoroutine(AutomaticCheckoutRoutine(itemIndex));
         }
         
 
@@ -223,6 +233,74 @@ namespace FLOBUK.StoreSimulator
             {
                 customerQueue[i].ProceedQueue(queuePositions.GetChild(i), i + 1);
             }
+        }
+
+        public bool HasAutomaticCashier()
+        {
+            return !string.IsNullOrEmpty(assignedEmployeeId);
+        }
+
+        public bool AssignAutomaticCashier(string employeeId)
+        {
+            if (string.IsNullOrEmpty(employeeId))
+                return false;
+
+            if (HasAutomaticCashier() && assignedEmployeeId != employeeId)
+                return false;
+
+            assignedEmployeeId = employeeId;
+            return true;
+        }
+
+        public void ReleaseAutomaticCashier(string employeeId)
+        {
+            if (assignedEmployeeId != employeeId)
+                return;
+
+            assignedEmployeeId = string.Empty;
+            if (automaticCheckoutRoutine != null)
+            {
+                StopCoroutine(automaticCheckoutRoutine);
+                automaticCheckoutRoutine = null;
+            }
+        }
+
+        public string GetWorkstationId()
+        {
+            return gameObject.scene.name + "/" + GetHierarchyPath(transform);
+        }
+
+        private IEnumerator AutomaticCheckoutRoutine(int itemCount)
+        {
+            float paymentDelay = customerQueue.Count > 0 && customerQueue[0].payCash ? 2.5f : 1.5f;
+            float serviceTime = Mathf.Clamp((itemCount * 0.5f + paymentDelay) / EntrepreneurProgress.EmployeeWorkSpeedMultiplier, 1f, 12f);
+            float scanDelay = itemCount > 0 ? Mathf.Max(0.1f, (serviceTime - paymentDelay) / itemCount) : 0.1f;
+
+            while (deskItems.Count > 0)
+            {
+                CheckoutItem item = deskItems[0];
+                yield return new WaitForSeconds(scanDelay);
+                if (item != null)
+                    Scan(item);
+            }
+
+            yield return new WaitForSeconds(paymentDelay);
+            if (customerQueue.Count > 0)
+            {
+                customerQueue[0].HasPaid();
+                yield return new WaitForSeconds(0.25f);
+                OnBillCustomer(cart.total.text);
+            }
+
+            automaticCheckoutRoutine = null;
+        }
+
+        private static string GetHierarchyPath(Transform transform)
+        {
+            if (transform == null)
+                return string.Empty;
+
+            return transform.parent == null ? transform.name : GetHierarchyPath(transform.parent) + "/" + transform.name;
         }
 
 

@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -106,10 +107,14 @@ namespace FLOBUK.StoreSimulator
                     joysticks[i].SetActive(true);
             #endif
 
+            PlayerInput playerInput = PlayerInput.GetPlayerByIndex(0);
+            if (playerInput == null)
+                return;
+
             #if UNITY_6000_0_OR_NEWER
-                PlayerInput.GetPlayerByIndex(0).actions.FindActionMap("UI").Disable();
+                playerInput.actions.FindActionMap("UI").Disable();
             #endif
-            PlayerInput.GetPlayerByIndex(0).onActionTriggered += OnAction;
+            playerInput.onActionTriggered += OnAction;
         }
 
 

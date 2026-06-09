@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -128,6 +129,8 @@ namespace FLOBUK.StoreSimulator
             JSONNode dailyData = SaveGameSystem.ReadComponentData("StatsDatabase");
             moneyEarned.text = StoreDatabase.FromLongToStringMoney(dailyData["moneyEarned"].AsLong);
             moneySpent.text = StoreDatabase.FromLongToStringMoney(dailyData["moneySpent"].AsLong);
+            if (dailyData["employeeSalarySpent"].AsLong > 0)
+                moneySpent.text += "\nSalarios de empleados: " + StoreDatabase.FromLongToStringMoney(dailyData["employeeSalarySpent"].AsLong);
             moneyProfit.text = StoreDatabase.FromLongToStringMoney(dailyData["moneyEarned"].AsLong + dailyData["moneySpent"].AsLong);
             customersTotal.text = (dailyData["customersHappy"].AsInt + dailyData["customersUnhappy"].AsInt).ToString();           
             customersHappy.text = dailyData["customersHappy"].Value;

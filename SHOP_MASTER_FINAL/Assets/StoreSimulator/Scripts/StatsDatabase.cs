@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -44,6 +45,11 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public int customersUnhappy { get; private set; }
 
+        /// <summary>
+        /// Salary expenses charged for hired employees during the current day.
+        /// </summary>
+        public long employeeSalarySpent { get; private set; }
+
 
         //initialize references
         void Awake()
@@ -63,6 +69,7 @@ namespace FLOBUK.StoreSimulator
             moneyEarned = moneySpent = 0;
             xpEarned = 0;
             customersHappy = customersUnhappy = 0;
+            employeeSalarySpent = 0;
         }
 
 
@@ -91,6 +98,14 @@ namespace FLOBUK.StoreSimulator
             else customersUnhappy++;
         }
 
+        public void RegisterEmployeeSalary(long amount)
+        {
+            if (amount <= 0)
+                return;
+
+            employeeSalarySpent += amount;
+        }
+
 
         /// <summary>
         /// Reads component data that should be persisted and returns it as a JSONNode. 
@@ -104,6 +119,7 @@ namespace FLOBUK.StoreSimulator
             data["xpEarned"] = xpEarned;
             data["customersHappy"] = customersHappy;
             data["customersUnhappy"] = customersUnhappy;
+            data["employeeSalarySpent"] = employeeSalarySpent;
             
             return data;
         }
@@ -122,6 +138,7 @@ namespace FLOBUK.StoreSimulator
             xpEarned = data["xpEarned"].AsLong;
             customersHappy = data["customersHappy"].AsInt;
             customersUnhappy = data["customersUnhappy"].AsInt;
+            employeeSalarySpent = data["employeeSalarySpent"].AsLong;
         }
 
 

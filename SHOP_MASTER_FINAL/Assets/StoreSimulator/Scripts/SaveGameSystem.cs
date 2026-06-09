@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -70,6 +71,7 @@ namespace FLOBUK.StoreSimulator
 
             Instance.gameData = data;
             EntrepreneurProgress.ResetToDefaults();
+            EmployeeManager.ResetRuntimeState();
             SceneManager.sceneLoaded += Instance.OnSceneLoaded;
         }
 
@@ -94,6 +96,7 @@ namespace FLOBUK.StoreSimulator
             data["TutorialSystem"] = TutorialSystem.Instance.SaveToJSON();
             data["StatsDatabase"] = StatsDatabase.Instance.SaveToJSON();
             data["EntrepreneurProgress"] = EntrepreneurProgress.SaveToJSON();
+            data["EmployeeManager"] = EmployeeManager.EnsureInstance().SaveToJSON();
 
             byte[] dataAsBytes = Encoding.ASCII.GetBytes(data.ToString());
             try { File.WriteAllBytes(Application.persistentDataPath + "/" + fileName + fileExt, dataAsBytes); }
@@ -161,6 +164,7 @@ namespace FLOBUK.StoreSimulator
             TutorialSystem.Instance.LoadFromJSON(gameData["TutorialSystem"]);
             StatsDatabase.Instance.LoadFromJSON(gameData["StatsDatabase"]);
             EntrepreneurProgress.LoadFromJSON(gameData["EntrepreneurProgress"]);
+            EmployeeManager.EnsureInstance().LoadFromJSON(gameData["EmployeeManager"]);
             
             //notify subscribed scripts of data update
             dataLoadEvent?.Invoke();
