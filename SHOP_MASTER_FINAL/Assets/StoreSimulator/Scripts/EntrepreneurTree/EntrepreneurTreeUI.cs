@@ -13,14 +13,22 @@ namespace FLOBUK.StoreSimulator
         private static readonly Color CardBackground = new Color(1f, 1f, 1f, 0.96f);
         private static readonly Color TextDark = new Color(0.12f, 0.12f, 0.13f, 1f);
         private static readonly Color TextMuted = new Color(0.32f, 0.33f, 0.35f, 1f);
+        private static readonly Color LineLocked = new Color(0.58f, 0.58f, 0.6f, 0.62f);
+        private static readonly Color LineAvailable = new Color(1f, 0f, 0.392f, 0.95f);
+        private static readonly Color LineNoPoints = new Color(0.95f, 0.66f, 0.22f, 0.9f);
+        private static readonly Color LineUnlocked = new Color(0.25f, 0.68f, 0.32f, 0.95f);
 
-        private readonly Dictionary<string, TMP_Text> stateLabels = new Dictionary<string, TMP_Text>();
-        private readonly Dictionary<string, Button> nodeButtons = new Dictionary<string, Button>();
+        private readonly Dictionary<string, EntrepreneurTreeNodeView> nodeViews = new Dictionary<string, EntrepreneurTreeNodeView>();
+        private readonly List<string> fallbackNodeIds = new List<string>();
 
         private TMP_Text pointsLabel;
         private TMP_Text detailsLabel;
+        private TMP_Text detailsMessageLabel;
         private Button unlockButton;
+        private EntrepreneurTreeConnectionGraphic connectionGraphic;
+        private ScrollRect graphScroll;
         private EntrepreneurTreeNodeDefinition selectedNode;
+        private bool built;
 
         void OnEnable()
         {
@@ -35,6 +43,10 @@ namespace FLOBUK.StoreSimulator
 
         public void Build()
         {
+            if (built)
+                return;
+
+            built = true;
             RectTransform rect = gameObject.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
@@ -54,7 +66,8 @@ namespace FLOBUK.StoreSimulator
 
             BuildHeader(transform);
             BuildBody(transform);
-            SelectNode(EntrepreneurTreeDefinitions.Get(EntrepreneurTreeDefinitions.DefaultUnlockedNodeId));
+            SelectNode(EntrepreneurTreeDefinitions.Get(EntrepreneurTreeDefinitions.DefaultUnlockedNodeId), false);
+            CenterOnDefaultNode();
             Refresh();
         }
 
@@ -62,7 +75,7 @@ namespace FLOBUK.StoreSimulator
         {
             GameObject header = CreatePanel("Header", parent, CardBackground);
             LayoutElement headerLayout = header.AddComponent<LayoutElement>();
-            headerLayout.preferredHeight = 78;
+            headerLayout.preferredHeight = 84;
 
             HorizontalLayoutGroup headerGroup = header.AddComponent<HorizontalLayoutGroup>();
             headerGroup.padding = new RectOffset(14, 14, 8, 8);
@@ -78,14 +91,23 @@ namespace FLOBUK.StoreSimulator
             textLayout.childControlWidth = true;
             textLayout.childControlHeight = true;
 
-            TMP_Text title = CreateText("Title", textBox.transform, "Arbol del Emprendedor", 24, FontStyles.Bold, TextAlignmentOptions.Left);
+            TMP_Text title = CreateText("Title", textBox.transform, "ARBOL DEL EMPRENDEDOR", 24, FontStyles.Bold, TextAlignmentOptions.Left);
             title.color = TextDark;
             TMP_Text subtitle = CreateText("Subtitle", textBox.transform, "Desbloquea productos, empleados, seguridad y mejoras para expandir tu supermercado.", 13, FontStyles.Normal, TextAlignmentOptions.Left);
             subtitle.color = TextMuted;
 
-            pointsLabel = CreateText("Points", header.transform, string.Empty, 19, FontStyles.Bold, TextAlignmentOptions.Right);
+            GameObject pointsBox = CreateLayoutBox("Points Box", header.transform);
+            LayoutElement pointsBoxLayout = pointsBox.AddComponent<LayoutElement>();
+            pointsBoxLayout.preferredWidth = 230;
+            VerticalLayoutGroup pointsLayout = pointsBox.AddComponent<VerticalLayoutGroup>();
+            pointsLayout.spacing = 4;
+            pointsLayout.childControlWidth = true;
+            pointsLayout.childControlHeight = true;
+
+            pointsLabel = CreateText("Points", pointsBox.transform, string.Empty, 19, FontStyles.Bold, TextAlignmentOptions.Right);
             pointsLabel.color = DesktopPink;
-            pointsLabel.GetComponent<LayoutElement>().preferredWidth = 165;
+            TMP_Text hint = CreateText("Hint", pointsBox.transform, "Nodos conectados por prerequisitos", 11, FontStyles.Normal, TextAlignmentOptions.Right);
+            hint.color = TextMuted;
         }
 
         private void BuildBody(Transform parent)
@@ -93,7 +115,7 @@ namespace FLOBUK.StoreSimulator
             GameObject body = CreateLayoutBox("Body", parent);
             LayoutElement bodyLayout = body.AddComponent<LayoutElement>();
             bodyLayout.flexibleHeight = 1;
-            bodyLayout.minHeight = 315;
+            bodyLayout.minHeight = 330;
 
             HorizontalLayoutGroup bodyGroup = body.AddComponent<HorizontalLayoutGroup>();
             bodyGroup.spacing = 10;
@@ -102,95 +124,114 @@ namespace FLOBUK.StoreSimulator
             bodyGroup.childForceExpandWidth = false;
             bodyGroup.childForceExpandHeight = true;
 
-            BuildNodeArea(body.transform);
+            BuildGraphPanel(body.transform);
             BuildDetailsPanel(body.transform);
         }
 
-        private void BuildNodeArea(Transform parent)
+        private void BuildGraphPanel(Transform parent)
         {
-            GameObject scrollObject = CreateScrollView("Tree Scroll", parent, out Transform content);
-            LayoutElement scrollLayout = scrollObject.AddComponent<LayoutElement>();
-            scrollLayout.flexibleWidth = 1;
+            GameObject graphPanel = CreatePanel("Graph Panel", parent, CardBackground);
+            LayoutElement graphLayout = graphPanel.AddComponent<LayoutElement>();
+            graphLayout.flexibleWidth = 1;
 
-            HorizontalLayoutGroup columns = content.gameObject.AddComponent<HorizontalLayoutGroup>();
-            columns.padding = new RectOffset(10, 10, 10, 10);
-            columns.spacing = 12;
-            columns.childControlWidth = true;
-            columns.childControlHeight = true;
-            columns.childForceExpandWidth = false;
-            columns.childForceExpandHeight = false;
-            ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
-            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            VerticalLayoutGroup graphGroup = graphPanel.AddComponent<VerticalLayoutGroup>();
+            graphGroup.padding = new RectOffset(10, 10, 10, 10);
+            graphGroup.spacing = 8;
+            graphGroup.childControlWidth = true;
+            graphGroup.childControlHeight = true;
+            graphGroup.childForceExpandWidth = true;
+            graphGroup.childForceExpandHeight = false;
 
-            BuildColumn(content, "Productos", EntrepreneurTreeNodeType.Product);
-            BuildColumn(content, "Empleados", EntrepreneurTreeNodeType.Employee);
-            BuildColumn(content, "Seguridad", EntrepreneurTreeNodeType.Security);
-            BuildColumn(content, "Mejoras", EntrepreneurTreeNodeType.Upgrade);
+            BuildLegend(graphPanel.transform);
+            BuildGraphScroll(graphPanel.transform);
         }
 
-        private void BuildColumn(Transform parent, string title, EntrepreneurTreeNodeType type)
+        private void BuildLegend(Transform parent)
         {
-            GameObject column = CreatePanel(title, parent, CardBackground);
-            LayoutElement columnLayout = column.AddComponent<LayoutElement>();
-            columnLayout.preferredWidth = GetColumnWidth(type);
-            columnLayout.minWidth = columnLayout.preferredWidth;
+            GameObject legend = CreatePanel("Legend", parent, new Color(0.96f, 0.96f, 0.97f, 1f));
+            LayoutElement layout = legend.AddComponent<LayoutElement>();
+            layout.preferredHeight = 34;
 
-            VerticalLayoutGroup columnGroup = column.AddComponent<VerticalLayoutGroup>();
-            columnGroup.padding = new RectOffset(8, 8, 8, 8);
-            columnGroup.spacing = 6;
-            columnGroup.childControlWidth = true;
-            columnGroup.childControlHeight = true;
-            columnGroup.childForceExpandWidth = true;
-            columnGroup.childForceExpandHeight = false;
+            TMP_Text label = CreateText("Legend Text", legend.transform, "Estados: Bloqueado | Disponible | Desbloqueado     Tipos: P Producto  E Empleado  S Seguridad  M Mejora", 12, FontStyles.Bold, TextAlignmentOptions.Center);
+            label.color = TextMuted;
+        }
 
-            TMP_Text columnTitle = CreateText("Title", column.transform, title, 18, FontStyles.Bold, TextAlignmentOptions.Center);
-            columnTitle.color = TextDark;
-            columnTitle.GetComponent<LayoutElement>().preferredHeight = 28;
+        private void BuildGraphScroll(Transform parent)
+        {
+            GameObject scroll = CreatePanel("Graph Scroll", parent, new Color(0.98f, 0.98f, 0.99f, 0.92f));
+            LayoutElement scrollLayout = scroll.AddComponent<LayoutElement>();
+            scrollLayout.flexibleHeight = 1;
 
+            graphScroll = scroll.AddComponent<ScrollRect>();
+            graphScroll.horizontal = true;
+            graphScroll.vertical = true;
+            graphScroll.movementType = ScrollRect.MovementType.Clamped;
+            graphScroll.scrollSensitivity = 30f;
+
+            GameObject viewport = CreateLayoutBox("Viewport", scroll.transform);
+            RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+            Stretch(viewportRect, new Vector2(8, 8), new Vector2(-8, -8));
+            Image viewportImage = viewport.AddComponent<Image>();
+            viewportImage.color = Color.clear;
+            Mask mask = viewport.AddComponent<Mask>();
+            mask.showMaskGraphic = false;
+
+            GameObject content = CreateLayoutBox("Graph Content", viewport.transform);
+            RectTransform contentRect = content.GetComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0, 1);
+            contentRect.anchorMax = new Vector2(0, 1);
+            contentRect.pivot = new Vector2(0, 1);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = EntrepreneurTreeVisualLayout.ContentSize;
+
+            GameObject connections = CreateLayoutBox("Connections", content.transform);
+            RectTransform connectionRect = connections.GetComponent<RectTransform>();
+            connectionRect.anchorMin = new Vector2(0, 1);
+            connectionRect.anchorMax = new Vector2(0, 1);
+            connectionRect.pivot = new Vector2(0, 1);
+            connectionRect.anchoredPosition = Vector2.zero;
+            connectionRect.sizeDelta = EntrepreneurTreeVisualLayout.ContentSize;
+            connectionGraphic = connections.AddComponent<EntrepreneurTreeConnectionGraphic>();
+            connectionGraphic.raycastTarget = false;
+
+            CreateGraphNodes(content.transform);
+            graphScroll.viewport = viewportRect;
+            graphScroll.content = contentRect;
+        }
+
+        private void CreateGraphNodes(Transform content)
+        {
+            int fallbackIndex = 0;
             foreach (EntrepreneurTreeNodeDefinition node in EntrepreneurTreeDefinitions.Nodes)
             {
-                if (node.Type != type)
-                    continue;
+                Vector2 position = EntrepreneurTreeVisualLayout.GetAnchoredPosition(node.Id, fallbackIndex, out bool usedFallback);
+                if (usedFallback)
+                {
+                    fallbackNodeIds.Add(node.Id);
+                    fallbackIndex++;
+                }
 
-                CreateNodeButton(column.transform, node);
+                GameObject nodeObject = new GameObject(node.Id, typeof(RectTransform));
+                nodeObject.transform.SetParent(content, false);
+                RectTransform rect = nodeObject.GetComponent<RectTransform>();
+                rect.anchorMin = new Vector2(0, 1);
+                rect.anchorMax = new Vector2(0, 1);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.sizeDelta = EntrepreneurTreeVisualLayout.NodeSize;
+                rect.anchoredPosition = position;
+
+                EntrepreneurTreeNodeView view = nodeObject.AddComponent<EntrepreneurTreeNodeView>();
+                view.Initialize(node, SelectNode);
+                nodeViews[node.Id] = view;
             }
-        }
-
-        private void CreateNodeButton(Transform parent, EntrepreneurTreeNodeDefinition node)
-        {
-            GameObject nodeObject = CreatePanel(node.Id, parent, new Color(0.88f, 0.88f, 0.89f, 1f));
-            LayoutElement layout = nodeObject.AddComponent<LayoutElement>();
-            layout.preferredHeight = 68;
-
-            Button button = nodeObject.AddComponent<Button>();
-            button.transition = Selectable.Transition.ColorTint;
-            button.targetGraphic = nodeObject.GetComponent<Image>();
-            button.onClick.AddListener(() => SelectNode(node));
-
-            VerticalLayoutGroup group = nodeObject.AddComponent<VerticalLayoutGroup>();
-            group.padding = new RectOffset(8, 8, 5, 5);
-            group.spacing = 2;
-            group.childControlWidth = true;
-            group.childControlHeight = true;
-
-            TMP_Text title = CreateText("Title", nodeObject.transform, node.Title, 14, FontStyles.Bold, TextAlignmentOptions.Left);
-            title.color = TextDark;
-            title.textWrappingMode = TextWrappingModes.NoWrap;
-            TMP_Text state = CreateText("State", nodeObject.transform, string.Empty, 12, FontStyles.Normal, TextAlignmentOptions.Left);
-            state.color = TextMuted;
-            state.textWrappingMode = TextWrappingModes.Normal;
-
-            nodeButtons[node.Id] = button;
-            stateLabels[node.Id] = state;
         }
 
         private void BuildDetailsPanel(Transform parent)
         {
             GameObject panel = CreatePanel("Details", parent, CardBackground);
             LayoutElement layout = panel.AddComponent<LayoutElement>();
-            layout.preferredWidth = 285;
-            layout.minWidth = 285;
+            layout.preferredWidth = 305;
+            layout.minWidth = 305;
 
             VerticalLayoutGroup group = panel.AddComponent<VerticalLayoutGroup>();
             group.padding = new RectOffset(12, 12, 12, 12);
@@ -200,16 +241,20 @@ namespace FLOBUK.StoreSimulator
             group.childForceExpandWidth = true;
             group.childForceExpandHeight = false;
 
-            TMP_Text title = CreateText("Title", panel.transform, "Detalle", 22, FontStyles.Bold, TextAlignmentOptions.Left);
+            TMP_Text title = CreateText("Title", panel.transform, "Detalle del nodo", 21, FontStyles.Bold, TextAlignmentOptions.Left);
             title.color = TextDark;
             title.GetComponent<LayoutElement>().preferredHeight = 30;
 
-            detailsLabel = CreateText("Details Text", panel.transform, string.Empty, 15, FontStyles.Normal, TextAlignmentOptions.Left);
+            detailsLabel = CreateText("Details Text", panel.transform, string.Empty, 14, FontStyles.Normal, TextAlignmentOptions.Left);
             detailsLabel.color = TextDark;
             detailsLabel.textWrappingMode = TextWrappingModes.Normal;
             LayoutElement detailsLayout = detailsLabel.GetComponent<LayoutElement>();
-            detailsLayout.preferredHeight = 250;
+            detailsLayout.preferredHeight = 260;
             detailsLayout.flexibleHeight = 1;
+
+            detailsMessageLabel = CreateText("Message", panel.transform, string.Empty, 13, FontStyles.Bold, TextAlignmentOptions.Left);
+            detailsMessageLabel.color = TextMuted;
+            detailsMessageLabel.GetComponent<LayoutElement>().preferredHeight = 52;
 
             unlockButton = CreateActionButton("Unlock Button", panel.transform, "Desbloquear");
             unlockButton.onClick.AddListener(UnlockSelectedNode);
@@ -217,8 +262,16 @@ namespace FLOBUK.StoreSimulator
 
         private void SelectNode(EntrepreneurTreeNodeDefinition node)
         {
+            SelectNode(node, true);
+        }
+
+        private void SelectNode(EntrepreneurTreeNodeDefinition node, bool refresh)
+        {
             selectedNode = node;
-            RefreshDetails();
+            if (refresh)
+                Refresh();
+            else
+                RefreshDetails();
         }
 
         private void UnlockSelectedNode()
@@ -227,6 +280,9 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             bool unlocked = EntrepreneurProgress.TryUnlock(selectedNode.Id, out string message);
+            if (detailsMessageLabel != null)
+                detailsMessageLabel.text = message;
+
             if (UIGame.Instance != null)
                 UIGame.AddNotification(message, otherColor: unlocked ? Color.green : new Color(1f, 0.78f, 0.25f), otherDuration: 4f);
 
@@ -238,33 +294,39 @@ namespace FLOBUK.StoreSimulator
             if (pointsLabel != null)
                 pointsLabel.text = "Puntos: " + EntrepreneurProgress.ProgressPoints;
 
-            foreach (EntrepreneurTreeNodeDefinition node in EntrepreneurTreeDefinitions.Nodes)
+            foreach (EntrepreneurTreeNodeView view in nodeViews.Values)
+                view.Refresh(view.Node == selectedNode);
+
+            RefreshConnections();
+            RefreshDetails();
+        }
+
+        private void RefreshConnections()
+        {
+            if (connectionGraphic == null)
+                return;
+
+            List<EntrepreneurTreeConnectionGraphic.ConnectionLine> lines = new List<EntrepreneurTreeConnectionGraphic.ConnectionLine>();
+            foreach (EntrepreneurTreeNodeDefinition childNode in EntrepreneurTreeDefinitions.Nodes)
             {
-                if (!stateLabels.TryGetValue(node.Id, out TMP_Text stateLabel))
+                if (!nodeViews.TryGetValue(childNode.Id, out EntrepreneurTreeNodeView childView))
                     continue;
 
-                EntrepreneurTreeNodeState state = EntrepreneurProgress.GetState(node);
-                stateLabel.text = EntrepreneurProgress.GetStateDescription(node);
-
-                Image image = nodeButtons[node.Id].targetGraphic as Image;
-                if (image == null)
-                    continue;
-
-                switch (state)
+                for (int i = 0; i < childNode.Prerequisites.Length; i++)
                 {
-                    case EntrepreneurTreeNodeState.Unlocked:
-                        image.color = new Color(0.75f, 0.92f, 0.78f, 1f);
-                        break;
-                    case EntrepreneurTreeNodeState.Available:
-                        image.color = new Color(0.80f, 0.88f, 1f, 1f);
-                        break;
-                    default:
-                        image.color = new Color(0.88f, 0.88f, 0.89f, 1f);
-                        break;
+                    string parentId = childNode.Prerequisites[i];
+                    EntrepreneurTreeNodeDefinition parentNode = EntrepreneurTreeDefinitions.Get(parentId);
+                    if (parentNode == null || !nodeViews.TryGetValue(parentId, out EntrepreneurTreeNodeView parentView))
+                        continue;
+
+                    Vector2 start = GetConnectionEdge(parentView.Rect.anchoredPosition, childView.Rect.anchoredPosition);
+                    Vector2 end = GetConnectionEdge(childView.Rect.anchoredPosition, parentView.Rect.anchoredPosition);
+                    Color color = GetConnectionColor(parentNode, childNode);
+                    lines.Add(new EntrepreneurTreeConnectionGraphic.ConnectionLine(start, end, color, 8f));
                 }
             }
 
-            RefreshDetails();
+            connectionGraphic.SetConnections(lines);
         }
 
         private void RefreshDetails()
@@ -276,14 +338,69 @@ namespace FLOBUK.StoreSimulator
             detailsLabel.text =
                 selectedNode.Title + "\n\n" +
                 "Tipo: " + GetTypeLabel(selectedNode.Type) + "\n" +
-                "Costo: " + selectedNode.Cost + " punto(s)\n" +
                 "Estado: " + EntrepreneurProgress.GetStateDescription(selectedNode).Replace("\n", " - ") + "\n" +
-                "Requisitos: " + requirements + "\n\n" +
+                "Costo: " + selectedNode.Cost + " punto(s)\n" +
+                "Requiere: " + requirements + "\n\n" +
                 "Beneficio:\n" + selectedNode.Benefit;
 
             EntrepreneurTreeNodeState state = EntrepreneurProgress.GetState(selectedNode);
             unlockButton.interactable = state == EntrepreneurTreeNodeState.Available;
-            unlockButton.GetComponentInChildren<TMP_Text>().text = state == EntrepreneurTreeNodeState.Unlocked ? "Desbloqueado" : "Desbloquear";
+            unlockButton.GetComponentInChildren<TMP_Text>().text = state == EntrepreneurTreeNodeState.Unlocked ? "Desbloqueado" : state == EntrepreneurTreeNodeState.Available ? "Desbloquear" : "Bloqueado";
+
+            if (detailsMessageLabel != null)
+                detailsMessageLabel.text = GetContextMessage(selectedNode, state);
+        }
+
+        private string GetContextMessage(EntrepreneurTreeNodeDefinition node, EntrepreneurTreeNodeState state)
+        {
+            if (state == EntrepreneurTreeNodeState.Unlocked)
+                return node.Title + " ya esta desbloqueado.";
+
+            List<string> missing = EntrepreneurProgress.GetMissingPrerequisites(node);
+            if (missing.Count > 0)
+                return "Falta desbloquear: " + string.Join(", ", missing);
+
+            if (EntrepreneurProgress.ProgressPoints < node.Cost)
+                return "No tienes puntos de progreso suficientes.";
+
+            return "Disponible para desbloquear.";
+        }
+
+        private static Color GetConnectionColor(EntrepreneurTreeNodeDefinition parentNode, EntrepreneurTreeNodeDefinition childNode)
+        {
+            if (EntrepreneurProgress.IsUnlocked(childNode.Id))
+                return LineUnlocked;
+
+            if (!EntrepreneurProgress.IsUnlocked(parentNode.Id))
+                return LineLocked;
+
+            if (EntrepreneurProgress.GetState(childNode) == EntrepreneurTreeNodeState.Available)
+                return LineAvailable;
+
+            if (EntrepreneurProgress.ArePrerequisitesUnlocked(childNode))
+                return LineNoPoints;
+
+            return LineLocked;
+        }
+
+        private static Vector2 GetConnectionEdge(Vector2 from, Vector2 to)
+        {
+            Vector2 delta = to - from;
+            if (delta.sqrMagnitude < 0.1f)
+                return from;
+
+            Vector2 direction = delta.normalized;
+            Vector2 half = EntrepreneurTreeVisualLayout.NodeSize * 0.5f;
+            float scale = Mathf.Abs(direction.x) > Mathf.Abs(direction.y) ? half.x : half.y;
+            return from + direction * scale;
+        }
+
+        private void CenterOnDefaultNode()
+        {
+            if (graphScroll == null)
+                return;
+
+            graphScroll.normalizedPosition = new Vector2(0f, 0.52f);
         }
 
         private static string GetTypeLabel(EntrepreneurTreeNodeType type)
@@ -315,11 +432,7 @@ namespace FLOBUK.StoreSimulator
         private static TMP_Text CreateText(string name, Transform parent, string text, int size, FontStyles style, TextAlignmentOptions alignment)
         {
             GameObject obj = CreateLayoutBox(name, parent);
-            RectTransform rect = obj.GetComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
+            Stretch(obj.GetComponent<RectTransform>(), Vector2.zero, Vector2.zero);
             TextMeshProUGUI label = obj.AddComponent<TextMeshProUGUI>();
             label.text = text;
             label.fontSize = size;
@@ -327,7 +440,7 @@ namespace FLOBUK.StoreSimulator
             label.alignment = alignment;
             label.textWrappingMode = TextWrappingModes.Normal;
             label.enableAutoSizing = true;
-            label.fontSizeMin = Mathf.Max(10, size - 5);
+            label.fontSizeMin = Mathf.Max(9, size - 5);
             label.fontSizeMax = size;
             label.raycastTarget = false;
             obj.AddComponent<LayoutElement>();
@@ -346,49 +459,12 @@ namespace FLOBUK.StoreSimulator
             return button;
         }
 
-        private static GameObject CreateScrollView(string name, Transform parent, out Transform content)
+        private static void Stretch(RectTransform rect, Vector2 offsetMin, Vector2 offsetMax)
         {
-            GameObject scroll = CreatePanel(name, parent, new Color(1f, 1f, 1f, 0.72f));
-            ScrollRect scrollRect = scroll.AddComponent<ScrollRect>();
-            scrollRect.horizontal = true;
-            scrollRect.vertical = true;
-
-            GameObject viewport = CreateLayoutBox("Viewport", scroll.transform);
-            RectTransform viewportRect = viewport.GetComponent<RectTransform>();
-            viewportRect.anchorMin = Vector2.zero;
-            viewportRect.anchorMax = Vector2.one;
-            viewportRect.offsetMin = new Vector2(8, 8);
-            viewportRect.offsetMax = new Vector2(-8, -8);
-            Image viewportImage = viewport.AddComponent<Image>();
-            viewportImage.color = Color.clear;
-            Mask mask = viewport.AddComponent<Mask>();
-            mask.showMaskGraphic = false;
-
-            GameObject contentObject = CreateLayoutBox("Content", viewport.transform);
-            RectTransform contentRect = contentObject.GetComponent<RectTransform>();
-            contentRect.anchorMin = new Vector2(0, 1);
-            contentRect.anchorMax = new Vector2(0, 1);
-            contentRect.pivot = new Vector2(0, 1);
-            contentRect.anchoredPosition = Vector2.zero;
-            contentRect.sizeDelta = new Vector2(835, 720);
-
-            scrollRect.viewport = viewportRect;
-            scrollRect.content = contentRect;
-            content = contentObject.transform;
-            return scroll;
-        }
-
-        private static float GetColumnWidth(EntrepreneurTreeNodeType type)
-        {
-            switch (type)
-            {
-                case EntrepreneurTreeNodeType.Product:
-                    return 220;
-                case EntrepreneurTreeNodeType.Employee:
-                    return 185;
-                default:
-                    return 200;
-            }
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = offsetMin;
+            rect.offsetMax = offsetMax;
         }
     }
 }

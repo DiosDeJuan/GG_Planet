@@ -63,9 +63,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\StoreSimulator\Scripts\EntrepreneurTree\EntrepreneurProgress.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\EntrepreneurTree\EntrepreneurTreeConnectionGraphic.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\EntrepreneurTree\EntrepreneurTreeNodeDefinition.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\EntrepreneurTree\EntrepreneurTreeNodeView.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\EntrepreneurTree\EntrepreneurTreeUI.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\EntrepreneurTree\EntrepreneurTreeUIBootstrap.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\EntrepreneurTree\EntrepreneurTreeVisualLayout.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Employees\EmployeeManager.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Employees\EmployeeRole.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Employees\EmployeeRuntimeAgent.cs" />
