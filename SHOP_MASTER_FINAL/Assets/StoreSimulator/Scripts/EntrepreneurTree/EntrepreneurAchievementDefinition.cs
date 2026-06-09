@@ -55,9 +55,9 @@ namespace FLOBUK.StoreSimulator
             new EntrepreneurAchievementDefinition("primer_empleado", "Primer Empleado", "Contrata tu primer empleado."),
             new EntrepreneurAchievementDefinition("maximo_empleo", "Maximo Empleo", "Contrata 18 empleados y asigna rol a cada uno."),
 
-            new EntrepreneurAchievementDefinition("supermercado_crecimiento", "Supermercado en Crecimiento", "Expande el supermercado a 300 m2.", 1, true, "No hay metrica de metros cuadrados en ExpansionScriptableObject."),
+            new EntrepreneurAchievementDefinition("supermercado_crecimiento", "Supermercado en Crecimiento", "Expande el supermercado a 300 m2."),
             new EntrepreneurAchievementDefinition("imperialista", "Imperialista", "Llega al tamano maximo del supermercado."),
-            new EntrepreneurAchievementDefinition("almacenamiento_maximizado", "Almacenamiento Maximizado", "Expande almacenamiento al maximo permitido.", 1, true, "No hay metrica de capacidad maxima de almacenamiento en StorageScriptableObject."),
+            new EntrepreneurAchievementDefinition("almacenamiento_maximizado", "Almacenamiento Maximizado", "Expande almacenamiento al maximo permitido."),
 
             new EntrepreneurAchievementDefinition("surtido_completo", "Surtido Completo", "Desbloquea todos los productos basicos."),
             new EntrepreneurAchievementDefinition("red_seguridad", "Red de Seguridad", "Desbloquea y activa todas las medidas de seguridad."),
@@ -73,7 +73,7 @@ namespace FLOBUK.StoreSimulator
             new EntrepreneurAchievementDefinition("rapidez", "Rapidez", "Compra tu primera caja registradora.", 1, true, "No hay evento especifico de compra de caja registradora separado de otros StorageObject."),
             new EntrepreneurAchievementDefinition("bajo_presion", "Bajo Presion", "Supera $500 en ventas en un dia sin contratar empleados."),
             new EntrepreneurAchievementDefinition("precio_perfecto", "Precio Perfecto", "Maximiza ganancias sin quejas por precios durante una semana.", 1, true, "No hay metrica semanal de precios sin quejas."),
-            new EntrepreneurAchievementDefinition("paciente", "Paciente", "Consigue que un cliente se queje de tus precios.", 1, true, "No hay evento limpio de queja por precio."),
+            new EntrepreneurAchievementDefinition("paciente", "Paciente", "Consigue que un cliente se queje de tus precios."),
             new EntrepreneurAchievementDefinition("perezoso", "Perezoso", "No corras durante todo un dia.", 1, true, "No hay tracking diario de correr en PlayerController."),
             new EntrepreneurAchievementDefinition("huevo_dorado", "Huevo dorado", "Encuentrate al creador como cliente despues de completar el Arbol.", 1, true, "No existe cliente creador ni evento de encuentro en esta copia."),
         };

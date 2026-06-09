@@ -27,6 +27,7 @@ namespace FLOBUK.StoreSimulator
         {
             DayCycleSystem.onDayFinished += OnDayFinished;
             UpgradeSystem.onUpgradePurchase += OnUpgradePurchased;
+            ShopExpansionManager.onSpacesChanged += OnSpacesChanged;
         }
 
         public static IReadOnlyList<EntrepreneurAchievementDefinition> Definitions => EntrepreneurAchievementDefinitions.Achievements;
@@ -106,6 +107,12 @@ namespace FLOBUK.StoreSimulator
         {
             manualArrestsCount++;
             TryCompleteAchievement("batman");
+            onAchievementsChanged?.Invoke();
+        }
+
+        public static void RegisterPriceComplaint()
+        {
+            TryCompleteAchievement("paciente");
             onAchievementsChanged?.Invoke();
         }
 
@@ -286,12 +293,14 @@ namespace FLOBUK.StoreSimulator
 
         private static void EvaluateExpansionAchievements()
         {
-            if (ItemDatabase.Instance == null)
-                return;
+            if (ShopExpansionManager.CurrentSaleAreaM2 >= 300)
+                TryCompleteAchievement("supermercado_crecimiento");
 
-            List<ExpansionScriptableObject> expansions = ItemDatabase.GetByType(typeof(ExpansionScriptableObject)).OfType<ExpansionScriptableObject>().ToList();
-            if (expansions.Count > 0 && expansions.All(expansion => expansion.isPurchased))
+            if (ShopExpansionManager.AreAllSaleSpacesPurchased)
                 TryCompleteAchievement("imperialista");
+
+            if (ShopExpansionManager.AreAllStorageSpacesPurchased)
+                TryCompleteAchievement("almacenamiento_maximizado");
         }
 
         private static void EvaluateDayAchievements()
@@ -352,6 +361,11 @@ namespace FLOBUK.StoreSimulator
         {
             if (purchasable is ExpansionScriptableObject)
                 EvaluateExpansionAchievements();
+        }
+
+        private static void OnSpacesChanged()
+        {
+            EvaluateExpansionAchievements();
         }
 
         private static void ShowNotification(string message)

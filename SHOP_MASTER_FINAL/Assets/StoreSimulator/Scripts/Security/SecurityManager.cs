@@ -80,29 +80,21 @@ namespace FLOBUK.StoreSimulator
             if (DayCycleSystem.GetStoreOpenState() != StoreOpenState.Open)
                 return false;
 
-            float chance = Mathf.Min(0.065f, 0.04f + CountPurchasedExpansions() * 0.005f);
-            chance = Mathf.Max(0.01f, chance - EntrepreneurProgress.SecurityLevel * 0.0075f);
+            float chance = ShopExpansionManager.GetShoplifterSpawnChance();
             return Random.value <= chance;
         }
 
         private ShoplifterType ChooseShoplifterType()
         {
+            float expansionProgress = ShopExpansionManager.GetSaleExpansionProgress01();
             bool hasLuxury = EntrepreneurProgress.IsUnlocked("productos_lujo_1") || EntrepreneurProgress.IsUnlocked("electrodomesticos_1");
-            if (hasLuxury && Random.value <= 0.2f)
+            if (hasLuxury && Random.value <= Mathf.Lerp(0.1f, 0.35f, expansionProgress))
                 return ShoplifterType.Special;
 
-            if (Random.value <= 0.35f)
+            if (Random.value <= Mathf.Lerp(0.25f, 0.45f, expansionProgress))
                 return ShoplifterType.SuspiciousCustomer;
 
             return ShoplifterType.Common;
-        }
-
-        private int CountPurchasedExpansions()
-        {
-            if (ItemDatabase.Instance == null)
-                return 0;
-
-            return ItemDatabase.GetByType(typeof(ExpansionScriptableObject)).OfType<ExpansionScriptableObject>().Count(expansion => expansion.isPurchased);
         }
 
         public PlacementObject FindTargetPlacement(ShoplifterType type)

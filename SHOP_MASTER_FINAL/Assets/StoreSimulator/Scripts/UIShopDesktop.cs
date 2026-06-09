@@ -87,6 +87,7 @@ namespace FLOBUK.StoreSimulator
 
             EntrepreneurTreeUIBootstrap.Ensure(this);
             UIEmployeesUIBootstrap.Ensure(this);
+            UIManagementUIBootstrap.Ensure(this);
 
             yield return new WaitForSeconds(1);
             Button[] buttons = GetComponentsInChildren<Button>(true);

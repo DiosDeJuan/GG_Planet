@@ -137,8 +137,16 @@ namespace FLOBUK.StoreSimulator
                 moneyEarned.text += "\nRecuperado por seguridad: " + StoreDatabase.FromLongToStringMoney(dailyData["recoveredValue"].AsLong);
             if (dailyData["charismaticBonusIncome"].AsLong > 0)
                 moneyEarned.text += "\nBono Carismatico: " + StoreDatabase.FromLongToStringMoney(dailyData["charismaticBonusIncome"].AsLong);
+            if (dailyData["rentExpense"].AsLong > 0)
+                moneySpent.text += "\nRenta: " + StoreDatabase.FromLongToStringMoney(dailyData["rentExpense"].AsLong);
+            if (dailyData["electricityExpense"].AsLong > 0)
+                moneySpent.text += "\nLuz: " + StoreDatabase.FromLongToStringMoney(dailyData["electricityExpense"].AsLong);
             if (dailyData["theftEventsCount"].AsInt > 0)
                 customersUnhappy.text += "\nRobos: " + dailyData["theftEventsCount"].AsInt + " | Detenidos: " + (dailyData["manualArrestsCount"].AsInt + dailyData["automaticArrestsCount"].AsInt);
+            if (dailyData["productsOutOfStock"].AsInt > 0)
+                customersUnhappy.text += "\nProductos agotados: " + dailyData["productsOutOfStock"].AsInt;
+            if (dailyData["customersLost"].AsInt > 0)
+                customersUnhappy.text += "\nClientes perdidos: " + dailyData["customersLost"].AsInt;
             moneyProfit.text = StoreDatabase.FromLongToStringMoney(dailyData["moneyEarned"].AsLong + dailyData["moneySpent"].AsLong);
             customersTotal.text = (dailyData["customersHappy"].AsInt + dailyData["customersUnhappy"].AsInt).ToString();           
             customersHappy.text = dailyData["customersHappy"].Value;

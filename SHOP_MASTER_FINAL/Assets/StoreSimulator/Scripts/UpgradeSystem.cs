@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -98,6 +99,27 @@ namespace FLOBUK.StoreSimulator
                 case BoosterScriptableObject:
                     BoosterScriptableObject booster = purchasable as BoosterScriptableObject;
                     ApplyBooster(booster);
+                    break;
+            }
+
+            onUpgradePurchase?.Invoke(purchasable);
+        }
+
+        public static void GrantPurchased(PurchasableScriptableObject purchasable)
+        {
+            switch (purchasable)
+            {
+                case ExpansionScriptableObject:
+                    (purchasable as ExpansionScriptableObject).isPurchased = true;
+                    break;
+                case LicenseScriptableObject:
+                    (purchasable as LicenseScriptableObject).isPurchased = true;
+                    break;
+                case DecorationScriptableObject:
+                    ApplyDecoration(purchasable as DecorationScriptableObject);
+                    break;
+                case BoosterScriptableObject:
+                    ApplyBooster(purchasable as BoosterScriptableObject);
                     break;
             }
 

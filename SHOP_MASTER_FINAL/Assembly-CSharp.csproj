@@ -1,5 +1,4 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptado por POMPIC 20100333 -->
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
@@ -77,6 +76,7 @@
     <Compile Include="Assets\StoreSimulator\Scripts\Employees\EmployeeRole.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\EntrepreneurTree\EntrepreneurTreeNodeDefinition.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\PaymentItem.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Management\UIManagementUIBootstrap.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\PlacementSystem.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\UIShopItemLicense.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\Benchmark02.cs" />
@@ -119,8 +119,10 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\WarpTextExample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ShaderPropAnimator.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Security\ShoplifterType.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Endings\GameEndingService.cs" />
     <Compile Include="Assets\StoreSimulator\Plugins\SimpleJSONUnity.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Employees\EmployeeRuntimeAgent.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Management\UIManagementPanel.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\UpgradeSystem.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Security\ShoplifterInteractableProxy.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Security\SecurityLevel.cs" />
@@ -139,6 +141,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ChatController.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Security\SecurityManager.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\UIStats.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Pricing\ProductPricingCalculator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_DigitValidator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_FrameRateCounter.cs" />
     <Compile Include="Assets\TutorialInfo\Scripts\Readme.cs" />
@@ -163,6 +166,7 @@
     <Compile Include="Assets\StoreSimulator\Scripts\TutorialSystem.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\DropdownSample.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\VertexColorCycler.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Expansion\ShopExpansionManager.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\CheckoutObject.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\UIShopItemStorage.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\UIGame.cs" />

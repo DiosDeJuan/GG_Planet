@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -271,15 +272,13 @@ namespace FLOBUK.StoreSimulator
                 //we are near the current item
                 if (agent.IsNear(cart.GetProductPlacement().position))
                 {
-                    //compare store price with market price
-                    //do a random willingness to pay factor from +20% to +75%
                     ProductScriptableObject product = cart.GetProduct();
-                    long maxPrice = Mathf.FloorToInt(product.marketPrice * (1 + Random.Range(0.2f, 0.75f)));
-
-                    if (product.storePrice > maxPrice)
+                    float purchaseProbability = ProductPricingCalculator.GetPurchaseProbability(product);
+                    if (Random.value > purchaseProbability)
                     {
                         //item cannot be reached or agent stuck
                         ShowUnhappy("Product " + product.name + " is too expensive.");
+                        EntrepreneurAchievementManager.RegisterPriceComplaint();
 
                         //continue with next item
                         cart.SetNextItem();
@@ -291,9 +290,10 @@ namespace FLOBUK.StoreSimulator
 
                     //decide whether to collect multiples of this item
                     int itemCount = 1;
-                    bool shouldDuplicate = Random.Range(100, 0) <= CustomerSystem.Instance.duplicateProductRate;
-                    if (shouldDuplicate)
-                        itemCount = Random.Range(3, 1);
+                    if (Random.value <= ProductPricingCalculator.GetExtraPurchaseProbability(product))
+                        itemCount++;
+                    else if (Random.Range(100, 0) <= CustomerSystem.Instance.duplicateProductRate)
+                        itemCount = Random.Range(1, 3);
 
                     //put item in bag
                     for(int i = 0; i < itemCount; i++)
@@ -362,6 +362,10 @@ namespace FLOBUK.StoreSimulator
             {
                 //item not found in store
                 ShowUnhappy("Product " + cart.GetProduct().name + " not found.");
+                if (StatsDatabase.Instance != null)
+                    StatsDatabase.Instance.RegisterProductOutOfStock();
+                if (UIGame.Instance != null)
+                    UIGame.AddNotification("Producto agotado: " + cart.GetProduct().name);
 
                 //continue with next item
                 cart.SetNextItem();

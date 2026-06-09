@@ -60,6 +60,10 @@ namespace FLOBUK.StoreSimulator
         public int securityAutoArrestAttempts { get; private set; }
         public int securityAutoArrestSuccesses { get; private set; }
         public long charismaticBonusIncome { get; private set; }
+        public int productsOutOfStock { get; private set; }
+        public int customersLost { get; private set; }
+        public long rentExpense { get; private set; }
+        public long electricityExpense { get; private set; }
 
 
         //initialize references
@@ -70,6 +74,7 @@ namespace FLOBUK.StoreSimulator
             StoreDatabase.onMoneyUpdate += OnMoneyUpdate;
             StoreDatabase.onExperienceUpdate += OnExperienceUpdate;
             DayCycleSystem.onDayLoaded += OnDayLoaded;
+            DayCycleSystem.onDayFinished += OnDayFinished;
             CustomerSystem.onCustomerLeft += OnCustomerLeft;
         }
 
@@ -91,6 +96,22 @@ namespace FLOBUK.StoreSimulator
             securityAutoArrestAttempts = 0;
             securityAutoArrestSuccesses = 0;
             charismaticBonusIncome = 0;
+            productsOutOfStock = 0;
+            customersLost = 0;
+            rentExpense = 0;
+            electricityExpense = 0;
+        }
+
+        private void OnDayFinished()
+        {
+            rentExpense = ShopExpansionManager.GetDailyRentExpense();
+            electricityExpense = ShopExpansionManager.GetDailyElectricityExpense();
+
+            long totalOperatingExpense = rentExpense + electricityExpense;
+            if (totalOperatingExpense > 0)
+                StoreDatabase.AddRemoveMoney(-totalOperatingExpense);
+
+            GameEndingService.EvaluateBankruptcy();
         }
 
 
@@ -168,6 +189,16 @@ namespace FLOBUK.StoreSimulator
             charismaticBonusIncome += amount;
         }
 
+        public void RegisterProductOutOfStock()
+        {
+            productsOutOfStock++;
+        }
+
+        public void RegisterCustomerLost()
+        {
+            customersLost++;
+        }
+
 
         /// <summary>
         /// Reads component data that should be persisted and returns it as a JSONNode. 
@@ -192,6 +223,10 @@ namespace FLOBUK.StoreSimulator
             data["securityAutoArrestAttempts"] = securityAutoArrestAttempts;
             data["securityAutoArrestSuccesses"] = securityAutoArrestSuccesses;
             data["charismaticBonusIncome"] = charismaticBonusIncome;
+            data["productsOutOfStock"] = productsOutOfStock;
+            data["customersLost"] = customersLost;
+            data["rentExpense"] = rentExpense;
+            data["electricityExpense"] = electricityExpense;
             
             return data;
         }
@@ -221,6 +256,10 @@ namespace FLOBUK.StoreSimulator
             securityAutoArrestAttempts = data["securityAutoArrestAttempts"].AsInt;
             securityAutoArrestSuccesses = data["securityAutoArrestSuccesses"].AsInt;
             charismaticBonusIncome = data["charismaticBonusIncome"].AsLong;
+            productsOutOfStock = data["productsOutOfStock"].AsInt;
+            customersLost = data["customersLost"].AsInt;
+            rentExpense = data["rentExpense"].AsLong;
+            electricityExpense = data["electricityExpense"].AsLong;
         }
 
 
@@ -230,6 +269,7 @@ namespace FLOBUK.StoreSimulator
             StoreDatabase.onMoneyUpdate -= OnMoneyUpdate;
             StoreDatabase.onExperienceUpdate -= OnExperienceUpdate;
             DayCycleSystem.onDayLoaded -= OnDayLoaded;
+            DayCycleSystem.onDayFinished -= OnDayFinished;
             CustomerSystem.onCustomerLeft -= OnCustomerLeft;
         }
     }

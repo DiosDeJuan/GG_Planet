@@ -207,7 +207,8 @@ namespace FLOBUK.StoreSimulator
         {
             while(true)
             {
-                for(int i = 0; i < spawnRate; i++)
+                int effectiveSpawnRate = ShopExpansionManager.GetExpandedCustomerSpawnRate(spawnRate);
+                for(int i = 0; i < effectiveSpawnRate; i++)
                 {
                     Invoke("SpawnCustomer", UnityEngine.Random.Range(1, 60));
                 }

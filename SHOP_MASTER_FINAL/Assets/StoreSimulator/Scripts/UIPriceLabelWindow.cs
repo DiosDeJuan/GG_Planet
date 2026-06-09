@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -77,7 +78,8 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public void Apply()
         {
-            storePrice.text = StoreDatabase.FromLongToStringMoney(StoreDatabase.FromStringToLongMoney(storePrice.text));
+            long price = ProductPricingCalculator.ClampPrice(product, StoreDatabase.FromStringToLongMoney(storePrice.text));
+            storePrice.text = StoreDatabase.FromLongToStringMoney(price);
 
             CalculateProfit();
         }
@@ -94,7 +96,8 @@ namespace FLOBUK.StoreSimulator
             PlayerController.SetMovementState(MovementState.All, true);
             InteractionSystem.SetInteractionState(InteractionState.All);
             
-            ItemDatabase.UpdateStorePrice(product.id, StoreDatabase.FromStringToLongMoney(storePrice.text));
+            long price = ProductPricingCalculator.ClampPrice(product, StoreDatabase.FromStringToLongMoney(storePrice.text));
+            ItemDatabase.UpdateStorePrice(product.id, price);
             gameObject.SetActive(false);
         }
 
@@ -139,9 +142,13 @@ namespace FLOBUK.StoreSimulator
         private void CalculateProfit()
         {
             long currentPrice = string.IsNullOrEmpty(storePrice.text) ? 0 : StoreDatabase.FromStringToLongMoney(storePrice.text);
+            currentPrice = ProductPricingCalculator.ClampPrice(product, currentPrice);
             long profitValue = currentPrice - product.buyPrice;
             string profitText = profitValue >= 0 ? "<color=green>Profit: " : "<color=red>Loss: ";
-            profitResult.text = profitText + StoreDatabase.FromLongToStringMoney(profitValue);
+            profitResult.text = profitText + StoreDatabase.FromLongToStringMoney(profitValue) + "</color>\n" +
+                                "Pcompra: " + ProductPricingCalculator.FormatPercent(ProductPricingCalculator.GetPurchaseProbability(product, currentPrice)) + "\n" +
+                                "Pextra: " + ProductPricingCalculator.FormatPercent(ProductPricingCalculator.GetExtraPurchaseProbability(product, currentPrice)) + "\n" +
+                                ProductPricingCalculator.GetPriceFeedback(product, currentPrice);
         }
     }
 }

@@ -62,6 +62,7 @@ namespace FLOBUK.StoreSimulator
         //reference to Animation component
         private Animation anim;
         private Coroutine automaticCheckoutRoutine;
+        private Coroutine customerWaitRoutine;
 
 
         //initialize references
@@ -130,6 +131,8 @@ namespace FLOBUK.StoreSimulator
 
             if (HasAutomaticCashier())
                 automaticCheckoutRoutine = StartCoroutine(AutomaticCheckoutRoutine(itemIndex));
+            else
+                customerWaitRoutine = StartCoroutine(CustomerWaitRoutine(customerQueue[0]));
         }
         
 
@@ -207,6 +210,7 @@ namespace FLOBUK.StoreSimulator
             }
 
             EntrepreneurAchievementManager.RegisterSale(cartAmount, customerBag != null ? customerBag.items : null, HasAutomaticCashier(), false);
+            StopCustomerWaitRoutine();
             cart.Clear();
             StoreDatabase.AddRemoveMoney(billAmount);
             ApplyCharismaticBonus(cartAmount);
@@ -311,6 +315,70 @@ namespace FLOBUK.StoreSimulator
             automaticCheckoutRoutine = null;
         }
 
+        private IEnumerator CustomerWaitRoutine(Customer customer)
+        {
+            yield return new WaitForSeconds(7f);
+            if (!IsStillWaiting(customer))
+                yield break;
+
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("Cliente esperando demasiado en caja.", otherColor: Color.yellow, otherDuration: 4f);
+
+            yield return new WaitForSeconds(7f);
+            if (!IsStillWaiting(customer))
+                yield break;
+
+            AbandonCurrentCustomer();
+        }
+
+        private bool IsStillWaiting(Customer customer)
+        {
+            return customer != null
+                   && customerQueue.Count > 0
+                   && customerQueue[0] == customer
+                   && customerBag != null
+                   && !isPlayerControlled
+                   && !HasAutomaticCashier();
+        }
+
+        private void StopCustomerWaitRoutine()
+        {
+            if (customerWaitRoutine == null)
+                return;
+
+            StopCoroutine(customerWaitRoutine);
+            customerWaitRoutine = null;
+        }
+
+        private void AbandonCurrentCustomer()
+        {
+            if (customerQueue.Count == 0)
+                return;
+
+            Customer customer = customerQueue[0];
+            if (StatsDatabase.Instance != null)
+                StatsDatabase.Instance.RegisterCustomerLost();
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("Cliente se fue sin pagar por espera excesiva.", otherColor: Color.red, otherDuration: 4f);
+
+            for (int i = 0; i < deskItems.Count; i++)
+            {
+                if (deskItems[i] != null)
+                    Destroy(deskItems[i].gameObject);
+            }
+
+            deskItems.Clear();
+            cart.Clear();
+            customerBag = null;
+            customer.ShowUnhappy("Espera excesiva en caja.");
+            customer.GoHome();
+            customerQueue.RemoveAt(0);
+            customerWaitRoutine = null;
+
+            for (int i = 0; i < customerQueue.Count; i++)
+                customerQueue[i].ProceedQueue(queuePositions.GetChild(i), i + 1);
+        }
+
         private static string GetHierarchyPath(Transform transform)
         {
             if (transform == null)
@@ -341,6 +409,7 @@ namespace FLOBUK.StoreSimulator
             UIGame.AddAction("Esc", "Exit");
 
             isPlayerControlled = true;
+            StopCustomerWaitRoutine();
             PlayerController.SetMovementState(MovementState.None, false);
 
             for(int i = 0; i < cols.Length; i++)

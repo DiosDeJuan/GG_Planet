@@ -71,6 +71,8 @@ namespace FLOBUK.StoreSimulator
 
             Instance.gameData = data;
             EntrepreneurProgress.ResetToDefaults();
+            ShopExpansionManager.ResetToDefaults();
+            GameEndingService.ResetToDefaults();
             EmployeeManager.ResetRuntimeState();
             SecurityManager.EnsureInstance();
             SceneManager.sceneLoaded += Instance.OnSceneLoaded;
@@ -97,6 +99,8 @@ namespace FLOBUK.StoreSimulator
             data["TutorialSystem"] = TutorialSystem.Instance.SaveToJSON();
             data["StatsDatabase"] = StatsDatabase.Instance.SaveToJSON();
             data["EntrepreneurProgress"] = EntrepreneurProgress.SaveToJSON();
+            data["ShopExpansionManager"] = ShopExpansionManager.SaveToJSON();
+            data["GameEndingService"] = GameEndingService.SaveToJSON();
             data["EmployeeManager"] = EmployeeManager.EnsureInstance().SaveToJSON();
             data["SecurityManager"] = SecurityManager.EnsureInstance().SaveToJSON();
 
@@ -166,6 +170,8 @@ namespace FLOBUK.StoreSimulator
             TutorialSystem.Instance.LoadFromJSON(gameData["TutorialSystem"]);
             StatsDatabase.Instance.LoadFromJSON(gameData["StatsDatabase"]);
             EntrepreneurProgress.LoadFromJSON(gameData["EntrepreneurProgress"]);
+            ShopExpansionManager.LoadFromJSON(gameData["ShopExpansionManager"]);
+            GameEndingService.LoadFromJSON(gameData["GameEndingService"]);
             EmployeeManager.EnsureInstance().LoadFromJSON(gameData["EmployeeManager"]);
             SecurityManager.EnsureInstance().LoadFromJSON(gameData["SecurityManager"]);
             EntrepreneurAchievementManager.EvaluateAll();
