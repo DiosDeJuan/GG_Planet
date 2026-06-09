@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Adaptado por POMPIC 20100333 -->
   <!-- Generated file, do not modify, your changes will be overwritten (use AssetPostprocessor.OnGeneratedCSProject) -->
   <PropertyGroup>
     <LangVersion>9.0</LangVersion>
@@ -141,6 +142,7 @@
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\ChatController.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Security\SecurityManager.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\UIStats.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Products\DocumentedProductCatalog.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Pricing\ProductPricingCalculator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_DigitValidator.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_FrameRateCounter.cs" />

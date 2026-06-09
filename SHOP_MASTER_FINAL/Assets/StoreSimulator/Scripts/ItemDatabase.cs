@@ -58,6 +58,8 @@ namespace FLOBUK.StoreSimulator
             ids.Add(typeof(DecorationScriptableObject), new Dictionary<string, PurchasableScriptableObject>());
             ids.Add(typeof(BoosterScriptableObject), new Dictionary<string, PurchasableScriptableObject>());
 
+            DocumentedProductCatalog.EnsureProducts(purchasables);
+
             //sort list of purchasables into respective dictionary groups
             for (int i = 0; i < purchasables.Count; i++)
             {

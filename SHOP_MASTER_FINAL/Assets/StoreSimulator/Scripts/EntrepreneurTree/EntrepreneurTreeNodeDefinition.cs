@@ -50,6 +50,7 @@ namespace FLOBUK.StoreSimulator
             new EntrepreneurTreeNodeDefinition("productos_basicos_3", "Productos Basicos 3", EntrepreneurTreeNodeType.Product, 1, "Cafe y huevo.", "productos_basicos_2"),
             new EntrepreneurTreeNodeDefinition("lacteos_1", "Lacteos 1", EntrepreneurTreeNodeType.Product, 1, "Rama de lacteos desbloqueada.", "productos_basicos_3"),
             new EntrepreneurTreeNodeDefinition("lacteos_2", "Lacteos 2", EntrepreneurTreeNodeType.Product, 1, "Rama avanzada de lacteos desbloqueada.", "lacteos_1"),
+            new EntrepreneurTreeNodeDefinition("lacteos_3", "Lacteos 3", EntrepreneurTreeNodeType.Product, 1, "Mozzarella y parmesano con assets provisionales seguros.", "lacteos_2"),
             new EntrepreneurTreeNodeDefinition("especias_1", "Especias 1", EntrepreneurTreeNodeType.Product, 1, "Rama de especias desbloqueada.", "productos_basicos_3"),
             new EntrepreneurTreeNodeDefinition("productos_frescos_1", "Productos Frescos 1", EntrepreneurTreeNodeType.Product, 1, "Manzana, platano, jitomate y cebolla.", "lacteos_1"),
             new EntrepreneurTreeNodeDefinition("productos_frescos_2", "Productos Frescos 2", EntrepreneurTreeNodeType.Product, 1, "Uvas, zanahorias y ajo.", "productos_frescos_1"),
@@ -172,13 +173,21 @@ namespace FLOBUK.StoreSimulator
                     return "lacteos_1";
 
                 case "lacteos_2":
+                case "queso_americano":
                 case "crema":
+                case "queso_crema":
                 case "helado":
                 case "leche_saborizada":
                     return "lacteos_2";
 
+                case "lacteos_3":
+                case "mozzarella":
+                case "parmesano":
+                    return "lacteos_3";
+
                 case "especias":
                 case "pimienta":
+                case "pimienta_negra":
                 case "oregano":
                 case "canela":
                     return "especias_1";
@@ -191,6 +200,7 @@ namespace FLOBUK.StoreSimulator
 
                 case "uvas":
                 case "zanahoria":
+                case "zanahorias":
                 case "ajo":
                     return "productos_frescos_2";
 
@@ -198,15 +208,24 @@ namespace FLOBUK.StoreSimulator
                 case "papel_higienico":
                 case "detergente":
                 case "pasta_dental":
+                case "pasta_de_dientes":
                     return "productos_higiene";
 
                 case "soda":
                 case "sodas":
                 case "refresco":
+                case "cola":
+                case "cola_sin_azucar":
+                case "refresco_de_limon":
+                case "refresco_limon":
                     return "sodas";
 
                 case "proteina":
                 case "proteina_1":
+                case "res":
+                case "pollo":
+                case "cerdo":
+                case "pescado":
                     return "proteina_1";
 
                 case "trufa":
@@ -216,6 +235,11 @@ namespace FLOBUK.StoreSimulator
 
                 case "electrodomestico":
                 case "electrodomesticos":
+                case "refrigerador":
+                case "microondas":
+                case "horno":
+                case "mesa":
+                case "licuadora":
                     return "electrodomesticos_1";
 
                 default:

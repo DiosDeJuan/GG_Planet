@@ -9,14 +9,15 @@ namespace FLOBUK.StoreSimulator
     public class EntrepreneurTreeUI : MonoBehaviour
     {
         private static readonly Color DesktopPink = new Color(1f, 0f, 0.392f, 1f);
-        private static readonly Color PanelBackground = new Color(0.94f, 0.94f, 0.95f, 0.98f);
-        private static readonly Color CardBackground = new Color(1f, 1f, 1f, 0.96f);
-        private static readonly Color TextDark = new Color(0.12f, 0.12f, 0.13f, 1f);
-        private static readonly Color TextMuted = new Color(0.32f, 0.33f, 0.35f, 1f);
-        private static readonly Color LineLocked = new Color(0.58f, 0.58f, 0.6f, 0.62f);
-        private static readonly Color LineAvailable = new Color(1f, 0f, 0.392f, 0.95f);
-        private static readonly Color LineNoPoints = new Color(0.95f, 0.66f, 0.22f, 0.9f);
-        private static readonly Color LineUnlocked = new Color(0.25f, 0.68f, 0.32f, 0.95f);
+        private static readonly Color PanelBackground = new Color(0.035f, 0.04f, 0.07f, 0.99f);
+        private static readonly Color CardBackground = new Color(0.075f, 0.085f, 0.13f, 0.98f);
+        private static readonly Color CardBackgroundAlt = new Color(0.105f, 0.12f, 0.18f, 0.98f);
+        private static readonly Color TextDark = new Color(0.94f, 0.95f, 0.98f, 1f);
+        private static readonly Color TextMuted = new Color(0.68f, 0.72f, 0.82f, 1f);
+        private static readonly Color LineLocked = new Color(0.22f, 0.24f, 0.31f, 0.68f);
+        private static readonly Color LineAvailable = new Color(0.1f, 0.88f, 1f, 0.98f);
+        private static readonly Color LineNoPoints = new Color(1f, 0.72f, 0.2f, 0.95f);
+        private static readonly Color LineUnlocked = new Color(0.18f, 1f, 0.52f, 0.98f);
 
         private readonly Dictionary<string, EntrepreneurTreeNodeView> nodeViews = new Dictionary<string, EntrepreneurTreeNodeView>();
         private readonly List<string> fallbackNodeIds = new List<string>();
@@ -67,8 +68,8 @@ namespace FLOBUK.StoreSimulator
             background.color = PanelBackground;
 
             VerticalLayoutGroup rootLayout = gameObject.AddComponent<VerticalLayoutGroup>();
-            rootLayout.padding = new RectOffset(14, 14, 12, 12);
-            rootLayout.spacing = 8;
+            rootLayout.padding = new RectOffset(12, 12, 10, 10);
+            rootLayout.spacing = 7;
             rootLayout.childControlWidth = true;
             rootLayout.childControlHeight = true;
             rootLayout.childForceExpandWidth = true;
@@ -85,11 +86,11 @@ namespace FLOBUK.StoreSimulator
         {
             GameObject header = CreatePanel("Header", parent, CardBackground);
             LayoutElement headerLayout = header.AddComponent<LayoutElement>();
-            headerLayout.preferredHeight = 112;
+            headerLayout.preferredHeight = 88;
 
             HorizontalLayoutGroup headerGroup = header.AddComponent<HorizontalLayoutGroup>();
-            headerGroup.padding = new RectOffset(14, 14, 8, 8);
-            headerGroup.spacing = 14;
+            headerGroup.padding = new RectOffset(14, 14, 7, 7);
+            headerGroup.spacing = 12;
             headerGroup.childControlWidth = true;
             headerGroup.childControlHeight = true;
             headerGroup.childForceExpandWidth = true;
@@ -101,28 +102,28 @@ namespace FLOBUK.StoreSimulator
             textLayout.childControlWidth = true;
             textLayout.childControlHeight = true;
 
-            TMP_Text title = CreateText("Title", textBox.transform, "ARBOL DEL EMPRENDEDOR", 24, FontStyles.Bold, TextAlignmentOptions.Left);
+            TMP_Text title = CreateText("Title", textBox.transform, "ARBOL DEL EMPRENDEDOR", 21, FontStyles.Bold, TextAlignmentOptions.Left);
             title.color = TextDark;
-            TMP_Text subtitle = CreateText("Subtitle", textBox.transform, "Completa logros para ganar puntos. Usa puntos para desbloquear productos, empleados, seguridad y mejoras.", 13, FontStyles.Normal, TextAlignmentOptions.Left);
+            TMP_Text subtitle = CreateText("Subtitle", textBox.transform, "Ramas RPG por productos, empleados, seguridad y mejoras. Los puntos vienen de logros cobrados una sola vez.", 12, FontStyles.Normal, TextAlignmentOptions.Left);
             subtitle.color = TextMuted;
 
             GameObject pointsBox = CreateLayoutBox("Points Box", header.transform);
             LayoutElement pointsBoxLayout = pointsBox.AddComponent<LayoutElement>();
-            pointsBoxLayout.preferredWidth = 275;
+            pointsBoxLayout.preferredWidth = 285;
             VerticalLayoutGroup pointsLayout = pointsBox.AddComponent<VerticalLayoutGroup>();
             pointsLayout.spacing = 4;
             pointsLayout.childControlWidth = true;
             pointsLayout.childControlHeight = true;
 
-            pointsLabel = CreateText("Points", pointsBox.transform, string.Empty, 19, FontStyles.Bold, TextAlignmentOptions.Right);
-            pointsLabel.color = DesktopPink;
+            pointsLabel = CreateText("Points", pointsBox.transform, string.Empty, 18, FontStyles.Bold, TextAlignmentOptions.Right);
+            pointsLabel.color = new Color(0.1f, 0.88f, 1f, 1f);
             progressLabel = CreateText("Progress", pointsBox.transform, string.Empty, 12, FontStyles.Bold, TextAlignmentOptions.Right);
             progressLabel.color = TextMuted;
             achievementsLabel = CreateText("Achievements", pointsBox.transform, string.Empty, 12, FontStyles.Bold, TextAlignmentOptions.Right);
             achievementsLabel.color = TextMuted;
             toggleAchievementsButton = CreateActionButton("Toggle Achievements", pointsBox.transform, "Ver logros");
             toggleAchievementsButton.onClick.AddListener(ToggleAchievements);
-            toggleAchievementsButton.GetComponent<LayoutElement>().preferredHeight = 28;
+            toggleAchievementsButton.GetComponent<LayoutElement>().preferredHeight = 26;
             TMP_Text buttonText = toggleAchievementsButton.GetComponentInChildren<TMP_Text>();
             buttonText.fontSizeMax = 13;
             buttonText.fontSize = 13;
@@ -133,7 +134,7 @@ namespace FLOBUK.StoreSimulator
             GameObject body = CreateLayoutBox("Body", parent);
             LayoutElement bodyLayout = body.AddComponent<LayoutElement>();
             bodyLayout.flexibleHeight = 1;
-            bodyLayout.minHeight = 330;
+            bodyLayout.minHeight = 350;
 
             HorizontalLayoutGroup bodyGroup = body.AddComponent<HorizontalLayoutGroup>();
             bodyGroup.spacing = 10;
@@ -153,8 +154,8 @@ namespace FLOBUK.StoreSimulator
             graphLayout.flexibleWidth = 1;
 
             VerticalLayoutGroup graphGroup = graphPanel.AddComponent<VerticalLayoutGroup>();
-            graphGroup.padding = new RectOffset(10, 10, 10, 10);
-            graphGroup.spacing = 8;
+            graphGroup.padding = new RectOffset(8, 8, 8, 8);
+            graphGroup.spacing = 7;
             graphGroup.childControlWidth = true;
             graphGroup.childControlHeight = true;
             graphGroup.childForceExpandWidth = true;
@@ -166,17 +167,17 @@ namespace FLOBUK.StoreSimulator
 
         private void BuildLegend(Transform parent)
         {
-            GameObject legend = CreatePanel("Legend", parent, new Color(0.96f, 0.96f, 0.97f, 1f));
+            GameObject legend = CreatePanel("Legend", parent, CardBackgroundAlt);
             LayoutElement layout = legend.AddComponent<LayoutElement>();
-            layout.preferredHeight = 34;
+            layout.preferredHeight = 30;
 
-            TMP_Text label = CreateText("Legend Text", legend.transform, "Estados: Bloqueado | Disponible | Desbloqueado     Tipos: P Producto  E Empleado  S Seguridad  M Mejora", 12, FontStyles.Bold, TextAlignmentOptions.Center);
+            TMP_Text label = CreateText("Legend Text", legend.transform, "Bloqueado | Disponible | Desbloqueado     P Producto  E Empleado  S Seguridad  M Mejora", 11, FontStyles.Bold, TextAlignmentOptions.Center);
             label.color = TextMuted;
         }
 
         private void BuildGraphScroll(Transform parent)
         {
-            GameObject scroll = CreatePanel("Graph Scroll", parent, new Color(0.98f, 0.98f, 0.99f, 0.92f));
+            GameObject scroll = CreatePanel("Graph Scroll", parent, new Color(0.025f, 0.03f, 0.055f, 0.96f));
             LayoutElement scrollLayout = scroll.AddComponent<LayoutElement>();
             scrollLayout.flexibleHeight = 1;
 
@@ -248,8 +249,8 @@ namespace FLOBUK.StoreSimulator
         {
             GameObject panel = CreatePanel("Details", parent, CardBackground);
             LayoutElement layout = panel.AddComponent<LayoutElement>();
-            layout.preferredWidth = 305;
-            layout.minWidth = 305;
+            layout.preferredWidth = 318;
+            layout.minWidth = 318;
 
             VerticalLayoutGroup group = panel.AddComponent<VerticalLayoutGroup>();
             group.padding = new RectOffset(12, 12, 12, 12);
@@ -259,11 +260,11 @@ namespace FLOBUK.StoreSimulator
             group.childForceExpandWidth = true;
             group.childForceExpandHeight = false;
 
-            detailsTitle = CreateText("Title", panel.transform, "Detalle del nodo", 21, FontStyles.Bold, TextAlignmentOptions.Left);
+            detailsTitle = CreateText("Title", panel.transform, "Detalle del nodo", 19, FontStyles.Bold, TextAlignmentOptions.Left);
             detailsTitle.color = TextDark;
             detailsTitle.GetComponent<LayoutElement>().preferredHeight = 30;
 
-            detailsLabel = CreateText("Details Text", panel.transform, string.Empty, 14, FontStyles.Normal, TextAlignmentOptions.Left);
+            detailsLabel = CreateText("Details Text", panel.transform, string.Empty, 13, FontStyles.Normal, TextAlignmentOptions.Left);
             detailsLabel.color = TextDark;
             detailsLabel.textWrappingMode = TextWrappingModes.Normal;
             LayoutElement detailsLayout = detailsLabel.GetComponent<LayoutElement>();
@@ -427,6 +428,7 @@ namespace FLOBUK.StoreSimulator
             achievementListObject.SetActive(false);
 
             string requirements = selectedNode.Prerequisites.Length == 0 ? "Ninguno" : string.Join(", ", System.Array.ConvertAll(selectedNode.Prerequisites, EntrepreneurTreeDefinitions.GetTitle));
+            string productSummary = selectedNode.Type == EntrepreneurTreeNodeType.Product ? "\n\nProductos:\n" + DocumentedProductCatalog.GetUnlockSummaryForNode(selectedNode.Id) : string.Empty;
             detailsLabel.text =
                 selectedNode.Title + "\n\n" +
                 "Tipo: " + GetTypeLabel(selectedNode.Type) + "\n" +
@@ -434,7 +436,7 @@ namespace FLOBUK.StoreSimulator
                 "Costo: " + selectedNode.Cost + " punto(s)\n" +
                 "Requiere: " + requirements + "\n" +
                 "Arbol: " + EntrepreneurProgress.GetUnlockedNodeCount() + "/" + EntrepreneurProgress.GetTotalNodeCount() + " nodos\n\n" +
-                "Beneficio:\n" + selectedNode.Benefit;
+                "Beneficio:\n" + selectedNode.Benefit + productSummary;
 
             EntrepreneurTreeNodeState state = EntrepreneurProgress.GetState(selectedNode);
             unlockButton.interactable = state == EntrepreneurTreeNodeState.Available;

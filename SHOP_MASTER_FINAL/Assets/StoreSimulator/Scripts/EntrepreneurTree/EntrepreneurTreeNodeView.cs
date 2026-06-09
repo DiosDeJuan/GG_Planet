@@ -8,12 +8,12 @@ namespace FLOBUK.StoreSimulator
 {
     public class EntrepreneurTreeNodeView : MonoBehaviour
     {
-        private static readonly Color LockedBackground = new Color(0.82f, 0.82f, 0.84f, 1f);
-        private static readonly Color AvailableBackground = new Color(1f, 0.91f, 0.96f, 1f);
-        private static readonly Color UnlockedBackground = new Color(0.74f, 0.91f, 0.77f, 1f);
+        private static readonly Color LockedBackground = new Color(0.11f, 0.12f, 0.16f, 0.86f);
+        private static readonly Color AvailableBackground = new Color(0.11f, 0.2f, 0.27f, 1f);
+        private static readonly Color UnlockedBackground = new Color(0.12f, 0.34f, 0.22f, 1f);
         private static readonly Color DesktopPink = new Color(1f, 0f, 0.392f, 1f);
-        private static readonly Color TextDark = new Color(0.12f, 0.12f, 0.13f, 1f);
-        private static readonly Color TextMuted = new Color(0.32f, 0.33f, 0.35f, 1f);
+        private static readonly Color TextDark = new Color(0.96f, 0.97f, 1f, 1f);
+        private static readonly Color TextMuted = new Color(0.72f, 0.77f, 0.86f, 1f);
 
         private Image background;
         private Outline outline;
@@ -71,7 +71,7 @@ namespace FLOBUK.StoreSimulator
             metaLabel.text = GetStateText(state) + " | " + Node.Cost + "P";
 
             outline.enabled = selected || state == EntrepreneurTreeNodeState.Available;
-            outline.effectColor = selected ? Color.black : DesktopPink;
+            outline.effectColor = selected ? Color.white : state == EntrepreneurTreeNodeState.Available ? new Color(0.1f, 0.88f, 1f, 1f) : DesktopPink;
             outline.effectDistance = selected ? new Vector2(3f, -3f) : new Vector2(2f, -2f);
         }
 
@@ -113,11 +113,11 @@ namespace FLOBUK.StoreSimulator
             switch (state)
             {
                 case EntrepreneurTreeNodeState.Unlocked:
-                    return "Desbloqueado";
+                    return "OK";
                 case EntrepreneurTreeNodeState.Available:
-                    return "Disponible";
+                    return "LISTO";
                 default:
-                    return "Bloqueado";
+                    return "LOCK";
             }
         }
 

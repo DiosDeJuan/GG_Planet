@@ -88,6 +88,7 @@ namespace FLOBUK.StoreSimulator
             EntrepreneurTreeUIBootstrap.Ensure(this);
             UIEmployeesUIBootstrap.Ensure(this);
             UIManagementUIBootstrap.Ensure(this);
+            OptimizeNavigationLayout();
 
             yield return new WaitForSeconds(1);
             Button[] buttons = GetComponentsInChildren<Button>(true);
@@ -182,6 +183,78 @@ namespace FLOBUK.StoreSimulator
         private void OnTimeUpdate(string time)
         {
             timeDisplay.text = time;
+        }
+
+
+        private void OptimizeNavigationLayout()
+        {
+            Transform navigation = FindRecursive(transform, "Navigation");
+            Transform categories = navigation != null ? FindRecursive(navigation, "Categories") : null;
+            if (categories == null)
+                return;
+
+            HorizontalLayoutGroup layout = categories.GetComponent<HorizontalLayoutGroup>();
+            if (layout == null)
+                layout = categories.gameObject.AddComponent<HorizontalLayoutGroup>();
+
+            layout.spacing = 6;
+            layout.padding = new RectOffset(4, 4, 2, 2);
+            layout.childControlWidth = false;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+
+            Button[] buttons = categories.GetComponentsInChildren<Button>(true);
+            for (int i = 0; i < buttons.Length; i++)
+                ConfigureNavigationButton(buttons[i]);
+        }
+
+
+        private void ConfigureNavigationButton(Button button)
+        {
+            if (button == null)
+                return;
+
+            LayoutElement layoutElement = button.GetComponent<LayoutElement>();
+            if (layoutElement == null)
+                layoutElement = button.gameObject.AddComponent<LayoutElement>();
+
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);
+            string text = label != null ? label.text : button.gameObject.name;
+            float preferredWidth = Mathf.Clamp(72f + text.Length * 5.5f, 96f, 150f);
+            layoutElement.minWidth = 88f;
+            layoutElement.preferredWidth = preferredWidth;
+            layoutElement.minHeight = 34f;
+            layoutElement.preferredHeight = 38f;
+
+            if (label == null)
+                return;
+
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.overflowMode = TextOverflowModes.Ellipsis;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 9;
+            label.fontSizeMax = 15;
+            label.alignment = TextAlignmentOptions.Center;
+        }
+
+
+        private static Transform FindRecursive(Transform parent, string objectName)
+        {
+            if (parent == null)
+                return null;
+
+            if (parent.name == objectName)
+                return parent;
+
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform found = FindRecursive(parent.GetChild(i), objectName);
+                if (found != null)
+                    return found;
+            }
+
+            return null;
         }
 
 

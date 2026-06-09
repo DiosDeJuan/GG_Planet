@@ -145,7 +145,7 @@ namespace FLOBUK.StoreSimulator.Tests
             object[] nodes = GetTreeNodes();
             string[] expectedIds =
             {
-                "productos_basicos_1", "productos_basicos_2", "productos_basicos_3", "lacteos_1", "lacteos_2",
+                "productos_basicos_1", "productos_basicos_2", "productos_basicos_3", "lacteos_1", "lacteos_2", "lacteos_3",
                 "especias_1", "productos_frescos_1", "productos_frescos_2", "productos_higiene", "sodas",
                 "proteina_1", "productos_lujo_1", "electrodomesticos_1",
                 "empleado_1", "empleado_2", "empleado_3", "empleado_4", "empleado_5", "empleado_6",
@@ -155,10 +155,188 @@ namespace FLOBUK.StoreSimulator.Tests
             };
 
             CollectionAssert.AreEquivalent(expectedIds, nodes.Select(GetNodeId).ToArray());
-            Assert.AreEqual(13, nodes.Count(node => GetNodeTypeName(node) == "Product"));
+            Assert.AreEqual(14, nodes.Count(node => GetNodeTypeName(node) == "Product"));
             Assert.AreEqual(18, nodes.Count(node => GetNodeTypeName(node) == "Employee"));
             Assert.AreEqual(3, nodes.Count(node => GetNodeTypeName(node) == "Security"));
             Assert.AreEqual(2, nodes.Count(node => GetNodeTypeName(node) == "Upgrade"));
+        }
+
+        [Test]
+        public void EntrepreneurTree_AllDocumentedProductCategoriesExist()
+        {
+            string[] expectedProductNodes =
+            {
+                "productos_basicos_1", "productos_basicos_2", "productos_basicos_3", "lacteos_1", "lacteos_2", "lacteos_3",
+                "especias_1", "productos_frescos_1", "productos_frescos_2", "productos_higiene", "sodas",
+                "proteina_1", "productos_lujo_1", "electrodomesticos_1"
+            };
+
+            object[] productNodes = GetTreeNodes().Where(node => GetNodeTypeName(node) == "Product").ToArray();
+            CollectionAssert.AreEquivalent(expectedProductNodes, productNodes.Select(GetNodeId).ToArray());
+            foreach (string nodeId in expectedProductNodes)
+                Assert.Greater(GetDocumentedProductsByNode(nodeId).Length, 0, nodeId);
+        }
+
+        [Test]
+        public void EntrepreneurTree_ProductNodesListUnlockedProducts()
+        {
+            foreach (object node in GetTreeNodes().Where(node => GetNodeTypeName(node) == "Product"))
+            {
+                string nodeId = GetNodeId(node);
+                object[] products = GetDocumentedProductsByNode(nodeId);
+                Assert.Greater(products.Length, 0, nodeId);
+                foreach (object product in products)
+                    Assert.AreEqual(nodeId, GetDefinitionString(product, "NodeId"), GetDefinitionString(product, "Title"));
+            }
+        }
+
+        [Test]
+        public void EntrepreneurTree_VisualLayoutHasNoDuplicateNodePositions()
+        {
+            Type layoutType = FindGameType("FLOBUK.StoreSimulator.EntrepreneurTreeVisualLayout");
+            MethodInfo getPosition = layoutType.GetMethod("GetAnchoredPosition", BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(getPosition);
+
+            HashSet<string> occupied = new HashSet<string>();
+            object[] nodes = GetTreeNodes();
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                string nodeId = GetNodeId(nodes[i]);
+                object[] args = { nodeId, i, false };
+                Vector2 position = (Vector2)getPosition.Invoke(null, args);
+                Assert.IsFalse(Convert.ToBoolean(args[2]), nodeId);
+                string key = Mathf.RoundToInt(position.x) + ":" + Mathf.RoundToInt(position.y);
+                Assert.IsTrue(occupied.Add(key), nodeId + " duplicates layout position " + key);
+            }
+        }
+
+        [Test]
+        public void DocumentedProductCatalog_RegistersAllDocumentedProducts()
+        {
+            object products = CreatePurchasableListWithFallback(out List<UnityEngine.Object> cleanup);
+            try
+            {
+                Invoke(GetDocumentedProductCatalogType(), "EnsureProducts", products);
+                System.Collections.IList list = (System.Collections.IList)products;
+                object[] definitions = GetDocumentedProductDefinitions();
+
+                Assert.AreEqual(47, definitions.Length);
+                Assert.AreEqual(definitions.Length, list.Count);
+                foreach (object definition in definitions)
+                {
+                    string id = GetDefinitionString(definition, "Id");
+                    string title = GetDefinitionString(definition, "Title");
+                    Assert.IsTrue(list.Cast<object>().Any(product => GetFieldString(product, "id") == id && GetFieldString(product, "title") == title), title);
+                }
+            }
+            finally
+            {
+                DestroyObjects(cleanup);
+            }
+        }
+
+        [Test]
+        public void StoreDatabase_AllDocumentedProductsHavePositiveIdealPriceExceptAllowedZeroCases()
+        {
+            foreach (object definition in GetDocumentedProductDefinitions())
+                Assert.Greater(GetDefinitionLong(definition, "IdealPrice"), 0L, GetDefinitionString(definition, "Title"));
+        }
+
+        [Test]
+        public void StoreDatabase_AllDocumentedProductsHavePackageCost()
+        {
+            foreach (object definition in GetDocumentedProductDefinitions())
+                Assert.Greater(GetDefinitionLong(definition, "PackageCost"), 0L, GetDefinitionString(definition, "Title"));
+        }
+
+        [Test]
+        public void StoreDatabase_AllDocumentedProductsHaveCategory()
+        {
+            foreach (object definition in GetDocumentedProductDefinitions())
+            {
+                Assert.IsNotEmpty(GetDefinitionString(definition, "Category"), GetDefinitionString(definition, "Title"));
+                Assert.IsNotEmpty(GetDefinitionString(definition, "FurnitureCategory"), GetDefinitionString(definition, "Title"));
+                Assert.NotNull(GetNode(GetDefinitionString(definition, "NodeId")), GetDefinitionString(definition, "Title"));
+            }
+        }
+
+        [Test]
+        public void StoreDatabase_ProvisionalProductsHaveSafeFallbackAsset()
+        {
+            object products = CreatePurchasableListWithFallback(out List<UnityEngine.Object> cleanup);
+            try
+            {
+                Invoke(GetDocumentedProductCatalogType(), "EnsureProducts", products);
+                foreach (object product in ((System.Collections.IList)products).Cast<object>())
+                {
+                    Assert.NotNull(GetFieldValue(product, "prefab"), GetFieldString(product, "title"));
+                    Assert.NotNull(GetFieldValue(product, "icon"), GetFieldString(product, "title"));
+                }
+            }
+            finally
+            {
+                DestroyObjects(cleanup);
+            }
+        }
+
+        [Test]
+        public void Products_Basic1UnlockedByDefaultAndOthersLockedByTree()
+        {
+            ResetProgress();
+            ScriptableObject leche = CreateProductProbe("0", "Leche");
+            ScriptableObject harina = CreateProductProbe("doc_harina", "Harina");
+            ScriptableObject mozzarella = CreateProductProbe("doc_mozzarella", "Mozzarella");
+
+            try
+            {
+                Assert.IsTrue(IsProductUnlocked(leche));
+                Assert.IsFalse(IsProductUnlocked(harina));
+                Assert.IsFalse(IsProductUnlocked(mozzarella));
+
+                UnlockWithPoint("productos_basicos_2");
+                Assert.IsTrue(IsProductUnlocked(harina));
+                Assert.IsFalse(IsProductUnlocked(mozzarella));
+
+                UnlockWithPoint("productos_basicos_3", "lacteos_1", "lacteos_2", "lacteos_3");
+                Assert.IsTrue(IsProductUnlocked(mozzarella));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(leche);
+                UnityEngine.Object.DestroyImmediate(harina);
+                UnityEngine.Object.DestroyImmediate(mozzarella);
+            }
+        }
+
+        [Test]
+        public void ProductPricing_AllDocumentedProductsCanBeEvaluated()
+        {
+            Type calculatorType = FindGameType("FLOBUK.StoreSimulator.ProductPricingCalculator");
+            Type productType = FindGameType("FLOBUK.StoreSimulator.ProductScriptableObject");
+            List<UnityEngine.Object> cleanup = new List<UnityEngine.Object>();
+            try
+            {
+                foreach (object definition in GetDocumentedProductDefinitions())
+                {
+                    ScriptableObject product = ScriptableObject.CreateInstance(productType);
+                    cleanup.Add(product);
+                    SetField(product, "id", GetDefinitionString(definition, "Id"));
+                    SetField(product, "title", GetDefinitionString(definition, "Title"));
+                    SetField(product, "buyPrice", GetDefinitionLong(definition, "PackageCost"));
+                    SetField(product, "packageCount", 1);
+                    SetField(product, "marketPrice", GetDefinitionLong(definition, "IdealPrice"));
+                    SetField(product, "storePrice", GetDefinitionLong(definition, "IdealPrice"));
+
+                    Assert.AreEqual(GetDefinitionLong(definition, "IdealPrice"), InvokeLong(calculatorType, "GetIdealPrice", product), GetDefinitionString(definition, "Title"));
+                    Assert.GreaterOrEqual(InvokeLong(calculatorType, "GetMaxPrice", product), GetDefinitionLong(definition, "IdealPrice"));
+                    Assert.AreEqual(1f, InvokeFloat(calculatorType, "GetPurchaseProbability", product, GetDefinitionLong(definition, "IdealPrice")), 0.0001f);
+                    Assert.GreaterOrEqual(InvokeFloat(calculatorType, "GetExtraPurchaseProbability", product, GetDefinitionLong(definition, "IdealPrice") / 2), 0f);
+                }
+            }
+            finally
+            {
+                DestroyObjects(cleanup);
+            }
         }
 
         [Test]
@@ -409,6 +587,75 @@ namespace FLOBUK.StoreSimulator.Tests
             UnityEngine.Object.DestroyImmediate(root);
         }
 
+        [UnityTest]
+        public IEnumerator Employees_All18CardsCanBeRepresented()
+        {
+            Type employeeManagerType = FindGameType("FLOBUK.StoreSimulator.EmployeeManager");
+            Type panelType = FindGameType("FLOBUK.StoreSimulator.UIEmployeesPanel");
+            object manager = Invoke(employeeManagerType, "EnsureInstance");
+            GameObject panel = new GameObject("Employees Test Panel", typeof(RectTransform));
+            Component component = panel.AddComponent(panelType);
+
+            try
+            {
+                panelType.GetMethod("Build", BindingFlags.Public | BindingFlags.Instance).Invoke(component, null);
+                panelType.GetMethod("Refresh", BindingFlags.Public | BindingFlags.Instance).Invoke(component, null);
+                yield return null;
+
+                Assert.AreEqual(18, GetTreeNodes().Count(node => GetNodeTypeName(node) == "Employee"));
+                Assert.AreEqual(18, CountChildrenByPrefix(panel.transform, "empleado_"));
+            }
+            finally
+            {
+                if (manager != null)
+                    UnityEngine.Object.DestroyImmediate(((Component)manager).gameObject);
+                UnityEngine.Object.DestroyImmediate(panel);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Employees_RebuildDoesNotDuplicateCardsOrListeners()
+        {
+            Type desktopType = FindGameType("FLOBUK.StoreSimulator.UIShopDesktop");
+            Type bootstrapType = FindGameType("FLOBUK.StoreSimulator.UIEmployeesUIBootstrap");
+            object manager = Invoke(FindGameType("FLOBUK.StoreSimulator.EmployeeManager"), "EnsureInstance");
+
+            GameObject root = new GameObject("Employees Desktop Root", typeof(RectTransform));
+            root.SetActive(false);
+            Component desktop = root.AddComponent(desktopType);
+
+            GameObject contentArea = new GameObject("ContentArea", typeof(RectTransform));
+            contentArea.transform.SetParent(root.transform, false);
+
+            GameObject navigation = new GameObject("Navigation", typeof(RectTransform));
+            navigation.transform.SetParent(root.transform, false);
+            GameObject categories = new GameObject("Categories", typeof(RectTransform));
+            categories.transform.SetParent(navigation.transform, false);
+
+            GameObject template = new GameObject("Template Button", typeof(RectTransform), typeof(Image), typeof(Button));
+            template.transform.SetParent(categories.transform, false);
+
+            MethodInfo ensure = bootstrapType.GetMethod("Ensure", BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(ensure);
+
+            try
+            {
+                ensure.Invoke(null, new object[] { desktop });
+                yield return null;
+                ensure.Invoke(null, new object[] { desktop });
+                yield return null;
+
+                Assert.AreEqual(1, CountChildrenNamed(navigation.transform, "Button - Employees"));
+                Assert.AreEqual(1, CountChildrenNamed(contentArea.transform, "Employees"));
+            }
+            finally
+            {
+                if (manager != null)
+                    UnityEngine.Object.DestroyImmediate(((Component)manager).gameObject);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         private static Type FindGameType(string typeName)
         {
             Type type = AppDomainAssemblies()
@@ -509,6 +756,11 @@ namespace FLOBUK.StoreSimulator.Tests
             return FindGameType("FLOBUK.StoreSimulator.EntrepreneurAchievementDefinitions");
         }
 
+        private static Type GetDocumentedProductCatalogType()
+        {
+            return FindGameType("FLOBUK.StoreSimulator.DocumentedProductCatalog");
+        }
+
         private static object[] GetTreeNodes()
         {
             object value = GetDefinitionsType().GetProperty("Nodes", BindingFlags.Public | BindingFlags.Static).GetValue(null);
@@ -518,6 +770,71 @@ namespace FLOBUK.StoreSimulator.Tests
         private static object GetNode(string nodeId)
         {
             return Invoke(GetDefinitionsType(), "Get", nodeId);
+        }
+
+        private static object[] GetDocumentedProductDefinitions()
+        {
+            object value = GetDocumentedProductCatalogType().GetProperty("Definitions", BindingFlags.Public | BindingFlags.Static).GetValue(null);
+            return ((System.Collections.IEnumerable)value).Cast<object>().ToArray();
+        }
+
+        private static object[] GetDocumentedProductsByNode(string nodeId)
+        {
+            object value = Invoke(GetDocumentedProductCatalogType(), "GetByNode", nodeId);
+            return ((System.Collections.IEnumerable)value).Cast<object>().ToArray();
+        }
+
+        private static string GetDefinitionString(object definition, string propertyName)
+        {
+            object value = definition.GetType().GetProperty(propertyName).GetValue(definition);
+            return Convert.ToString(value);
+        }
+
+        private static long GetDefinitionLong(object definition, string propertyName)
+        {
+            object value = definition.GetType().GetProperty(propertyName).GetValue(definition);
+            return Convert.ToInt64(value);
+        }
+
+        private static object CreatePurchasableListWithFallback(out List<UnityEngine.Object> cleanup)
+        {
+            cleanup = new List<UnityEngine.Object>();
+            Type productType = FindGameType("FLOBUK.StoreSimulator.ProductScriptableObject");
+            Type purchasableType = FindGameType("FLOBUK.StoreSimulator.PurchasableScriptableObject");
+            Type listType = typeof(List<>).MakeGenericType(purchasableType);
+            System.Collections.IList list = (System.Collections.IList)Activator.CreateInstance(listType);
+
+            ScriptableObject fallback = ScriptableObject.CreateInstance(productType);
+            GameObject prefab = new GameObject("Product_A-E Fallback Prefab");
+            Texture2D texture = new Texture2D(1, 1);
+            texture.SetPixel(0, 0, Color.white);
+            texture.Apply();
+            Sprite icon = Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
+
+            SetField(fallback, "id", "0");
+            SetField(fallback, "title", "Leche");
+            SetField(fallback, "prefab", prefab);
+            SetField(fallback, "icon", icon);
+            SetField(fallback, "size", Vector2Int.one);
+            list.Add(fallback);
+
+            cleanup.Add(fallback);
+            cleanup.Add(prefab);
+            cleanup.Add(icon);
+            cleanup.Add(texture);
+            return list;
+        }
+
+        private static void DestroyObjects(IEnumerable<UnityEngine.Object> objects)
+        {
+            if (objects == null)
+                return;
+
+            foreach (UnityEngine.Object obj in objects)
+            {
+                if (obj != null)
+                    UnityEngine.Object.DestroyImmediate(obj);
+            }
         }
 
         private static object[] GetAchievementDefinitions()
@@ -650,6 +967,18 @@ namespace FLOBUK.StoreSimulator.Tests
             return result;
         }
 
+        private static object GetFieldValue(object target, string fieldName)
+        {
+            FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
+            Assert.NotNull(field, "Could not find field " + fieldName);
+            return field.GetValue(target);
+        }
+
+        private static string GetFieldString(object target, string fieldName)
+        {
+            return Convert.ToString(GetFieldValue(target, fieldName));
+        }
+
         private static void SetField(object target, string fieldName, object value)
         {
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
@@ -710,6 +1039,21 @@ namespace FLOBUK.StoreSimulator.Tests
                     count++;
 
                 count += CountChildrenNamed(child, objectName);
+            }
+
+            return count;
+        }
+
+        private static int CountChildrenByPrefix(Transform parent, string prefix)
+        {
+            int count = 0;
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform child = parent.GetChild(i);
+                if (child.name.StartsWith(prefix, StringComparison.Ordinal))
+                    count++;
+
+                count += CountChildrenByPrefix(child, prefix);
             }
 
             return count;

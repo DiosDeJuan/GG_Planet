@@ -6,8 +6,8 @@ namespace FLOBUK.StoreSimulator
 {
     public static class EntrepreneurTreeVisualLayout
     {
-        public static readonly Vector2 ContentSize = new Vector2(3200f, 1300f);
-        public static readonly Vector2 NodeSize = new Vector2(178f, 68f);
+        public static readonly Vector2 ContentSize = new Vector2(3240f, 1180f);
+        public static readonly Vector2 NodeSize = new Vector2(168f, 58f);
 
         private const float LeftMargin = 130f;
         private const float TopMargin = 115f;
@@ -21,6 +21,7 @@ namespace FLOBUK.StoreSimulator
 
             { "lacteos_1", new Vector2(720f, 160f) },
             { "lacteos_2", new Vector2(1200f, 160f) },
+            { "lacteos_3", new Vector2(1440f, 160f) },
             { "productos_frescos_1", new Vector2(960f, 300f) },
             { "productos_frescos_2", new Vector2(1200f, 300f) },
             { "mejora_cafeina", new Vector2(1440f, 420f) },
