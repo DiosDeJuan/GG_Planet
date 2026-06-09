@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="2" result="Passed" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.1070826">
+  <test-suite type="TestSuite" id="1011" name="SHOP_MASTER_FINAL" fullname="SHOP_MASTER_FINAL" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.107083" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1004" name="FLOBUK.StoreSimulator.PlayModeTests.dll" fullname="C:/Users/ijuan/SHOP_MASTER_FINAL/Library/ScriptAssemblies/FLOBUK.StoreSimulator.PlayModeTests.dll" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.095102" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="32208" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1005" name="FLOBUK" fullname="FLOBUK" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.093465" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1006" name="StoreSimulator" fullname="FLOBUK.StoreSimulator" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.092796" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1007" name="Tests" fullname="FLOBUK.StoreSimulator.Tests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.092188" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="StoreSimulatorPlayModeRegressionTests" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.089679" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1002" name="ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" methodname="ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1309116450" result="Passed" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.054867" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1003" name="SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" methodname="SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="510890388" result="Passed" start-time="2026-06-09 19:21:55Z" end-time="2026-06-09 19:21:55Z" duration="0.004317" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/ijuan/AppData/LocalLow/DefaultCompany/SHOP_MASTER_FINAL\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

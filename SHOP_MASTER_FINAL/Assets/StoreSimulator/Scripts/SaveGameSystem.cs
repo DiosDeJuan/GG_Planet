@@ -85,7 +85,6 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void Save(string otherKey = "")
         {
-            string fileName = otherKey == string.Empty ? fileKey : otherKey;
             JSONNode data = new JSONObject();
 
             data["UISettings"] = UISettings.Instance.SaveToJSON();
@@ -105,7 +104,7 @@ namespace FLOBUK.StoreSimulator
             data["SecurityManager"] = SecurityManager.EnsureInstance().SaveToJSON();
 
             byte[] dataAsBytes = Encoding.ASCII.GetBytes(data.ToString());
-            try { File.WriteAllBytes(Application.persistentDataPath + "/" + fileName + fileExt, dataAsBytes); }
+            try { File.WriteAllBytes(GetSavePath(otherKey), dataAsBytes); }
             catch (Exception) { }
 
             //notify subscribed scripts of data update
@@ -119,12 +118,12 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void Load(string otherKey = "")
         {
-            string fileName = otherKey == string.Empty ? fileKey : otherKey;
             string dataString = string.Empty;
+            string savePath = GetSavePath(otherKey);
 
-            if (File.Exists(Application.persistentDataPath + "/" + fileKey + fileExt))
+            if (File.Exists(savePath))
             {
-                byte[] dataAsBytes = File.ReadAllBytes(Application.persistentDataPath + "/" + fileKey + fileExt);
+                byte[] dataAsBytes = File.ReadAllBytes(savePath);
                 dataString = Encoding.ASCII.GetString(dataAsBytes);
             }
             
@@ -137,6 +136,12 @@ namespace FLOBUK.StoreSimulator
 
             Instance.gameData = JSON.Parse(dataString);
             SceneManager.sceneLoaded += Instance.OnSceneLoaded;
+        }
+
+        private static string GetSavePath(string otherKey = "")
+        {
+            string fileName = otherKey == string.Empty ? fileKey : otherKey;
+            return Path.Combine(Application.persistentDataPath, fileName + fileExt);
         }
 
 

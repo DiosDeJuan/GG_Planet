@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{CEB36D03-FD35-45EC-876F-0520B846134F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FLOBUK.StoreSimulator.PlayModeTests", "FLOBUK.StoreSimulator.PlayModeTests.csproj", "{181955E3-C128-8A0E-F638-8DC2DEB6ACEE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{CEB36D03-FD35-45EC-876F-0520B846134F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CEB36D03-FD35-45EC-876F-0520B846134F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CEB36D03-FD35-45EC-876F-0520B846134F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{181955E3-C128-8A0E-F638-8DC2DEB6ACEE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{181955E3-C128-8A0E-F638-8DC2DEB6ACEE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{181955E3-C128-8A0E-F638-8DC2DEB6ACEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{181955E3-C128-8A0E-F638-8DC2DEB6ACEE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
