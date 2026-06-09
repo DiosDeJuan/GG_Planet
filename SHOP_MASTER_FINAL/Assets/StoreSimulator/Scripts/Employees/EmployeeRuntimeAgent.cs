@@ -10,11 +10,14 @@ namespace FLOBUK.StoreSimulator
         private string employeeId;
         private NavMeshAgent agent;
         private Coroutine workRoutine;
+        private float baseAgentSpeed = -1f;
 
         public void Configure(string newEmployeeId)
         {
             employeeId = newEmployeeId;
             agent = GetComponent<NavMeshAgent>();
+            if (agent != null && baseAgentSpeed < 0)
+                baseAgentSpeed = agent.speed;
             if (workRoutine != null)
                 StopCoroutine(workRoutine);
 
@@ -23,9 +26,9 @@ namespace FLOBUK.StoreSimulator
 
         private IEnumerator WorkRoutine()
         {
-            WaitForSeconds wait = new WaitForSeconds(5f);
             while (true)
             {
+                ApplyCafeinaMovement();
                 EmployeeManager manager = EmployeeManager.EnsureInstance();
                 EmployeeRole role = manager.GetRole(employeeId);
                 if (role == EmployeeRole.Cashier)
@@ -38,8 +41,14 @@ namespace FLOBUK.StoreSimulator
                     UIGame.Instance.ShowMessage(fallbackMessage);
                 }
 
-                yield return wait;
+                yield return new WaitForSeconds(5f / EntrepreneurProgress.EmployeeWorkSpeedMultiplier);
             }
+        }
+
+        private void ApplyCafeinaMovement()
+        {
+            if (agent != null && baseAgentSpeed > 0)
+                agent.speed = baseAgentSpeed * EntrepreneurProgress.EmployeeWorkSpeedMultiplier;
         }
 
         private void MoveTo(Transform target)

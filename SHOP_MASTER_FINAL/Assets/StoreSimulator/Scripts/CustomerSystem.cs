@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -25,6 +26,11 @@ namespace FLOBUK.StoreSimulator
         /// The boolean describes whether they were happy (true) or unhappy (false).
         /// </summary>
         public static event Action<bool> onCustomerLeft;
+
+        /// <summary>
+        /// Event fired after a Customer has been spawned and initialized as a scene object.
+        /// </summary>
+        public static event Action<Customer> onCustomerSpawned;
        
         /// <summary>
         /// Rate for spawning per real time minute. E.g. 5 = 5 new customers per minute.
@@ -103,6 +109,7 @@ namespace FLOBUK.StoreSimulator
 
             DayCycleSystem.onDayStarted += StartSpawning;
             DayCycleSystem.onDayOver += StopSpawning;
+            SecurityManager.EnsureInstance();
         }
 
 
@@ -215,7 +222,10 @@ namespace FLOBUK.StoreSimulator
         {
             GameObject prefab = customerPrefabs[UnityEngine.Random.Range(0, customerPrefabs.Length)];
             Vector3 spawnPosition = spawnLocations[UnityEngine.Random.Range(0, spawnLocations.Length)].position;
-            Instantiate(prefab, spawnPosition, Quaternion.identity);
+            GameObject instance = Instantiate(prefab, spawnPosition, Quaternion.identity);
+            Customer customer = instance.GetComponent<Customer>();
+            if (customer != null)
+                onCustomerSpawned?.Invoke(customer);
         }
 
 

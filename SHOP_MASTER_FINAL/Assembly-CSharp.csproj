@@ -72,6 +72,11 @@
     <Compile Include="Assets\StoreSimulator\Scripts\Employees\EmployeeState.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Employees\UIEmployeesPanel.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\Employees\UIEmployeesUIBootstrap.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Security\SecurityLevel.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Security\SecurityManager.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Security\ShoplifterAgent.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Security\ShoplifterInteractableProxy.cs" />
+    <Compile Include="Assets\StoreSimulator\Scripts\Security\ShoplifterType.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\LicenseScriptableObject.cs" />
     <Compile Include="Assets\TextMesh Pro\Examples &amp; Extras\Scripts\TMP_TextEventHandler.cs" />
     <Compile Include="Assets\StoreSimulator\Scripts\UIShopItemBooster.cs" />

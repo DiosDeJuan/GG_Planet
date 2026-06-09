@@ -50,6 +50,17 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public long employeeSalarySpent { get; private set; }
 
+        public int theftEventsCount { get; private set; }
+        public long stolenValue { get; private set; }
+        public long recoveredValue { get; private set; }
+        public int escapedThievesCount { get; private set; }
+        public int manualArrestsCount { get; private set; }
+        public int automaticArrestsCount { get; private set; }
+        public int securityLevelAtEndOfDay { get; private set; }
+        public int securityAutoArrestAttempts { get; private set; }
+        public int securityAutoArrestSuccesses { get; private set; }
+        public long charismaticBonusIncome { get; private set; }
+
 
         //initialize references
         void Awake()
@@ -70,6 +81,16 @@ namespace FLOBUK.StoreSimulator
             xpEarned = 0;
             customersHappy = customersUnhappy = 0;
             employeeSalarySpent = 0;
+            theftEventsCount = 0;
+            stolenValue = 0;
+            recoveredValue = 0;
+            escapedThievesCount = 0;
+            manualArrestsCount = 0;
+            automaticArrestsCount = 0;
+            securityLevelAtEndOfDay = EntrepreneurProgress.SecurityLevel;
+            securityAutoArrestAttempts = 0;
+            securityAutoArrestSuccesses = 0;
+            charismaticBonusIncome = 0;
         }
 
 
@@ -106,6 +127,47 @@ namespace FLOBUK.StoreSimulator
             employeeSalarySpent += amount;
         }
 
+        public void RegisterTheftEscaped(long value)
+        {
+            theftEventsCount++;
+            escapedThievesCount++;
+            stolenValue += value > 0 ? value : 0;
+        }
+
+        public void RegisterManualArrest(long amount)
+        {
+            theftEventsCount++;
+            manualArrestsCount++;
+            recoveredValue += amount > 0 ? amount : 0;
+        }
+
+        public void RegisterAutomaticArrest(long amount)
+        {
+            theftEventsCount++;
+            automaticArrestsCount++;
+            recoveredValue += amount > 0 ? amount : 0;
+        }
+
+        public void RegisterSecurityAutoArrestAttempt(bool success)
+        {
+            securityAutoArrestAttempts++;
+            if (success)
+                securityAutoArrestSuccesses++;
+        }
+
+        public void RecordSecurityLevel(int level)
+        {
+            securityLevelAtEndOfDay = Mathf.Clamp(level, 0, 3);
+        }
+
+        public void RegisterCharismaticBonus(long amount)
+        {
+            if (amount <= 0)
+                return;
+
+            charismaticBonusIncome += amount;
+        }
+
 
         /// <summary>
         /// Reads component data that should be persisted and returns it as a JSONNode. 
@@ -120,6 +182,16 @@ namespace FLOBUK.StoreSimulator
             data["customersHappy"] = customersHappy;
             data["customersUnhappy"] = customersUnhappy;
             data["employeeSalarySpent"] = employeeSalarySpent;
+            data["theftEventsCount"] = theftEventsCount;
+            data["stolenValue"] = stolenValue;
+            data["recoveredValue"] = recoveredValue;
+            data["escapedThievesCount"] = escapedThievesCount;
+            data["manualArrestsCount"] = manualArrestsCount;
+            data["automaticArrestsCount"] = automaticArrestsCount;
+            data["securityLevelAtEndOfDay"] = securityLevelAtEndOfDay;
+            data["securityAutoArrestAttempts"] = securityAutoArrestAttempts;
+            data["securityAutoArrestSuccesses"] = securityAutoArrestSuccesses;
+            data["charismaticBonusIncome"] = charismaticBonusIncome;
             
             return data;
         }
@@ -139,6 +211,16 @@ namespace FLOBUK.StoreSimulator
             customersHappy = data["customersHappy"].AsInt;
             customersUnhappy = data["customersUnhappy"].AsInt;
             employeeSalarySpent = data["employeeSalarySpent"].AsLong;
+            theftEventsCount = data["theftEventsCount"].AsInt;
+            stolenValue = data["stolenValue"].AsLong;
+            recoveredValue = data["recoveredValue"].AsLong;
+            escapedThievesCount = data["escapedThievesCount"].AsInt;
+            manualArrestsCount = data["manualArrestsCount"].AsInt;
+            automaticArrestsCount = data["automaticArrestsCount"].AsInt;
+            securityLevelAtEndOfDay = data["securityLevelAtEndOfDay"].AsInt;
+            securityAutoArrestAttempts = data["securityAutoArrestAttempts"].AsInt;
+            securityAutoArrestSuccesses = data["securityAutoArrestSuccesses"].AsInt;
+            charismaticBonusIncome = data["charismaticBonusIncome"].AsLong;
         }
 
 

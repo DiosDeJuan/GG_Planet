@@ -72,6 +72,7 @@ namespace FLOBUK.StoreSimulator
             Instance.gameData = data;
             EntrepreneurProgress.ResetToDefaults();
             EmployeeManager.ResetRuntimeState();
+            SecurityManager.EnsureInstance();
             SceneManager.sceneLoaded += Instance.OnSceneLoaded;
         }
 
@@ -97,6 +98,7 @@ namespace FLOBUK.StoreSimulator
             data["StatsDatabase"] = StatsDatabase.Instance.SaveToJSON();
             data["EntrepreneurProgress"] = EntrepreneurProgress.SaveToJSON();
             data["EmployeeManager"] = EmployeeManager.EnsureInstance().SaveToJSON();
+            data["SecurityManager"] = SecurityManager.EnsureInstance().SaveToJSON();
 
             byte[] dataAsBytes = Encoding.ASCII.GetBytes(data.ToString());
             try { File.WriteAllBytes(Application.persistentDataPath + "/" + fileName + fileExt, dataAsBytes); }
@@ -165,6 +167,7 @@ namespace FLOBUK.StoreSimulator
             StatsDatabase.Instance.LoadFromJSON(gameData["StatsDatabase"]);
             EntrepreneurProgress.LoadFromJSON(gameData["EntrepreneurProgress"]);
             EmployeeManager.EnsureInstance().LoadFromJSON(gameData["EmployeeManager"]);
+            SecurityManager.EnsureInstance().LoadFromJSON(gameData["SecurityManager"]);
             
             //notify subscribed scripts of data update
             dataLoadEvent?.Invoke();

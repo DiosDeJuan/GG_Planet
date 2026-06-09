@@ -208,6 +208,7 @@ namespace FLOBUK.StoreSimulator
 
             cart.Clear();
             StoreDatabase.AddRemoveMoney(billAmount);
+            ApplyCharismaticBonus(cartAmount);
             AudioSystem.Play2D(successClip);
 
             if (customerQueue[0].payCash)
@@ -268,6 +269,20 @@ namespace FLOBUK.StoreSimulator
         public string GetWorkstationId()
         {
             return gameObject.scene.name + "/" + GetHierarchyPath(transform);
+        }
+
+        private void ApplyCharismaticBonus(long cartAmount)
+        {
+            if (!HasAutomaticCashier() || EntrepreneurProgress.CashierRevenueMultiplier <= 1f)
+                return;
+
+            long bonus = Mathf.RoundToInt(cartAmount * (EntrepreneurProgress.CashierRevenueMultiplier - 1f));
+            if (bonus <= 0)
+                return;
+
+            StoreDatabase.AddRemoveMoney(bonus);
+            if (StatsDatabase.Instance != null)
+                StatsDatabase.Instance.RegisterCharismaticBonus(bonus);
         }
 
         private IEnumerator AutomaticCheckoutRoutine(int itemCount)
