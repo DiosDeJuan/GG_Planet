@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="5" result="Passed" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.367175">
+  <test-suite type="TestSuite" id="1014" name="SHOP_MASTER_FINAL" fullname="SHOP_MASTER_FINAL" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.367175" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1007" name="FLOBUK.StoreSimulator.PlayModeTests.dll" fullname="C:/Users/ijuan/SHOP_MASTER_FINAL/Library/ScriptAssemblies/FLOBUK.StoreSimulator.PlayModeTests.dll" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.355011" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="19468" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1008" name="FLOBUK" fullname="FLOBUK" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.353743" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1009" name="StoreSimulator" fullname="FLOBUK.StoreSimulator" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.353149" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1010" name="Tests" fullname="FLOBUK.StoreSimulator.Tests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.352540" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="StoreSimulatorPlayModeRegressionTests" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.349576" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1002" name="ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" methodname="ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="726752754" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.045530" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1004" name="ProductPricingCalculator_NullAndZeroIdealInputsStaySafe" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductPricingCalculator_NullAndZeroIdealInputsStaySafe" methodname="ProductPricingCalculator_NullAndZeroIdealInputsStaySafe" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="184160000" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.002534" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1003" name="SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" methodname="SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1005264869" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.003500" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1005" name="ShopExpansionManager_ClampsAreasAndScalesRiskWithoutRunawayValues" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ShopExpansionManager_ClampsAreasAndScalesRiskWithoutRunawayValues" methodname="ShopExpansionManager_ClampsAreasAndScalesRiskWithoutRunawayValues" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1794335097" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.007344" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1006" name="UIManagementUIBootstrap_EnsureKeepsSingleManagementEntry" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.UIManagementUIBootstrap_EnsureKeepsSingleManagementEntry" methodname="UIManagementUIBootstrap_EnsureKeepsSingleManagementEntry" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="367609999" result="Passed" start-time="2026-06-09 20:00:30Z" end-time="2026-06-09 20:00:30Z" duration="0.262543" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/ijuan/AppData/LocalLow/DefaultCompany/SHOP_MASTER_FINAL\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
