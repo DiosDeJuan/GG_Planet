@@ -36,13 +36,11 @@ namespace FLOBUK.StoreSimulator
             UIShopCategoryHelper helper = contentArea.GetComponent<UIShopCategoryHelper>();
             if (licensesButton != null)
             {
-                licensesButton.onClick.AddListener(() =>
-                {
-                    if (helper != null)
-                        helper.Show(licensesPanel.gameObject);
-                    else
-                        licensesPanel.gameObject.SetActive(true);
-                });
+                EntrepreneurTreeNavigationBinding binding = licensesButton.GetComponent<EntrepreneurTreeNavigationBinding>();
+                if (binding == null)
+                    binding = licensesButton.gameObject.AddComponent<EntrepreneurTreeNavigationBinding>();
+
+                binding.Configure(licensesButton, licensesPanel.gameObject, helper);
             }
         }
 
@@ -168,6 +166,43 @@ namespace FLOBUK.StoreSimulator
             }
 
             return null;
+        }
+
+        private sealed class EntrepreneurTreeNavigationBinding : MonoBehaviour
+        {
+            private Button button;
+            private GameObject treePanel;
+            private UIShopCategoryHelper helper;
+
+            public void Configure(Button button, GameObject treePanel, UIShopCategoryHelper helper)
+            {
+                if (this.button != null)
+                    this.button.onClick.RemoveListener(ShowTree);
+
+                this.button = button;
+                this.treePanel = treePanel;
+                this.helper = helper;
+
+                if (this.button != null)
+                    this.button.onClick.AddListener(ShowTree);
+            }
+
+            private void ShowTree()
+            {
+                if (treePanel == null)
+                    return;
+
+                if (helper != null)
+                    helper.Show(treePanel);
+                else
+                    treePanel.SetActive(true);
+            }
+
+            void OnDestroy()
+            {
+                if (button != null)
+                    button.onClick.RemoveListener(ShowTree);
+            }
         }
     }
 }

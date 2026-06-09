@@ -58,6 +58,8 @@ namespace FLOBUK.StoreSimulator
             new EntrepreneurAchievementDefinition("supermercado_crecimiento", "Supermercado en Crecimiento", "Expande el supermercado a 300 m2."),
             new EntrepreneurAchievementDefinition("imperialista", "Imperialista", "Llega al tamano maximo del supermercado."),
             new EntrepreneurAchievementDefinition("almacenamiento_maximizado", "Almacenamiento Maximizado", "Expande almacenamiento al maximo permitido."),
+            new EntrepreneurAchievementDefinition("eficiencia_maximo", "Eficiencia al Maximo", "Mantiene estantes abastecidos durante una semana de juego.", 1, true, "No hay metrica semanal estable de estantes abastecidos."),
+            new EntrepreneurAchievementDefinition("limpieza_impecable", "Limpieza Impecable", "Mantiene el supermercado limpio durante una semana de juego.", 1, true, "No existe sistema de suciedad o limpieza en esta copia del asset."),
 
             new EntrepreneurAchievementDefinition("surtido_completo", "Surtido Completo", "Desbloquea todos los productos basicos."),
             new EntrepreneurAchievementDefinition("red_seguridad", "Red de Seguridad", "Desbloquea y activa todas las medidas de seguridad."),
