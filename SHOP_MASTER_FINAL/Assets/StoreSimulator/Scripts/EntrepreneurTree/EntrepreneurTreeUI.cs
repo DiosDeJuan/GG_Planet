@@ -22,23 +22,33 @@ namespace FLOBUK.StoreSimulator
         private readonly List<string> fallbackNodeIds = new List<string>();
 
         private TMP_Text pointsLabel;
+        private TMP_Text progressLabel;
+        private TMP_Text achievementsLabel;
+        private TMP_Text detailsTitle;
         private TMP_Text detailsLabel;
         private TMP_Text detailsMessageLabel;
+        private Button toggleAchievementsButton;
         private Button unlockButton;
         private EntrepreneurTreeConnectionGraphic connectionGraphic;
         private ScrollRect graphScroll;
+        private GameObject achievementListObject;
+        private Transform achievementListContent;
         private EntrepreneurTreeNodeDefinition selectedNode;
         private bool built;
+        private bool showAchievements;
 
         void OnEnable()
         {
             EntrepreneurProgress.onProgressChanged += Refresh;
+            EntrepreneurAchievementManager.onAchievementsChanged += Refresh;
+            EntrepreneurAchievementManager.EvaluateAll();
             Refresh();
         }
 
         void OnDisable()
         {
             EntrepreneurProgress.onProgressChanged -= Refresh;
+            EntrepreneurAchievementManager.onAchievementsChanged -= Refresh;
         }
 
         public void Build()
@@ -75,7 +85,7 @@ namespace FLOBUK.StoreSimulator
         {
             GameObject header = CreatePanel("Header", parent, CardBackground);
             LayoutElement headerLayout = header.AddComponent<LayoutElement>();
-            headerLayout.preferredHeight = 84;
+            headerLayout.preferredHeight = 112;
 
             HorizontalLayoutGroup headerGroup = header.AddComponent<HorizontalLayoutGroup>();
             headerGroup.padding = new RectOffset(14, 14, 8, 8);
@@ -93,12 +103,12 @@ namespace FLOBUK.StoreSimulator
 
             TMP_Text title = CreateText("Title", textBox.transform, "ARBOL DEL EMPRENDEDOR", 24, FontStyles.Bold, TextAlignmentOptions.Left);
             title.color = TextDark;
-            TMP_Text subtitle = CreateText("Subtitle", textBox.transform, "Desbloquea productos, empleados, seguridad y mejoras para expandir tu supermercado.", 13, FontStyles.Normal, TextAlignmentOptions.Left);
+            TMP_Text subtitle = CreateText("Subtitle", textBox.transform, "Completa logros para ganar puntos. Usa puntos para desbloquear productos, empleados, seguridad y mejoras.", 13, FontStyles.Normal, TextAlignmentOptions.Left);
             subtitle.color = TextMuted;
 
             GameObject pointsBox = CreateLayoutBox("Points Box", header.transform);
             LayoutElement pointsBoxLayout = pointsBox.AddComponent<LayoutElement>();
-            pointsBoxLayout.preferredWidth = 230;
+            pointsBoxLayout.preferredWidth = 275;
             VerticalLayoutGroup pointsLayout = pointsBox.AddComponent<VerticalLayoutGroup>();
             pointsLayout.spacing = 4;
             pointsLayout.childControlWidth = true;
@@ -106,8 +116,16 @@ namespace FLOBUK.StoreSimulator
 
             pointsLabel = CreateText("Points", pointsBox.transform, string.Empty, 19, FontStyles.Bold, TextAlignmentOptions.Right);
             pointsLabel.color = DesktopPink;
-            TMP_Text hint = CreateText("Hint", pointsBox.transform, "Nodos conectados por prerequisitos", 11, FontStyles.Normal, TextAlignmentOptions.Right);
-            hint.color = TextMuted;
+            progressLabel = CreateText("Progress", pointsBox.transform, string.Empty, 12, FontStyles.Bold, TextAlignmentOptions.Right);
+            progressLabel.color = TextMuted;
+            achievementsLabel = CreateText("Achievements", pointsBox.transform, string.Empty, 12, FontStyles.Bold, TextAlignmentOptions.Right);
+            achievementsLabel.color = TextMuted;
+            toggleAchievementsButton = CreateActionButton("Toggle Achievements", pointsBox.transform, "Ver logros");
+            toggleAchievementsButton.onClick.AddListener(ToggleAchievements);
+            toggleAchievementsButton.GetComponent<LayoutElement>().preferredHeight = 28;
+            TMP_Text buttonText = toggleAchievementsButton.GetComponentInChildren<TMP_Text>();
+            buttonText.fontSizeMax = 13;
+            buttonText.fontSize = 13;
         }
 
         private void BuildBody(Transform parent)
@@ -241,9 +259,9 @@ namespace FLOBUK.StoreSimulator
             group.childForceExpandWidth = true;
             group.childForceExpandHeight = false;
 
-            TMP_Text title = CreateText("Title", panel.transform, "Detalle del nodo", 21, FontStyles.Bold, TextAlignmentOptions.Left);
-            title.color = TextDark;
-            title.GetComponent<LayoutElement>().preferredHeight = 30;
+            detailsTitle = CreateText("Title", panel.transform, "Detalle del nodo", 21, FontStyles.Bold, TextAlignmentOptions.Left);
+            detailsTitle.color = TextDark;
+            detailsTitle.GetComponent<LayoutElement>().preferredHeight = 30;
 
             detailsLabel = CreateText("Details Text", panel.transform, string.Empty, 14, FontStyles.Normal, TextAlignmentOptions.Left);
             detailsLabel.color = TextDark;
@@ -258,6 +276,52 @@ namespace FLOBUK.StoreSimulator
 
             unlockButton = CreateActionButton("Unlock Button", panel.transform, "Desbloquear");
             unlockButton.onClick.AddListener(UnlockSelectedNode);
+            BuildAchievementList(panel.transform);
+        }
+
+        private void BuildAchievementList(Transform parent)
+        {
+            achievementListObject = CreatePanel("Achievement List", parent, new Color(0.96f, 0.96f, 0.97f, 1f));
+            LayoutElement layout = achievementListObject.AddComponent<LayoutElement>();
+            layout.flexibleHeight = 1;
+            layout.minHeight = 270;
+
+            ScrollRect scroll = achievementListObject.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 24f;
+
+            GameObject viewport = CreateLayoutBox("Viewport", achievementListObject.transform);
+            RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+            Stretch(viewportRect, new Vector2(6, 6), new Vector2(-6, -6));
+            Image viewportImage = viewport.AddComponent<Image>();
+            viewportImage.color = Color.clear;
+            Mask mask = viewport.AddComponent<Mask>();
+            mask.showMaskGraphic = false;
+
+            GameObject content = CreateLayoutBox("Content", viewport.transform);
+            RectTransform contentRect = content.GetComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0, 1);
+            contentRect.anchorMax = new Vector2(1, 1);
+            contentRect.pivot = new Vector2(0.5f, 1f);
+            contentRect.offsetMin = Vector2.zero;
+            contentRect.offsetMax = Vector2.zero;
+
+            VerticalLayoutGroup contentGroup = content.AddComponent<VerticalLayoutGroup>();
+            contentGroup.padding = new RectOffset(4, 4, 4, 4);
+            contentGroup.spacing = 6;
+            contentGroup.childControlWidth = true;
+            contentGroup.childControlHeight = true;
+            contentGroup.childForceExpandWidth = true;
+            contentGroup.childForceExpandHeight = false;
+            ContentSizeFitter fitter = content.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            scroll.viewport = viewportRect;
+            scroll.content = contentRect;
+            achievementListContent = content.transform;
+            achievementListObject.SetActive(false);
         }
 
         private void SelectNode(EntrepreneurTreeNodeDefinition node)
@@ -292,7 +356,18 @@ namespace FLOBUK.StoreSimulator
         private void Refresh()
         {
             if (pointsLabel != null)
-                pointsLabel.text = "Puntos: " + EntrepreneurProgress.ProgressPoints;
+                pointsLabel.text = "Puntos: " + EntrepreneurProgress.AvailablePoints;
+            if (progressLabel != null)
+            {
+                int unlocked = EntrepreneurProgress.GetUnlockedNodeCount();
+                int total = EntrepreneurProgress.GetTotalNodeCount();
+                int percent = Mathf.RoundToInt(EntrepreneurProgress.GetTreeCompletionPercent() * 100f);
+                progressLabel.text = "Progreso: " + unlocked + "/" + total + " nodos (" + percent + "%)";
+            }
+            if (achievementsLabel != null)
+                achievementsLabel.text = "Logros: " + EntrepreneurAchievementManager.CompletedCount + "/" + EntrepreneurAchievementManager.TotalAchievementCount;
+            if (toggleAchievementsButton != null)
+                toggleAchievementsButton.GetComponentInChildren<TMP_Text>().text = showAchievements ? "Ver nodo" : "Ver logros";
 
             foreach (EntrepreneurTreeNodeView view in nodeViews.Values)
                 view.Refresh(view.Node == selectedNode);
@@ -334,13 +409,31 @@ namespace FLOBUK.StoreSimulator
             if (selectedNode == null || detailsLabel == null)
                 return;
 
+            if (showAchievements)
+            {
+                detailsTitle.text = "Logros";
+                detailsLabel.gameObject.SetActive(false);
+                detailsMessageLabel.gameObject.SetActive(false);
+                unlockButton.gameObject.SetActive(false);
+                achievementListObject.SetActive(true);
+                RefreshAchievementList();
+                return;
+            }
+
+            detailsTitle.text = "Detalle del nodo";
+            detailsLabel.gameObject.SetActive(true);
+            detailsMessageLabel.gameObject.SetActive(true);
+            unlockButton.gameObject.SetActive(true);
+            achievementListObject.SetActive(false);
+
             string requirements = selectedNode.Prerequisites.Length == 0 ? "Ninguno" : string.Join(", ", System.Array.ConvertAll(selectedNode.Prerequisites, EntrepreneurTreeDefinitions.GetTitle));
             detailsLabel.text =
                 selectedNode.Title + "\n\n" +
                 "Tipo: " + GetTypeLabel(selectedNode.Type) + "\n" +
                 "Estado: " + EntrepreneurProgress.GetStateDescription(selectedNode).Replace("\n", " - ") + "\n" +
                 "Costo: " + selectedNode.Cost + " punto(s)\n" +
-                "Requiere: " + requirements + "\n\n" +
+                "Requiere: " + requirements + "\n" +
+                "Arbol: " + EntrepreneurProgress.GetUnlockedNodeCount() + "/" + EntrepreneurProgress.GetTotalNodeCount() + " nodos\n\n" +
                 "Beneficio:\n" + selectedNode.Benefit;
 
             EntrepreneurTreeNodeState state = EntrepreneurProgress.GetState(selectedNode);
@@ -364,6 +457,35 @@ namespace FLOBUK.StoreSimulator
                 return "No tienes puntos de progreso suficientes.";
 
             return "Disponible para desbloquear.";
+        }
+
+        private void ToggleAchievements()
+        {
+            showAchievements = !showAchievements;
+            Refresh();
+        }
+
+        private void RefreshAchievementList()
+        {
+            if (achievementListContent == null)
+                return;
+
+            for (int i = achievementListContent.childCount - 1; i >= 0; i--)
+                Destroy(achievementListContent.GetChild(i).gameObject);
+
+            TMP_Text help = CreateText("Help", achievementListContent, "Completa logros para ganar puntos. Cada logro reclamado otorga +1 punto salvo Arbol Completo, que es simbolico.", 12, FontStyles.Bold, TextAlignmentOptions.Left);
+            help.color = TextMuted;
+            help.GetComponent<LayoutElement>().preferredHeight = 44;
+
+            foreach (EntrepreneurAchievementDefinition achievement in EntrepreneurAchievementManager.Definitions)
+            {
+                string reward = achievement.RewardPoints > 0 ? "+" + achievement.RewardPoints + " punto" : "sin punto";
+                string status = EntrepreneurAchievementManager.GetStatusText(achievement);
+                string suffix = achievement.IsHook && !string.IsNullOrEmpty(achievement.HookReason) ? "\nPendiente: " + achievement.HookReason : string.Empty;
+                TMP_Text row = CreateText("Achievement - " + achievement.Id, achievementListContent, achievement.Title + "\n" + achievement.Description + "\nEstado: " + status + " | Recompensa: " + reward + suffix, 11, FontStyles.Normal, TextAlignmentOptions.Left);
+                row.color = achievement.IsHook && !EntrepreneurAchievementManager.IsCompleted(achievement.Id) ? TextMuted : TextDark;
+                row.GetComponent<LayoutElement>().preferredHeight = achievement.IsHook ? 72 : 58;
+            }
         }
 
         private static Color GetConnectionColor(EntrepreneurTreeNodeDefinition parentNode, EntrepreneurTreeNodeDefinition childNode)

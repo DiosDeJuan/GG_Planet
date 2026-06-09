@@ -164,7 +164,10 @@ namespace FLOBUK.StoreSimulator
             if (automatic)
                 StatsDatabase.Instance.RegisterAutomaticArrest(recoveredValue);
             else
+            {
                 StatsDatabase.Instance.RegisterManualArrest(recoveredValue);
+                EntrepreneurAchievementManager.RegisterManualArrest();
+            }
         }
 
         public JSONNode SaveToJSON()

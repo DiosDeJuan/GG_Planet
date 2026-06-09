@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -123,6 +124,7 @@ namespace FLOBUK.StoreSimulator
         {
             long cartAmount = StoreDatabase.FromStringToLongMoney(cart.total.text);
 
+            EntrepreneurAchievementManager.RegisterSale(cartAmount, customerBag != null ? customerBag.items : null, false, true);
             cart.Clear();
             StoreDatabase.AddRemoveMoney(cartAmount);
             AudioSystem.Play2D(successClip);

@@ -206,6 +206,7 @@ namespace FLOBUK.StoreSimulator
                 }
             }
 
+            EntrepreneurAchievementManager.RegisterSale(cartAmount, customerBag != null ? customerBag.items : null, HasAutomaticCashier(), false);
             cart.Clear();
             StoreDatabase.AddRemoveMoney(billAmount);
             ApplyCharismaticBonus(cartAmount);

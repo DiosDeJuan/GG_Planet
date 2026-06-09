@@ -108,6 +108,7 @@ namespace FLOBUK.StoreSimulator
             SpawnEmployee(state);
             message = "Empleado contratado correctamente.";
             onEmployeesChanged?.Invoke();
+            EntrepreneurAchievementManager.RegisterEmployeeStateChanged();
             return true;
         }
 
@@ -140,6 +141,7 @@ namespace FLOBUK.StoreSimulator
 
             SpawnEmployee(state);
             onEmployeesChanged?.Invoke();
+            EntrepreneurAchievementManager.RegisterEmployeeStateChanged();
             return true;
         }
 
@@ -202,6 +204,17 @@ namespace FLOBUK.StoreSimulator
             }
 
             onEmployeesChanged?.Invoke();
+            EntrepreneurAchievementManager.RegisterEmployeeStateChanged();
+        }
+
+        public int GetHiredEmployeeCount()
+        {
+            return states.Values.Count(state => state.isHired);
+        }
+
+        public int GetHiredEmployeeWithRoleCount()
+        {
+            return states.Values.Count(state => state.isHired && state.role != EmployeeRole.None);
         }
 
         public bool TryRestockOne(out string message, out Vector3 targetPosition)

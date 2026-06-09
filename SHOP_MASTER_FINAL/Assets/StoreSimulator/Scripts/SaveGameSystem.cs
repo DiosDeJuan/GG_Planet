@@ -168,6 +168,7 @@ namespace FLOBUK.StoreSimulator
             EntrepreneurProgress.LoadFromJSON(gameData["EntrepreneurProgress"]);
             EmployeeManager.EnsureInstance().LoadFromJSON(gameData["EmployeeManager"]);
             SecurityManager.EnsureInstance().LoadFromJSON(gameData["SecurityManager"]);
+            EntrepreneurAchievementManager.EvaluateAll();
             
             //notify subscribed scripts of data update
             dataLoadEvent?.Invoke();

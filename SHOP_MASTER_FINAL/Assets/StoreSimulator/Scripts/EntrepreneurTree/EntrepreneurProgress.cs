@@ -12,9 +12,12 @@ namespace FLOBUK.StoreSimulator
     {
         public static event Action onProgressChanged;
         public static event Action<string> onNodeUnlocked;
+        public static event Action<string> onProgressPointAwarded;
+        public static event Action onTreeCompleted;
 
         private static readonly HashSet<string> unlockedNodeIds = new HashSet<string>();
         private static int progressPoints;
+        private static bool treeCompletionNotified;
 
         static EntrepreneurProgress()
         {
@@ -22,6 +25,8 @@ namespace FLOBUK.StoreSimulator
         }
 
         public static int ProgressPoints => progressPoints;
+        public static int AvailablePoints => progressPoints;
+        public static int SpentPoints => unlockedNodeIds.Select(EntrepreneurTreeDefinitions.Get).Where(node => node != null).Sum(node => node.Cost);
         public static float EmployeeWorkSpeedMultiplier => IsUnlocked("mejora_cafeina") ? 1.1f : 1f;
         public static float CashierRevenueMultiplier => IsUnlocked("mejora_carismatico") ? 1.05f : 1f;
         public static int SecurityLevel => IsUnlocked("seguridad_3") ? 3 : IsUnlocked("seguridad_2") ? 2 : IsUnlocked("seguridad_1") ? 1 : 0;
@@ -31,6 +36,8 @@ namespace FLOBUK.StoreSimulator
             unlockedNodeIds.Clear();
             unlockedNodeIds.Add(EntrepreneurTreeDefinitions.DefaultUnlockedNodeId);
             progressPoints = 0;
+            treeCompletionNotified = false;
+            EntrepreneurAchievementManager.ResetToDefaults();
             onProgressChanged?.Invoke();
         }
 
@@ -76,6 +83,11 @@ namespace FLOBUK.StoreSimulator
                 return EntrepreneurTreeNodeState.Unlocked;
 
             return ArePrerequisitesUnlocked(node) && progressPoints >= node.Cost ? EntrepreneurTreeNodeState.Available : EntrepreneurTreeNodeState.Locked;
+        }
+
+        public static bool CanAfford(EntrepreneurTreeNodeDefinition node)
+        {
+            return node != null && progressPoints >= node.Cost;
         }
 
         public static bool ArePrerequisitesUnlocked(EntrepreneurTreeNodeDefinition node)
@@ -124,6 +136,8 @@ namespace FLOBUK.StoreSimulator
             Normalize();
             message = node.Title + " desbloqueado.";
             onNodeUnlocked?.Invoke(node.Id);
+            EntrepreneurAchievementManager.RegisterNodeUnlocked(node.Id);
+            NotifyTreeCompletionIfNeeded(true);
             onProgressChanged?.Invoke();
             return true;
         }
@@ -157,6 +171,8 @@ namespace FLOBUK.StoreSimulator
             data["securityLevel"] = SecurityLevel;
             data["employeeWorkSpeedMultiplier"] = EmployeeWorkSpeedMultiplier;
             data["cashierRevenueMultiplier"] = CashierRevenueMultiplier;
+            data["treeCompletionNotified"] = treeCompletionNotified;
+            data["achievements"] = EntrepreneurAchievementManager.SaveToJSON();
             return data;
         }
 
@@ -167,6 +183,7 @@ namespace FLOBUK.StoreSimulator
                 return;
 
             progressPoints = Mathf.Max(0, data["progressPoints"].AsInt);
+            treeCompletionNotified = data["treeCompletionNotified"].AsBool;
             JSONArray unlocked = data["unlockedNodeIds"].AsArray;
             for (int i = 0; i < unlocked.Count; i++)
             {
@@ -175,7 +192,55 @@ namespace FLOBUK.StoreSimulator
                     unlockedNodeIds.Add(nodeId);
             }
 
+            EntrepreneurAchievementManager.LoadFromJSON(data["achievements"]);
             Normalize();
+            NotifyTreeCompletionIfNeeded(false);
+            onProgressChanged?.Invoke();
+        }
+
+        public static bool HasClaimedProgressReward(string sourceId)
+        {
+            return EntrepreneurAchievementManager.IsRewardClaimed(sourceId);
+        }
+
+        public static bool AddProgressPoint(string sourceId, string displayReason)
+        {
+            return EntrepreneurAchievementManager.TryAwardKnownAchievement(sourceId, displayReason);
+        }
+
+        public static int GetUnlockedNodeCount()
+        {
+            return EntrepreneurTreeDefinitions.Nodes.Count(node => IsUnlocked(node.Id));
+        }
+
+        public static int GetTotalNodeCount()
+        {
+            return EntrepreneurTreeDefinitions.Nodes.Count;
+        }
+
+        public static int GetTotalUnlockableCount()
+        {
+            return EntrepreneurTreeDefinitions.Nodes.Count(node => node.Cost > 0);
+        }
+
+        public static float GetTreeCompletionPercent()
+        {
+            int total = GetTotalNodeCount();
+            return total == 0 ? 0f : Mathf.Clamp01((float)GetUnlockedNodeCount() / total);
+        }
+
+        public static bool IsTreeComplete()
+        {
+            return GetUnlockedNodeCount() >= GetTotalNodeCount();
+        }
+
+        internal static void AddProgressPointsFromAchievement(int amount, string sourceId, string displayReason)
+        {
+            if (amount <= 0)
+                return;
+
+            progressPoints = Mathf.Max(0, progressPoints + amount);
+            onProgressPointAwarded?.Invoke(displayReason);
             onProgressChanged?.Invoke();
         }
 
@@ -208,6 +273,20 @@ namespace FLOBUK.StoreSimulator
                 }
             }
             while (removed);
+
+            if (!IsTreeComplete())
+                treeCompletionNotified = false;
+        }
+
+        private static void NotifyTreeCompletionIfNeeded(bool showNotification)
+        {
+            if (!IsTreeComplete() || treeCompletionNotified)
+                return;
+
+            treeCompletionNotified = true;
+            onTreeCompleted?.Invoke();
+            if (showNotification && UIGame.Instance != null)
+                UIGame.AddNotification("Arbol del Emprendedor completado.", otherColor: Color.green, otherDuration: 5f);
         }
     }
 }
