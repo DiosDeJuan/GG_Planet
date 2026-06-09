@@ -19,6 +19,9 @@ namespace FLOBUK.StoreSimulator
         private static readonly Color LineNoPoints = new Color(1f, 0.72f, 0.2f, 0.95f);
         private static readonly Color LineUnlocked = new Color(0.18f, 1f, 0.52f, 0.98f);
 
+        public static Color VisualPanelBackground => PanelBackground;
+        public static Color VisualCardBackground => CardBackground;
+
         private readonly Dictionary<string, EntrepreneurTreeNodeView> nodeViews = new Dictionary<string, EntrepreneurTreeNodeView>();
         private readonly List<string> fallbackNodeIds = new List<string>();
 
@@ -282,7 +285,7 @@ namespace FLOBUK.StoreSimulator
 
         private void BuildAchievementList(Transform parent)
         {
-            achievementListObject = CreatePanel("Achievement List", parent, new Color(0.96f, 0.96f, 0.97f, 1f));
+            achievementListObject = CreatePanel("Achievement List", parent, CardBackgroundAlt);
             LayoutElement layout = achievementListObject.AddComponent<LayoutElement>();
             layout.flexibleHeight = 1;
             layout.minHeight = 270;

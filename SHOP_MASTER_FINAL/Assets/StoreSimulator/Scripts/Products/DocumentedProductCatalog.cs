@@ -151,7 +151,8 @@ namespace FLOBUK.StoreSimulator
             string names = string.Join(", ", products.Select(product => product.Title));
             string furniture = string.Join(", ", products.Select(product => product.FurnitureCategory).Distinct());
             int provisional = products.Count(product => product.UsesProvisionalAsset);
-            return "Desbloquea " + products.Count + " producto(s): " + names + "\nMueble sugerido: " + furniture + "\nAssets provisionales: " + provisional + "/" + products.Count;
+            string placeholders = provisional > 0 ? "\nPlaceholder seguro: " + string.Join(", ", products.Where(product => product.UsesProvisionalAsset).Select(product => product.Title)) : "\nAssets finales: productos base del asset.";
+            return "Desbloquea " + products.Count + " producto(s): " + names + "\nMueble sugerido: " + furniture + "\nAssets provisionales: " + provisional + "/" + products.Count + placeholders;
         }
 
         private static ProductScriptableObject FindProduct(List<ProductScriptableObject> products, DocumentedProductDefinition definition)

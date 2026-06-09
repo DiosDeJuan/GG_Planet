@@ -50,6 +50,11 @@ namespace FLOBUK.StoreSimulator
         void Awake()
         {
             Instance = this;
+            ids.Clear();
+            availableProducts.Clear();
+
+            if (purchasables == null)
+                purchasables = new List<PurchasableScriptableObject>();
 
             ids.Add(typeof(StorageScriptableObject), new Dictionary<string, PurchasableScriptableObject>());
             ids.Add(typeof(ProductScriptableObject), new Dictionary<string, PurchasableScriptableObject>());
@@ -63,9 +68,11 @@ namespace FLOBUK.StoreSimulator
             //sort list of purchasables into respective dictionary groups
             for (int i = 0; i < purchasables.Count; i++)
             {
-                ids[purchasables[i].GetType()].Add(purchasables[i].id, purchasables[i]);
+                if (purchasables[i] != null && ids.TryGetValue(purchasables[i].GetType(), out Dictionary<string, PurchasableScriptableObject> typeIds))
+                    typeIds[purchasables[i].id] = purchasables[i];
             }
 
+            StoreDatabase.onLevelUpdate -= OnLevelUpdate;
             StoreDatabase.onLevelUpdate += OnLevelUpdate;
 
             //(editor only) whenever we enter play mode, save all ScriptableObjects defaults
@@ -304,10 +311,17 @@ namespace FLOBUK.StoreSimulator
             JSONArray productArray = data["ProductScriptableObjects"].AsArray;
             for (int i = 0; i < productArray.Count; i++)
             {
-                ProductScriptableObject product = GetById(typeof(ProductScriptableObject), productArray[i]["id"]) as ProductScriptableObject;
-                product.buyPrice = productArray[i]["buyPrice"].AsLong;
-                product.storePrice = productArray[i]["storePrice"].AsLong;
-                product.marketPrice = productArray[i]["marketPrice"].AsLong;
+                string productId = productArray[i]["id"].Value;
+                if (!TryGetById(typeof(ProductScriptableObject), productId, out PurchasableScriptableObject purchasable) || purchasable is not ProductScriptableObject product)
+                    continue;
+
+                JSONNode productData = productArray[i];
+                if (productData.HasKey("buyPrice"))
+                    product.buyPrice = productData["buyPrice"].AsLong;
+                if (productData.HasKey("storePrice"))
+                    product.storePrice = productData["storePrice"].AsLong;
+                if (productData.HasKey("marketPrice"))
+                    product.marketPrice = productData["marketPrice"].AsLong;
             }
 
             JSONArray licenseArray = data["LicenseScriptableObjects"].AsArray;
@@ -351,9 +365,13 @@ namespace FLOBUK.StoreSimulator
             StoreDatabase.onLevelUpdate -= OnLevelUpdate;
 
             #if UNITY_EDITOR
+            if (defaultData == null || purchasables == null)
+                return;
+
             for (int i = 0; i < purchasables.Count; i++)
             {
-                JsonUtility.FromJsonOverwrite(defaultData[i].Value, purchasables[i]);
+                if (purchasables[i] != null && defaultData[i] != null)
+                    JsonUtility.FromJsonOverwrite(defaultData[i].Value, purchasables[i]);
             }
             #endif
         }
