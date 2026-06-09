@@ -11,6 +11,7 @@ namespace FLOBUK.StoreSimulator
     public static class EntrepreneurProgress
     {
         public static event Action onProgressChanged;
+        public static event Action<string> onNodeUnlocked;
 
         private static readonly HashSet<string> unlockedNodeIds = new HashSet<string>();
         private static int progressPoints;
@@ -108,13 +109,13 @@ namespace FLOBUK.StoreSimulator
             List<string> missingPrerequisites = GetMissingPrerequisites(node);
             if (missingPrerequisites.Count > 0)
             {
-                message = "Falta: " + string.Join(", ", missingPrerequisites);
+                message = "Falta desbloquear: " + string.Join(", ", missingPrerequisites);
                 return false;
             }
 
             if (progressPoints < node.Cost)
             {
-                message = "Puntos insuficientes.";
+                message = "No tienes puntos de progreso suficientes.";
                 return false;
             }
 
@@ -122,6 +123,7 @@ namespace FLOBUK.StoreSimulator
             unlockedNodeIds.Add(node.Id);
             Normalize();
             message = node.Title + " desbloqueado.";
+            onNodeUnlocked?.Invoke(node.Id);
             onProgressChanged?.Invoke();
             return true;
         }
@@ -137,8 +139,8 @@ namespace FLOBUK.StoreSimulator
                 default:
                     List<string> missing = GetMissingPrerequisites(node);
                     if (missing.Count > 0)
-                        return "Bloqueado\nFalta: " + string.Join(", ", missing);
-                    return "Bloqueado\nPuntos insuficientes";
+                        return "Bloqueado\nFalta desbloquear: " + string.Join(", ", missing);
+                    return "Bloqueado\nNo tienes puntos de progreso suficientes";
             }
         }
 

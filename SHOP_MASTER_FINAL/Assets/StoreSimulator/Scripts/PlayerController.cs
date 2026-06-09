@@ -92,6 +92,8 @@ namespace FLOBUK.StoreSimulator
         private float gravityVelocity;
         //the package that is currently carried around
         private PackageObject handsPackage;
+        //cached PlayerInput reference used for clean subscription handling
+        private PlayerInput playerInput;
 
 
         //initialize references
@@ -107,12 +109,22 @@ namespace FLOBUK.StoreSimulator
                     joysticks[i].SetActive(true);
             #endif
 
-            PlayerInput playerInput = PlayerInput.GetPlayerByIndex(0);
+            if (cameraTransform == null && Camera.main != null)
+                cameraTransform = Camera.main.transform;
+
+            playerInput = PlayerInput.GetPlayerByIndex(0);
             if (playerInput == null)
+            {
+                Debug.LogWarning("PlayerController could not find PlayerInput index 0. Movement input will not be received until PlayerInput exists.");
                 return;
+            }
 
             #if UNITY_6000_0_OR_NEWER
-                playerInput.actions.FindActionMap("UI").Disable();
+                InputActionMap uiActionMap = playerInput.actions != null ? playerInput.actions.FindActionMap("UI", false) : null;
+                if (uiActionMap != null)
+                    uiActionMap.Disable();
+                else
+                    Debug.LogWarning("PlayerController did not find optional Input Action Map 'UI'. Continuing with gameplay input.");
             #endif
             playerInput.onActionTriggered += OnAction;
         }
@@ -121,7 +133,10 @@ namespace FLOBUK.StoreSimulator
         //initialize variables
         void Start()
         {
-            transform.LookAt(StoreDatabase.Instance.storeEntry.position + Vector3.up);
+            if (StoreDatabase.Instance != null && StoreDatabase.Instance.storeEntry != null)
+                transform.LookAt(StoreDatabase.Instance.storeEntry.position + Vector3.up);
+            else
+                Debug.LogWarning("PlayerController could not look at store entry because StoreDatabase or storeEntry is missing.");
         }
 
 
@@ -177,7 +192,9 @@ namespace FLOBUK.StoreSimulator
         {
             if (Cursor.lockState == CursorLockMode.None && lockCursor == true)
             {
-                Mouse.current.WarpCursorPosition(new Vector2(Screen.width / 2, Screen.height / 2));
+                if (Mouse.current != null)
+                    Mouse.current.WarpCursorPosition(new Vector2(Screen.width / 2, Screen.height / 2));
+
                 Instance.skipMouseDelta = true;
             }
 
@@ -294,7 +311,8 @@ namespace FLOBUK.StoreSimulator
             //Camera
             cameraRotation.x += -viewInput.y * viewSensitivity;
             cameraRotation.x = Mathf.Clamp(cameraRotation.x, viewClamp.x, viewClamp.y);
-            cameraTransform.localRotation = Quaternion.Euler(cameraRotation);
+            if (cameraTransform != null)
+                cameraTransform.localRotation = Quaternion.Euler(cameraRotation);
         }
 
 
@@ -322,6 +340,13 @@ namespace FLOBUK.StoreSimulator
             {
                 gravityVelocity += jumpForce;
             }
+        }
+
+
+        void OnDestroy()
+        {
+            if (playerInput != null)
+                playerInput.onActionTriggered -= OnAction;
         }
     }
 }

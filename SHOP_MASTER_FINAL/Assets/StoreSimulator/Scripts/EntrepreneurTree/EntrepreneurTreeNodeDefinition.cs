@@ -49,6 +49,7 @@ namespace FLOBUK.StoreSimulator
             new EntrepreneurTreeNodeDefinition("productos_basicos_2", "Productos Basicos 2", EntrepreneurTreeNodeType.Product, 1, "Harina, arroz, frijoles, pan y aceite.", DefaultUnlockedNodeId),
             new EntrepreneurTreeNodeDefinition("productos_basicos_3", "Productos Basicos 3", EntrepreneurTreeNodeType.Product, 1, "Cafe y huevo.", "productos_basicos_2"),
             new EntrepreneurTreeNodeDefinition("lacteos_1", "Lacteos 1", EntrepreneurTreeNodeType.Product, 1, "Rama de lacteos desbloqueada.", "productos_basicos_3"),
+            new EntrepreneurTreeNodeDefinition("lacteos_2", "Lacteos 2", EntrepreneurTreeNodeType.Product, 1, "Rama avanzada de lacteos desbloqueada.", "lacteos_1"),
             new EntrepreneurTreeNodeDefinition("especias_1", "Especias 1", EntrepreneurTreeNodeType.Product, 1, "Rama de especias desbloqueada.", "productos_basicos_3"),
             new EntrepreneurTreeNodeDefinition("productos_frescos_1", "Productos Frescos 1", EntrepreneurTreeNodeType.Product, 1, "Manzana, platano, jitomate y cebolla.", "lacteos_1"),
             new EntrepreneurTreeNodeDefinition("productos_frescos_2", "Productos Frescos 2", EntrepreneurTreeNodeType.Product, 1, "Uvas, zanahorias y ajo.", "productos_frescos_1"),
@@ -169,6 +170,12 @@ namespace FLOBUK.StoreSimulator
                 case "yogurt":
                 case "mantequilla":
                     return "lacteos_1";
+
+                case "lacteos_2":
+                case "crema":
+                case "helado":
+                case "leche_saborizada":
+                    return "lacteos_2";
 
                 case "especias":
                 case "pimienta":

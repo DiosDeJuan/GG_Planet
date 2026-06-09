@@ -139,7 +139,7 @@ namespace FLOBUK.StoreSimulator
             if (level <= 0)
                 return false;
 
-            float chance = level == 1 ? 0.35f : level == 2 ? 0.67f : 0.94f;
+            float chance = level == 1 ? 0.33f : level == 2 ? 0.66f : 0.99f;
             bool success = Random.value <= chance;
             if (StatsDatabase.Instance != null)
                 StatsDatabase.Instance.RegisterSecurityAutoArrestAttempt(success);

@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;

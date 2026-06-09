@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
