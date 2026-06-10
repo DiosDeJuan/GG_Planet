@@ -62,6 +62,14 @@ namespace FLOBUK.StoreSimulator
         private Quaternion prevCamRotation;
         //reference to collider used for detecting an interaction
         private Collider col;
+        //whether the computer is currently controlling player input
+        private bool isOpen;
+        //whether this desktop is subscribed to input callbacks
+        private bool actionSubscribed;
+        //currently open desktop used by QA restore
+        private static UIShopDesktop activeDesktop;
+
+        public bool IsComputerOpen => isOpen;
 
 
         //initialize references
@@ -120,21 +128,31 @@ namespace FLOBUK.StoreSimulator
         public override bool Interact(string actionName)
         {
             if (actionName != "LeftClick") return false;
+            if (isOpen) return true;
 
-            PlayerInput.GetPlayerByIndex(0).onActionTriggered += OnAction;
-            UIGame.AddAction("Esc", "Exit");
+            SubscribeInput();
+            if (UIGame.Instance != null)
+                UIGame.AddAction("Esc", "Exit");
             
             if (UIGame.Instance != null)
                 UIGame.Instance.SetVisible(false);
-            PlayerController.SetMovementState(MovementState.None, false);
+            PlayerController.SetGameplayInputEnabled(false);
+            if (InteractionSystem.Instance != null)
+                InteractionSystem.SetInteractionState(InteractionState.None);
             if (col != null)
                 col.enabled = false;
+            isOpen = true;
+            activeDesktop = this;
 
             Transform camTransform = PlayerController.GetCameraTransform();
-            prevCamPosition = camTransform.localPosition;
-            prevCamRotation = camTransform.localRotation;
+            if (camTransform != null)
+            {
+                prevCamPosition = camTransform.localPosition;
+                prevCamRotation = camTransform.localRotation;
 
-            InteractionSystem.MoveToTargetLinear(camTransform, null, lookTransform.position, Quaternion.LookRotation(lookTransform.forward), lerpSpeed, false);
+                if (lookTransform != null && InteractionSystem.Instance != null)
+                    InteractionSystem.MoveToTargetLinear(camTransform, null, lookTransform.position, Quaternion.LookRotation(lookTransform.forward), lerpSpeed, false);
+            }
             return true;
         }
 
@@ -153,11 +171,19 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public void Exit()
         {
-            PlayerInput.GetPlayerByIndex(0).onActionTriggered -= OnAction;
-            UIGame.RemoveAction("Esc");
+            if (!isOpen)
+            {
+                RestorePlayerAfterComputerClosed();
+                return;
+            }
+
+            UnsubscribeInput();
+            if (UIGame.Instance != null)
+                UIGame.RemoveAction("Esc");
 
             Transform camTransform = PlayerController.GetCameraTransform();
-            InteractionSystem.MoveToTargetLinear(camTransform, null, prevCamPosition, prevCamRotation, lerpSpeed, true);
+            if (camTransform != null && InteractionSystem.Instance != null)
+                InteractionSystem.MoveToTargetLinear(camTransform, null, prevCamPosition, prevCamRotation, lerpSpeed, true);
 
             Invoke("ReEnable", 0.5f);
         }
@@ -166,12 +192,52 @@ namespace FLOBUK.StoreSimulator
         //after exiting the controlled state, player movement is re-enabled with a short delay
         private void ReEnable()
         {
-            PlayerController.SetMovementState(MovementState.All, true);
+            RestorePlayerAfterComputerClosed();
+        }
+
+
+        private void RestorePlayerAfterComputerClosed()
+        {
+            isOpen = false;
+            if (activeDesktop == this)
+                activeDesktop = null;
+            UnsubscribeInput();
+            if (UIGame.Instance != null)
+                UIGame.RemoveAction("Esc");
+            if (InteractionSystem.Instance != null)
+                InteractionSystem.SetInteractionState(InteractionState.All);
+            PlayerController.RestoreGameplayInput();
             if (col != null)
                 col.enabled = true;
 
             if (UIGame.Instance != null)
                 UIGame.Instance.SetVisible(true);
+        }
+
+
+        private void SubscribeInput()
+        {
+            if (actionSubscribed)
+                return;
+
+            PlayerInput input = PlayerController.GetActivePlayerInput();
+            if (input == null)
+                return;
+
+            input.onActionTriggered += OnAction;
+            actionSubscribed = true;
+        }
+
+
+        private void UnsubscribeInput()
+        {
+            if (!actionSubscribed)
+                return;
+
+            PlayerInput input = PlayerController.GetActivePlayerInput();
+            if (input != null)
+                input.onActionTriggered -= OnAction;
+            actionSubscribed = false;
         }
 
 
@@ -204,6 +270,15 @@ namespace FLOBUK.StoreSimulator
         public bool OpenArbolForQA(bool showQaOverlay = true)
         {
             return OpenAppForQA("ARBOL", showQaOverlay);
+        }
+
+
+        public static void RestoreGameplayInputForQA()
+        {
+            if (activeDesktop != null)
+                activeDesktop.RestorePlayerAfterComputerClosed();
+            else
+                PlayerController.RestoreGameplayInput();
         }
 
 
@@ -370,6 +445,9 @@ namespace FLOBUK.StoreSimulator
         //unsubscribe from events
         void OnDestroy()
         {
+            if (activeDesktop == this)
+                activeDesktop = null;
+            UnsubscribeInput();
             StoreDatabase.onMoneyUpdate -= OnMoneyUpdate;
             StoreDatabase.onLevelUpdate -= OnLevelUpdate;
             DayCycleSystem.onTimeUpdate -= OnTimeUpdate;

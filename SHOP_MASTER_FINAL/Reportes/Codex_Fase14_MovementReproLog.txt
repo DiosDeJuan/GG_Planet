@@ -1,0 +1,15 @@
+Escena usada: Assets/StoreSimulator/Scenes/Game.unity
+Fixture: PlayerController real con CharacterController y PlayerInput real de Store Simulator
+Posicion inicial: (0.0000, -0.0041, 0.0000)
+Posicion despues de avanzar 2s: (0.0000, -0.0041, 10.0000)
+Delta: (0.0000, 0.0000, 10.0000)
+Distancia: 10.0000
+canMove antes/despues: True/True
+canLook antes/despues: True/True
+Cursor solicitado gameplayLock: True
+Cursor Unity batchmode: None visible=False
+Action map activo: Default
+timeScale: 1.00
+Computadora abierta/cerrada: validado por PlayerMovement_ComputerOpenCloseRestoresMovement
+Resultado F7 restore: ruta QA llama UIShopDesktop.RestoreGameplayInputForQA y PlayerController.RestoreGameplayInput
+Errores rojos encontrados: no en esta prueba

@@ -26,6 +26,18 @@ namespace FLOBUK.StoreSimulator
         [Range(1, 20)]
         public int speed = 5;
 
+        /// <summary>
+        /// Speed while holding the run key.
+        /// </summary>
+        [Range(1, 20)]
+        public float runSpeed = 10f;
+
+        /// <summary>
+        /// Multiplier applied while crouching.
+        /// </summary>
+        [Range(0.1f, 1f)]
+        public float crouchSpeedMultiplier = 0.55f;
+
         [Header("Rotation")]
         /// <summary>
         /// A reference to the player's camera transform.
@@ -55,6 +67,13 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         [Range(1, 5)]
         public int jumpForce = 2;
+
+        [Header("Crouch")]
+        /// <summary>
+        /// CharacterController height while crouching.
+        /// </summary>
+        [Range(0.5f, 2f)]
+        public float crouchHeight = 1f;
 
         [Header("Hands")]
         /// <summary>
@@ -94,15 +113,60 @@ namespace FLOBUK.StoreSimulator
         private PackageObject handsPackage;
         //cached PlayerInput reference used for clean subscription handling
         private PlayerInput playerInput;
+        //cached gameplay action map used by the real PlayerInput
+        private InputActionMap gameplayActionMap;
+        //cached optional UI action map, if the project ever adds one
+        private InputActionMap uiActionMap;
+        //whether this controller is currently subscribed to PlayerInput callbacks
+        private bool inputSubscribed;
+        //warning guard for optional UI action map logs
+        private static bool missingUiActionMapWarningLogged;
+        //warning guard for fixtures/scenes without store entry
+        private static bool missingStoreEntryWarningLogged;
+        //last known reason for movement being blocked, useful for QA
+        private string lastBlockReason = "Gameplay";
+        //whether the player is currently sprinting
+        private bool isSprinting;
+        //whether the player is currently crouching
+        private bool isCrouching;
+        //last cursor mode requested by gameplay/UI transitions
+        private bool wantsGameplayCursorLocked = true;
+        //initial CharacterController dimensions for crouch restore
+        private float defaultControllerHeight;
+        private Vector3 defaultControllerCenter;
+        //initial local camera position for crouch restore
+        private Vector3 defaultCameraLocalPosition;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+        //diagnostic overlay visibility, toggled with F9
+        private bool showMovementDiagnostics;
+#endif
+
+        public MovementState CurrentMovementState => movementState;
+        public bool CanMove => movementState == MovementState.All && characterController != null && characterController.enabled;
+        public bool CanLook => movementState == MovementState.All || movementState == MovementState.RotationOnly;
+        public bool IsGrounded => characterController != null && characterController.isGrounded;
+        public bool IsCrouching => isCrouching;
+        public bool IsSprinting => isSprinting;
+        public bool IsInputSubscribed => inputSubscribed;
+        public bool WantsGameplayCursorLocked => wantsGameplayCursorLocked;
+        public Vector2 LastMoveInput => moveInput;
+        public Vector2 LastViewInput => viewInput;
+        public string LastBlockReason => lastBlockReason;
+        public string ActiveActionMapName => playerInput != null && playerInput.currentActionMap != null ? playerInput.currentActionMap.name : string.Empty;
+        public float CurrentSpeed => GetCurrentSpeed();
+        public float WalkSpeed => speed;
+        public float RunSpeed => runSpeed;
 
 
         //initialize references
         void Awake()
         {
             Instance = this;
-            Cursor.lockState = CursorLockMode.Locked;
+            SetCursorForGameplay(true);
 
             characterController = GetComponent<CharacterController>();
+            defaultControllerHeight = characterController != null ? characterController.height : 0f;
+            defaultControllerCenter = characterController != null ? characterController.center : Vector3.zero;
 
             #if UNITY_ANDROID || UNITY_IOS
                 for(int i = 0; i < joysticks.Length; i++)
@@ -111,22 +175,10 @@ namespace FLOBUK.StoreSimulator
 
             if (cameraTransform == null && Camera.main != null)
                 cameraTransform = Camera.main.transform;
+            if (cameraTransform != null)
+                defaultCameraLocalPosition = cameraTransform.localPosition;
 
-            playerInput = PlayerInput.GetPlayerByIndex(0);
-            if (playerInput == null)
-            {
-                Debug.LogWarning("PlayerController could not find PlayerInput index 0. Movement input will not be received until PlayerInput exists.");
-                return;
-            }
-
-            #if UNITY_6000_0_OR_NEWER
-                InputActionMap uiActionMap = playerInput.actions != null ? playerInput.actions.FindActionMap("UI", false) : null;
-                if (uiActionMap != null)
-                    uiActionMap.Disable();
-                else
-                    Debug.LogWarning("PlayerController did not find optional Input Action Map 'UI'. Continuing with gameplay input.");
-            #endif
-            playerInput.onActionTriggered += OnAction;
+            EnsureInputReady(true);
         }
 
 
@@ -135,14 +187,43 @@ namespace FLOBUK.StoreSimulator
         {
             if (StoreDatabase.Instance != null && StoreDatabase.Instance.storeEntry != null)
                 transform.LookAt(StoreDatabase.Instance.storeEntry.position + Vector3.up);
-            else
-                Debug.LogWarning("PlayerController could not look at store entry because StoreDatabase or storeEntry is missing.");
+            else if (!missingStoreEntryWarningLogged)
+            {
+                Debug.Log("PlayerController skipped initial store-entry look because StoreDatabase or storeEntry is missing.");
+                missingStoreEntryWarningLogged = true;
+            }
+
+            RestoreGameplayInput();
+        }
+
+
+        void OnEnable()
+        {
+            if (Instance == null)
+                Instance = this;
+
+            EnsureInputReady(false);
+        }
+
+
+        void OnDisable()
+        {
+            UnsubscribeInput();
         }
 
 
         //apply different inputs
         void Update()
         {
+            if (!EnsureInputReady(false))
+                lastBlockReason = "PlayerInput no disponible";
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+            HandleQaShortcuts();
+#endif
+
+            ReadSupplementalKeyboardState();
+
             switch(movementState)
             {
                 case MovementState.All:
@@ -163,7 +244,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static MovementState GetPreviousMovementState()
         {
-            return Instance.previousMovementState;
+            return Instance != null ? Instance.previousMovementState : MovementState.All;
         }
 
 
@@ -172,7 +253,7 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static Transform GetCameraTransform()
         {
-            return Instance.cameraTransform;
+            return Instance != null ? Instance.cameraTransform : null;
         }
 
 
@@ -181,7 +262,8 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void SetCameraRotation(Quaternion newRotation)
         {
-            Instance.cameraRotation = newRotation.eulerAngles;
+            if (Instance != null)
+                Instance.cameraRotation = newRotation.eulerAngles;
         }
 
 
@@ -190,6 +272,9 @@ namespace FLOBUK.StoreSimulator
         /// </summary>
         public static void SetMovementState(MovementState state, bool lockCursor)
         {
+            if (Instance == null)
+                return;
+
             if (Cursor.lockState == CursorLockMode.None && lockCursor == true)
             {
                 if (Mouse.current != null)
@@ -205,9 +290,49 @@ namespace FLOBUK.StoreSimulator
                     Instance.joysticks[1].SetActive(true);
             #endif
 
-            Cursor.lockState = lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
+            SetCursorForGameplay(lockCursor);
             Instance.previousMovementState = Instance.movementState;
             Instance.movementState = state;
+            Instance.lastBlockReason = state == MovementState.All ? "Gameplay" : "UI/controlled object";
+            if (state == MovementState.All)
+                Instance.EnsureGameplayActionMap();
+        }
+
+
+        /// <summary>
+        /// Restore the real gameplay input state after closing UI or controlled objects.
+        /// </summary>
+        public static void RestoreGameplayInput()
+        {
+            if (Instance == null)
+                return;
+
+            Instance.RestoreGameplayInputInternal();
+        }
+
+
+        /// <summary>
+        /// Enable or disable gameplay input through the same state path used by the asset.
+        /// </summary>
+        public static void SetGameplayInputEnabled(bool enabled)
+        {
+            if (enabled)
+                RestoreGameplayInput();
+            else
+                SetMovementState(MovementState.None, false);
+        }
+
+
+        /// <summary>
+        /// Returns the active PlayerInput used for gameplay subscriptions.
+        /// </summary>
+        public static PlayerInput GetActivePlayerInput()
+        {
+            if (Instance == null)
+                return PlayerInput.GetPlayerByIndex(0);
+
+            Instance.EnsureInputReady(false);
+            return Instance.playerInput;
         }
 
 
@@ -256,10 +381,17 @@ namespace FLOBUK.StoreSimulator
                     moveInput = context.ReadValue<Vector2>();
                     break;
                 case "View":
+                case "Look":
                     viewInput = context.ReadValue<Vector2>();
                     if (context.control.device.name == "Gamepad")
                         viewInput *= viewSensitivity;
 
+                    break;
+                case "Sprint":
+                    isSprinting = context.ReadValue<float>() > 0.1f;
+                    break;
+                case "Crouch":
+                    SetCrouching(context.ReadValue<float>() > 0.1f);
                     break;
                 case "Jump":
                     if (context.started)
@@ -277,8 +409,9 @@ namespace FLOBUK.StoreSimulator
             //prevent direction changes while jumping
             if (characterController.isGrounded) moveCache = moveInput;
 
-            moveDir = transform.TransformDirection(new Vector3(moveCache.x, gravityVelocity, moveCache.y));
-            characterController.Move(moveDir * speed * Time.deltaTime);
+            Vector3 horizontal = transform.TransformDirection(new Vector3(moveCache.x, 0f, moveCache.y));
+            moveDir = horizontal * GetCurrentSpeed();
+            characterController.Move((moveDir + Vector3.up * gravityVelocity) * Time.deltaTime);
         }
 
 
@@ -343,10 +476,239 @@ namespace FLOBUK.StoreSimulator
         }
 
 
+        private bool EnsureInputReady(bool logWarnings)
+        {
+            if (playerInput == null)
+                playerInput = ResolvePlayerInput();
+
+            if (playerInput == null)
+            {
+                if (logWarnings)
+                    Debug.LogWarning("PlayerController could not find PlayerInput. Movement will retry until PlayerInput is available.");
+                return false;
+            }
+
+            ResolveActionMaps(logWarnings);
+            EnsureGameplayActionMap();
+            if (!inputSubscribed)
+            {
+                playerInput.onActionTriggered += OnAction;
+                inputSubscribed = true;
+            }
+
+            return true;
+        }
+
+
+        private PlayerInput ResolvePlayerInput()
+        {
+            PlayerInput localInput = GetComponent<PlayerInput>();
+            if (localInput != null)
+                return localInput;
+
+            PlayerInput indexedInput = PlayerInput.GetPlayerByIndex(0);
+            if (indexedInput != null)
+                return indexedInput;
+
+            PlayerInput[] inputs = FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
+            return inputs.Length > 0 ? inputs[0] : null;
+        }
+
+
+        private void ResolveActionMaps(bool logWarnings)
+        {
+            if (playerInput == null || playerInput.actions == null)
+                return;
+
+            gameplayActionMap = playerInput.actions.FindActionMap("Default", false)
+                ?? playerInput.actions.FindActionMap("Player", false)
+                ?? (playerInput.actions.actionMaps.Count > 0 ? playerInput.actions.actionMaps[0] : null);
+
+            uiActionMap = playerInput.actions.FindActionMap("UI", false);
+            if (uiActionMap == null && logWarnings && !missingUiActionMapWarningLogged)
+            {
+                Debug.LogWarning("PlayerController did not find optional Input Action Map 'UI'. Continuing with gameplay input.");
+                missingUiActionMapWarningLogged = true;
+            }
+        }
+
+
+        private void EnsureGameplayActionMap()
+        {
+            if (playerInput == null || playerInput.actions == null)
+                return;
+
+            if (gameplayActionMap == null)
+                ResolveActionMaps(false);
+
+            if (gameplayActionMap != null)
+            {
+                if (!gameplayActionMap.enabled)
+                    gameplayActionMap.Enable();
+
+                if (playerInput.currentActionMap != gameplayActionMap)
+                    playerInput.SwitchCurrentActionMap(gameplayActionMap.name);
+            }
+
+            if (uiActionMap != null && uiActionMap != gameplayActionMap)
+                uiActionMap.Disable();
+        }
+
+
+        private void UnsubscribeInput()
+        {
+            if (playerInput != null && inputSubscribed)
+                playerInput.onActionTriggered -= OnAction;
+
+            inputSubscribed = false;
+        }
+
+
+        private void RestoreGameplayInputInternal()
+        {
+            EnsureInputReady(false);
+            Time.timeScale = 1f;
+            if (characterController != null)
+                characterController.enabled = true;
+            if (cameraTransform == null && Camera.main != null)
+                cameraTransform = Camera.main.transform;
+            if (cameraTransform != null)
+                cameraTransform.gameObject.SetActive(true);
+
+            moveInput = Vector2.zero;
+            moveCache = Vector2.zero;
+            viewInput = Vector2.zero;
+            gravityVelocity = characterController != null && characterController.isGrounded ? -1f : gravityVelocity;
+            SetCrouching(false);
+            SetMovementState(MovementState.All, true);
+            lastBlockReason = "Gameplay restaurado";
+        }
+
+
+        private static void SetCursorForGameplay(bool gameplay)
+        {
+            if (Instance != null)
+                Instance.wantsGameplayCursorLocked = gameplay;
+            Cursor.lockState = gameplay ? CursorLockMode.Locked : CursorLockMode.None;
+            Cursor.visible = !gameplay;
+        }
+
+
+        private void ReadSupplementalKeyboardState()
+        {
+            if (Keyboard.current == null || movementState != MovementState.All)
+                return;
+
+            bool runPressed = Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed;
+            bool crouchPressed = Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed || Keyboard.current.cKey.isPressed;
+            isSprinting = runPressed;
+            SetCrouching(crouchPressed);
+        }
+
+
+        private float GetCurrentSpeed()
+        {
+            float current = isSprinting ? Mathf.Max(runSpeed, speed) : speed;
+            return isCrouching ? current * crouchSpeedMultiplier : current;
+        }
+
+
+        private void SetCrouching(bool crouching)
+        {
+            if (isCrouching == crouching)
+                return;
+
+            isCrouching = crouching;
+            if (characterController != null && defaultControllerHeight > 0f)
+            {
+                characterController.height = crouching ? Mathf.Min(defaultControllerHeight, crouchHeight) : defaultControllerHeight;
+                characterController.center = crouching ? defaultControllerCenter + Vector3.down * ((defaultControllerHeight - characterController.height) * 0.5f) : defaultControllerCenter;
+            }
+
+            if (cameraTransform != null)
+            {
+                Vector3 target = defaultCameraLocalPosition;
+                if (crouching)
+                    target += Vector3.down * Mathf.Max(0.1f, (defaultControllerHeight - crouchHeight) * 0.5f);
+                cameraTransform.localPosition = target;
+            }
+        }
+
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+        private void HandleQaShortcuts()
+        {
+            if (Keyboard.current == null)
+                return;
+
+            if (Keyboard.current.f7Key.wasPressedThisFrame)
+            {
+                UIShopDesktop.RestoreGameplayInputForQA();
+                Debug.Log("QA Restore Gameplay Input ejecutado");
+            }
+
+            if (Keyboard.current.f9Key.wasPressedThisFrame)
+                showMovementDiagnostics = !showMovementDiagnostics;
+        }
+
+
+        void OnGUI()
+        {
+            if (!showMovementDiagnostics)
+                return;
+
+            GUILayout.BeginArea(new Rect(12, 12, 420, 250), GUI.skin.box);
+            GUILayout.Label("Movement QA Diagnostics (F9)");
+            GUILayout.Label("Position: " + transform.position.ToString("F3"));
+            GUILayout.Label("Speed: " + CurrentSpeed.ToString("F2") + " Grounded: " + IsGrounded);
+            GUILayout.Label("canMove: " + CanMove + " canLook: " + CanLook + " state: " + movementState);
+            GUILayout.Label("ActionMap: " + ActiveActionMapName + " subscribed: " + inputSubscribed);
+            GUILayout.Label("Cursor: " + Cursor.lockState + " visible: " + Cursor.visible);
+            GUILayout.Label("timeScale: " + Time.timeScale.ToString("F2") + " CC enabled: " + (characterController != null && characterController.enabled));
+            GUILayout.Label("Move: " + moveInput.ToString("F2") + " View: " + viewInput.ToString("F2"));
+            GUILayout.Label("Sprinting: " + isSprinting + " Crouching: " + isCrouching);
+            GUILayout.Label("Last block: " + lastBlockReason);
+            GUILayout.Label("F7 restaura movimiento");
+            GUILayout.EndArea();
+        }
+
+
+        public void ApplyMovementInputForQA(Vector2 input, float seconds)
+        {
+            EnsureInputReady(false);
+            moveInput = input;
+            moveCache = input;
+            if (movementState != MovementState.All || characterController == null || !characterController.enabled)
+                return;
+
+            Vector3 horizontal = transform.TransformDirection(new Vector3(input.x, 0f, input.y));
+            characterController.Move(horizontal * GetCurrentSpeed() * Mathf.Max(0f, seconds));
+        }
+
+
+        public void ApplyLookInputForQA(Vector2 input)
+        {
+            viewInput = input;
+            ApplyRotation();
+        }
+
+
+        public void SetCrouchingForQA(bool crouching)
+        {
+            SetCrouching(crouching);
+        }
+
+
+        public void SetMovementDiagnosticsVisibleForQA(bool visible)
+        {
+            showMovementDiagnostics = visible;
+        }
+#endif
+
+
         void OnDestroy()
         {
-            if (playerInput != null)
-                playerInput.onActionTriggered -= OnAction;
+            UnsubscribeInput();
         }
     }
 }

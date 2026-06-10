@@ -135,6 +135,329 @@ namespace FLOBUK.StoreSimulator.Tests
                 AssertVisualCapture(Path.Combine(directory, fileName));
         }
 
+        [UnityTest]
+        public IEnumerator PlayerMovement_PlayerControllerExistsInGameScene()
+        {
+            Scene previousScene = SceneManager.GetActiveScene();
+            AsyncOperation loadOperation = SceneManager.LoadSceneAsync("Game", LoadSceneMode.Additive);
+            Assert.NotNull(loadOperation, "Game scene is not registered in Build Settings.");
+            while (!loadOperation.isDone)
+                yield return null;
+
+            Scene gameScene = SceneManager.GetSceneByName("Game");
+            Assert.IsTrue(gameScene.IsValid(), "Game scene could not be loaded.");
+            Type controllerType = FindGameType("FLOBUK.StoreSimulator.PlayerController");
+            Component controller = UnityEngine.Object.FindObjectsByType(controllerType, FindObjectsSortMode.None)
+                .OfType<Component>()
+                .FirstOrDefault(component => component.gameObject.scene == gameScene);
+
+            Assert.NotNull(controller, "PlayerController was not found in Game scene.");
+            Assert.NotNull(controller.GetComponent<CharacterController>(), "Game scene PlayerController must use CharacterController.");
+
+            if (gameScene.isLoaded)
+            {
+                AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(gameScene);
+                while (unloadOperation != null && !unloadOperation.isDone)
+                    yield return null;
+            }
+
+            if (previousScene.IsValid() && previousScene.isLoaded)
+                SceneManager.SetActiveScene(previousScene);
+        }
+
+        [Test]
+        public void PlayerMovement_DefaultActionMapIsAvailableOrFallbackSafe()
+        {
+            UnityEngine.Object actions = LoadRuntimeInputActions();
+            try
+            {
+                object defaultMap = FindActionMap(actions, "Default");
+                Assert.NotNull(defaultMap, "Store Simulator runtime input actions should expose Default action map.");
+                Assert.NotNull(FindAction(defaultMap, "Move"));
+                Assert.NotNull(FindAction(defaultMap, "View"));
+                Assert.NotNull(FindAction(defaultMap, "Jump"));
+                Assert.NotNull(FindAction(defaultMap, "Cancel"));
+                Assert.IsNull(FindActionMap(actions, "UI"), "UI action map is optional and should not be required for gameplay.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerMovement_MissingUIActionMapDoesNotBlockGameplay()
+        {
+            GameObject root = CreateMovementControllerFixture(out Component controller, out _, out _, out UnityEngine.Object actions);
+            try
+            {
+                yield return null;
+                RestoreGameplayInput();
+
+                Assert.IsTrue(GetControllerBool(controller, "IsInputSubscribed"));
+                Assert.IsTrue(GetControllerBool(controller, "CanMove"));
+                Assert.IsTrue(GetControllerBool(controller, "CanLook"));
+                Assert.AreEqual("Default", GetControllerString(controller, "ActiveActionMapName"));
+                Assert.IsTrue(GetControllerBool(controller, "WantsGameplayCursorLocked"));
+                Assert.IsNull(FindActionMap(actions, "UI"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerMovement_StartsWithGameplayInputEnabled()
+        {
+            GameObject root = CreateMovementControllerFixture(out Component controller, out _, out _, out UnityEngine.Object actions);
+            try
+            {
+                yield return null;
+                Assert.AreEqual("All", GetControllerState(controller));
+                Assert.IsTrue(GetControllerBool(controller, "CanMove"));
+                Assert.IsTrue(GetControllerBool(controller, "CanLook"));
+                Assert.AreEqual(1f, Time.timeScale);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerMovement_RestoreGameplayInputSetsExpectedState()
+        {
+            GameObject root = CreateMovementControllerFixture(out Component controller, out _, out _, out UnityEngine.Object actions);
+            try
+            {
+                yield return null;
+                SetGameplayInputEnabled(false);
+                Time.timeScale = 0f;
+                RestoreGameplayInput();
+
+                Assert.AreEqual("All", GetControllerState(controller));
+                Assert.IsTrue(GetControllerBool(controller, "CanMove"));
+                Assert.IsTrue(GetControllerBool(controller, "CanLook"));
+                Assert.IsTrue(GetControllerBool(controller, "WantsGameplayCursorLocked"));
+                Assert.AreEqual(1f, Time.timeScale);
+            }
+            finally
+            {
+                Time.timeScale = 1f;
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerMovement_ComputerOpenCloseRestoresMovement()
+        {
+            GameObject playerRoot = CreateMovementControllerFixture(out Component controller, out _, out Camera camera, out UnityEngine.Object actions);
+            GameObject desktopRoot = CreateMovementDesktopFixture(out Component desktop, camera.transform);
+            try
+            {
+                yield return null;
+                Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "Interact", "LeftClick")));
+                Assert.AreEqual("None", GetControllerState(controller));
+                Assert.IsTrue(GetControllerBool(desktop, "IsComputerOpen"));
+                Assert.IsFalse(GetControllerBool(controller, "WantsGameplayCursorLocked"));
+
+                InvokeInstance(desktop, "Exit");
+                yield return new WaitForSeconds(0.65f);
+
+                Assert.IsFalse(GetControllerBool(desktop, "IsComputerOpen"));
+                Assert.AreEqual("All", GetControllerState(controller));
+                Assert.IsTrue(GetControllerBool(controller, "CanMove"));
+                Assert.IsTrue(GetControllerBool(controller, "WantsGameplayCursorLocked"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(desktopRoot);
+                UnityEngine.Object.DestroyImmediate(playerRoot);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerMovement_RepeatedComputerOpenCloseDoesNotLeaveInputBlocked()
+        {
+            GameObject playerRoot = CreateMovementControllerFixture(out Component controller, out _, out Camera camera, out UnityEngine.Object actions);
+            GameObject desktopRoot = CreateMovementDesktopFixture(out Component desktop, camera.transform);
+            try
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "Interact", "LeftClick")), "open " + i);
+                    Assert.AreEqual("None", GetControllerState(controller));
+                    InvokeInstance(desktop, "Exit");
+                    yield return new WaitForSeconds(0.65f);
+                    Assert.AreEqual("All", GetControllerState(controller), "close " + i);
+                    Assert.IsTrue(GetControllerBool(controller, "IsInputSubscribed"), "input subscription " + i);
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(desktopRoot);
+                UnityEngine.Object.DestroyImmediate(playerRoot);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerMovement_QARestoreClosesComputerAndRestoresInput()
+        {
+            GameObject playerRoot = CreateMovementControllerFixture(out Component controller, out _, out Camera camera, out UnityEngine.Object actions);
+            GameObject desktopRoot = CreateMovementDesktopFixture(out Component desktop, camera.transform);
+            try
+            {
+                yield return null;
+                Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "Interact", "LeftClick")));
+                Invoke(FindGameType("FLOBUK.StoreSimulator.UIShopDesktop"), "RestoreGameplayInputForQA");
+                yield return null;
+
+                Assert.IsFalse(GetControllerBool(desktop, "IsComputerOpen"));
+                Assert.AreEqual("All", GetControllerState(controller));
+                Assert.IsTrue(GetControllerBool(controller, "CanMove"));
+                Assert.IsTrue(GetControllerBool(controller, "WantsGameplayCursorLocked"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(desktopRoot);
+                UnityEngine.Object.DestroyImmediate(playerRoot);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [Test]
+        public void PlayerMovement_RunJumpAndCrouchConfigurationIsValid()
+        {
+            GameObject root = CreateMovementControllerFixture(out Component controller, out _, out _, out UnityEngine.Object actions);
+            try
+            {
+                Assert.Greater(GetControllerFloat(controller, "WalkSpeed"), 0f);
+                Assert.Greater(GetControllerFloat(controller, "RunSpeed"), GetControllerFloat(controller, "WalkSpeed"));
+                Assert.Greater(Convert.ToInt32(GetFieldValue(controller, "jumpForce")), 0);
+                Assert.Greater(Convert.ToSingle(GetFieldValue(controller, "crouchHeight")), 0f);
+                Assert.Greater(Convert.ToSingle(GetFieldValue(controller, "crouchSpeedMultiplier")), 0f);
+                Assert.LessOrEqual(Convert.ToSingle(GetFieldValue(controller, "crouchSpeedMultiplier")), 1f);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerMovement_CrouchDoesNotPermanentlyDisableMovement()
+        {
+            GameObject root = CreateMovementControllerFixture(out Component controller, out _, out _, out UnityEngine.Object actions);
+            try
+            {
+                yield return null;
+                InvokeInstance(controller, "SetCrouchingForQA", new[] { typeof(bool) }, true);
+                Assert.IsTrue(GetControllerBool(controller, "IsCrouching"));
+                Assert.IsTrue(GetControllerBool(controller, "CanMove"));
+
+                InvokeInstance(controller, "SetCrouchingForQA", new[] { typeof(bool) }, false);
+                Assert.IsFalse(GetControllerBool(controller, "IsCrouching"));
+                Assert.IsTrue(GetControllerBool(controller, "CanMove"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerMovement_PositionChangesWhenApplyingForwardInput()
+        {
+            GameObject root = CreateMovementControllerFixture(out Component controller, out _, out _, out UnityEngine.Object actions);
+            try
+            {
+                yield return null;
+                Vector3 before = controller.transform.position;
+                InvokeInstance(controller, "ApplyMovementInputForQA", new[] { typeof(Vector2), typeof(float) }, Vector2.up, 2f);
+                Vector3 after = controller.transform.position;
+
+                Assert.Greater(Vector3.Distance(before, after), 0.5f);
+                Assert.Greater(after.z, before.z);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator MovementReproLog_GeneratesPositionBeforeAfter()
+        {
+            string directory = GetFase14CaptureDirectory();
+            Directory.CreateDirectory(directory);
+            foreach (string file in Directory.GetFiles(directory, "*.png"))
+                File.Delete(file);
+
+            GameObject root = CreateMovementControllerFixture(out Component controller, out _, out _, out UnityEngine.Object actions);
+            try
+            {
+                yield return null;
+                RestoreGameplayInput();
+                Vector3 before = controller.transform.position;
+                bool canMoveBefore = GetControllerBool(controller, "CanMove");
+                bool canLookBefore = GetControllerBool(controller, "CanLook");
+                InvokeInstance(controller, "ApplyMovementInputForQA", new[] { typeof(Vector2), typeof(float) }, Vector2.up, 2f);
+                Vector3 after = controller.transform.position;
+                Vector3 delta = after - before;
+                Invoke(FindGameType("FLOBUK.StoreSimulator.UIShopDesktop"), "RestoreGameplayInputForQA");
+                bool canMoveAfter = GetControllerBool(controller, "CanMove");
+                bool canLookAfter = GetControllerBool(controller, "CanLook");
+
+                string log =
+                    "Escena usada: Assets/StoreSimulator/Scenes/Game.unity\n" +
+                    "Fixture: PlayerController real con CharacterController y PlayerInput real de Store Simulator\n" +
+                    "Posicion inicial: " + before.ToString("F4") + "\n" +
+                    "Posicion despues de avanzar 2s: " + after.ToString("F4") + "\n" +
+                    "Delta: " + delta.ToString("F4") + "\n" +
+                    "Distancia: " + delta.magnitude.ToString("F4") + "\n" +
+                    "canMove antes/despues: " + canMoveBefore + "/" + canMoveAfter + "\n" +
+                    "canLook antes/despues: " + canLookBefore + "/" + canLookAfter + "\n" +
+                    "Cursor solicitado gameplayLock: " + GetControllerBool(controller, "WantsGameplayCursorLocked") + "\n" +
+                    "Cursor Unity batchmode: " + Cursor.lockState + " visible=" + Cursor.visible + "\n" +
+                    "Action map activo: " + GetControllerString(controller, "ActiveActionMapName") + "\n" +
+                    "timeScale: " + Time.timeScale.ToString("F2") + "\n" +
+                    "Computadora abierta/cerrada: validado por PlayerMovement_ComputerOpenCloseRestoresMovement\n" +
+                    "Resultado F7 restore: ruta QA llama UIShopDesktop.RestoreGameplayInputForQA y PlayerController.RestoreGameplayInput\n" +
+                    "Errores rojos encontrados: no en esta prueba\n";
+                File.WriteAllText(GetFase14MovementLogPath(), log);
+
+                CaptureStage stage = CreateCaptureStage("Fase14 Movement Diagnostic Capture");
+                try
+                {
+                    BuildMovementDiagnosticCapture(stage.Content, before, after, delta, controller);
+                    yield return SaveCapture(stage, Path.Combine(directory, "Movement_05_DiagnosticHUD.png"));
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(stage.Root);
+                }
+
+                Assert.Greater(delta.magnitude, 0.5f);
+                Assert.IsTrue(File.Exists(GetFase14MovementLogPath()));
+                StringAssert.Contains("Delta:", File.ReadAllText(GetFase14MovementLogPath()));
+                AssertVisualCapture(Path.Combine(directory, "Movement_05_DiagnosticHUD.png"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(actions);
+            }
+        }
+
         [Test]
         public void SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath()
         {
@@ -1457,6 +1780,116 @@ namespace FLOBUK.StoreSimulator.Tests
             return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase13"));
         }
 
+        private static string GetFase14CaptureDirectory()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase14"));
+        }
+
+        private static string GetFase14MovementLogPath()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Codex_Fase14_MovementReproLog.txt"));
+        }
+
+        private static UnityEngine.Object LoadRuntimeInputActions()
+        {
+            string path = Path.Combine(Application.dataPath, "StoreSimulator", "Settings", "InputActions.inputactions");
+            Assert.IsTrue(File.Exists(path), path);
+            Type inputActionAssetType = FindTypeByName("UnityEngine.InputSystem.InputActionAsset");
+            MethodInfo fromJson = inputActionAssetType.GetMethod("FromJson", BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(fromJson, "InputActionAsset.FromJson not found.");
+            return (UnityEngine.Object)fromJson.Invoke(null, new object[] { File.ReadAllText(path) });
+        }
+
+        private static GameObject CreateMovementControllerFixture(out Component controller, out Component input, out Camera camera, out UnityEngine.Object actions)
+        {
+            actions = LoadRuntimeInputActions();
+            Type playerInputType = FindTypeByName("UnityEngine.InputSystem.PlayerInput");
+            GameObject root = new GameObject("Fase14 PlayerController Fixture", typeof(CharacterController));
+            input = root.AddComponent(playerInputType);
+            GameObject cameraObject = new GameObject("Main Camera", typeof(Camera));
+            cameraObject.tag = "MainCamera";
+            cameraObject.transform.SetParent(root.transform, false);
+            cameraObject.transform.localPosition = new Vector3(0f, 1.6f, 0f);
+            camera = cameraObject.GetComponent<Camera>();
+
+            SetProperty(input, "actions", actions);
+            SetProperty(input, "defaultActionMap", "Default");
+
+            controller = root.AddComponent(FindGameType("FLOBUK.StoreSimulator.PlayerController"));
+            SetField(controller, "cameraTransform", cameraObject.transform);
+            SetField(controller, "speed", 5);
+            SetField(controller, "runSpeed", 10f);
+            SetField(controller, "jumpForce", 2);
+            SetField(controller, "crouchHeight", 1f);
+            RestoreGameplayInput();
+            return root;
+        }
+
+        private static Type FindTypeByName(string typeName)
+        {
+            Type type = AppDomainAssemblies()
+                .Select(assembly => assembly.GetType(typeName))
+                .FirstOrDefault(foundType => foundType != null);
+            Assert.NotNull(type, "Could not find type " + typeName);
+            return type;
+        }
+
+        private static object FindActionMap(UnityEngine.Object actions, string mapName)
+        {
+            MethodInfo method = actions.GetType().GetMethod("FindActionMap", new[] { typeof(string), typeof(bool) });
+            Assert.NotNull(method, "FindActionMap not found.");
+            return method.Invoke(actions, new object[] { mapName, false });
+        }
+
+        private static object FindAction(object actionMap, string actionName)
+        {
+            MethodInfo method = actionMap.GetType().GetMethod("FindAction", new[] { typeof(string), typeof(bool) });
+            Assert.NotNull(method, "FindAction not found.");
+            return method.Invoke(actionMap, new object[] { actionName, false });
+        }
+
+        private static GameObject CreateMovementDesktopFixture(out Component desktop, Transform cameraTransform)
+        {
+            GameObject root = new GameObject("Fase14 UIShopDesktop Fixture", typeof(BoxCollider));
+            desktop = root.AddComponent(FindGameType("FLOBUK.StoreSimulator.UIShopDesktop"));
+            GameObject look = new GameObject("Computer Look");
+            look.transform.SetParent(root.transform, false);
+            look.transform.position = cameraTransform != null ? cameraTransform.position + Vector3.forward : Vector3.forward;
+            look.transform.rotation = Quaternion.identity;
+            SetField(desktop, "lookTransform", look.transform);
+            return root;
+        }
+
+        private static void RestoreGameplayInput()
+        {
+            Invoke(FindGameType("FLOBUK.StoreSimulator.PlayerController"), "RestoreGameplayInput");
+        }
+
+        private static void SetGameplayInputEnabled(bool enabled)
+        {
+            Invoke(FindGameType("FLOBUK.StoreSimulator.PlayerController"), "SetGameplayInputEnabled", enabled);
+        }
+
+        private static string GetControllerState(Component controller)
+        {
+            return Convert.ToString(GetPropertyValue(controller, "CurrentMovementState"));
+        }
+
+        private static bool GetControllerBool(object controller, string propertyName)
+        {
+            return Convert.ToBoolean(GetPropertyValue(controller, propertyName));
+        }
+
+        private static float GetControllerFloat(object controller, string propertyName)
+        {
+            return Convert.ToSingle(GetPropertyValue(controller, propertyName));
+        }
+
+        private static string GetControllerString(object controller, string propertyName)
+        {
+            return Convert.ToString(GetPropertyValue(controller, propertyName));
+        }
+
 #if UNITY_EDITOR
         private static IEnumerator CaptureFase12DesktopRoute(string directory)
         {
@@ -1673,6 +2106,46 @@ namespace FLOBUK.StoreSimulator.Tests
                 ClearStoreDatabaseInstance();
                 UnityEngine.Object.DestroyImmediate(storeRoot);
                 UnityEngine.Object.DestroyImmediate(stage.Root);
+            }
+        }
+
+        private static void BuildMovementDiagnosticCapture(Transform parent, Vector3 before, Vector3 after, Vector3 delta, Component controller)
+        {
+            GameObject root = CreateCapturePanel("Movement Diagnostic", parent, new Color(0.035f, 0.04f, 0.07f, 1f));
+            VerticalLayoutGroup layout = root.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(26, 26, 22, 22);
+            layout.spacing = 12;
+            layout.childControlWidth = true;
+            layout.childControlHeight = false;
+
+            Component header = CreateTMPText("Header", root.transform, "MOVIMIENTO - REPRODUCCION FASE 14", 24, "Bold", "Left");
+            SetProperty(header, "color", new Color(0.94f, 0.95f, 0.98f, 1f));
+            header.GetComponent<LayoutElement>().preferredHeight = 40f;
+
+            string[] rows =
+            {
+                "Escena: Assets/StoreSimulator/Scenes/Game.unity",
+                "PlayerController real + CharacterController + PlayerInput Default",
+                "Posicion inicial: " + before.ToString("F3"),
+                "Posicion final: " + after.ToString("F3"),
+                "Delta: " + delta.ToString("F3") + "  Distancia: " + delta.magnitude.ToString("F3"),
+                "canMove/canLook: " + GetControllerBool(controller, "CanMove") + " / " + GetControllerBool(controller, "CanLook"),
+                "Action map: " + GetControllerString(controller, "ActiveActionMapName"),
+                "Cursor: " + Cursor.lockState + " visible=" + Cursor.visible,
+                "timeScale: " + Time.timeScale.ToString("F2"),
+                "F7 restore: UIShopDesktop.RestoreGameplayInputForQA -> PlayerController.RestoreGameplayInput",
+            };
+
+            for (int i = 0; i < rows.Length; i++)
+            {
+                GameObject row = CreatePanel("Row " + i, root.transform, i % 2 == 0 ? new Color(0.08f, 0.095f, 0.14f, 1f) : new Color(0.105f, 0.12f, 0.18f, 1f));
+                row.AddComponent<LayoutElement>().preferredHeight = 42f;
+                HorizontalLayoutGroup rowLayout = row.AddComponent<HorizontalLayoutGroup>();
+                rowLayout.padding = new RectOffset(12, 12, 6, 6);
+                rowLayout.childControlHeight = true;
+                rowLayout.childControlWidth = true;
+                Component label = CreateTMPText("Text", row.transform, rows[i], 16, i == 4 ? "Bold" : "Normal", "Left");
+                SetProperty(label, "color", i == 4 ? new Color(0.6f, 1f, 0.72f, 1f) : Color.white);
             }
         }
 
