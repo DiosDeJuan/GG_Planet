@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -1691,6 +1692,71 @@ namespace FLOBUK.StoreSimulator.Tests
             CollectionAssert.IsEmpty(products.Select(product => GetDefinitionString(product, "NodeId")).Where(nodeId => GetNode(nodeId) == null).Distinct().ToArray());
         }
 
+        [Test]
+        public void EntrepreneurTree_Fase15GraphIntegrityIsCompleteReachableAndAcyclic()
+        {
+            object[] nodes = GetTreeNodes();
+            string[] nodeIds = nodes.Select(GetNodeId).ToArray();
+            CollectionAssert.AllItemsAreUnique(nodeIds);
+            Assert.AreEqual(37, nodes.Length);
+            Assert.AreEqual("productos_basicos_1", GetNodeId(nodes.First(node => GetNodeCost(node) == 0)));
+
+            HashSet<string> ids = new HashSet<string>(nodeIds);
+            List<string> errors = new List<string>();
+            foreach (object node in nodes)
+            {
+                string nodeId = GetNodeId(node);
+                string[] prerequisites = GetNodePrerequisites(node);
+                CollectionAssert.AllItemsAreUnique(prerequisites, nodeId);
+                foreach (string prerequisite in prerequisites)
+                {
+                    if (!ids.Contains(prerequisite))
+                        errors.Add(nodeId + " references missing prerequisite " + prerequisite);
+                    if (prerequisite == nodeId)
+                        errors.Add(nodeId + " references itself");
+                }
+            }
+
+            HashSet<string> reachable = GetReachableTreeNodes();
+            foreach (string nodeId in nodeIds)
+            {
+                if (!reachable.Contains(nodeId))
+                    errors.Add(nodeId + " is not reachable from productos_basicos_1");
+            }
+
+            CollectionAssert.IsEmpty(errors);
+        }
+
+        [Test]
+        public void EntrepreneurTree_Fase15CanUnlockEveryNodeAndCompleteTree()
+        {
+            ResetProgress();
+            UnlockEntireTreeForTest();
+
+            Assert.AreEqual(GetTreeNodes().Length, InvokeInt(GetProgressType(), "GetUnlockedNodeCount"));
+            Assert.IsTrue(Convert.ToBoolean(Invoke(GetProgressType(), "IsTreeComplete")));
+            Assert.IsTrue(IsAchievementCompleted("arbol_completo"));
+            Assert.AreEqual(3, GetProgressInt("SecurityLevel"));
+            Assert.AreEqual(1.1f, GetProgressFloat("EmployeeWorkSpeedMultiplier"), 0.0001f);
+            Assert.AreEqual(1.05f, GetProgressFloat("CashierRevenueMultiplier"), 0.0001f);
+            Assert.GreaterOrEqual(GetProgressInt("AvailablePoints"), 0);
+        }
+
+        [Test]
+        public void EntrepreneurTree_Fase15RuntimeAuditCanBeGenerated()
+        {
+            string audit = BuildFase15RuntimeAudit();
+            string path = GetFase15AuditPath();
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllText(path, audit);
+
+            Assert.IsTrue(File.Exists(path), path);
+            StringAssert.Contains("Fase 15 Entrepreneur Tree Runtime Audit", audit);
+            StringAssert.Contains("Errors: 0", audit);
+            StringAssert.Contains("Tree completion: PASS", audit);
+            StringAssert.Contains("Documented products: 47", audit);
+        }
+
         [UnityTest]
         public IEnumerator TreeRuntime_QAOverlayAddsPointsUnlocksAndStaysHiddenByDefault()
         {
@@ -1720,6 +1786,40 @@ namespace FLOBUK.StoreSimulator.Tests
                 UnityEngine.Object.DestroyImmediate(root);
                 ResetProgress();
             }
+        }
+
+        [UnityTest]
+        public IEnumerator EntrepreneurTree_Fase15CapturesFinalArbolStates()
+        {
+            string directory = GetFase15CaptureDirectory();
+            Directory.CreateDirectory(directory);
+            foreach (string file in Directory.GetFiles(directory, "*.png"))
+                File.Delete(file);
+
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+                Assert.Ignore("Capturas Fase 15 omitidas: Unity esta ejecutando con dispositivo grafico Null.");
+
+#if UNITY_EDITOR
+            yield return CaptureFase15DesktopRoute(directory);
+
+            string[] expected =
+            {
+                "Arbol_Final_01_VistaGeneral.png",
+                "Arbol_Final_02_Productos.png",
+                "Arbol_Final_03_Empleados.png",
+                "Arbol_Final_04_Seguridad.png",
+                "Arbol_Final_05_Mejoras.png",
+                "Arbol_Final_06_QAOverlay.png",
+                "Arbol_Final_07_Logros.png",
+                "Arbol_Final_08_Completado.png",
+            };
+
+            foreach (string fileName in expected)
+                AssertVisualCapture(Path.Combine(directory, fileName));
+#else
+            yield return null;
+            Assert.Ignore("Capturas Fase 15 requieren UnityEditor para instanciar el prefab real UIShopDesktop.");
+#endif
         }
 
         [UnityTest]
@@ -1788,6 +1888,16 @@ namespace FLOBUK.StoreSimulator.Tests
         private static string GetFase14MovementLogPath()
         {
             return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Codex_Fase14_MovementReproLog.txt"));
+        }
+
+        private static string GetFase15CaptureDirectory()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase15"));
+        }
+
+        private static string GetFase15AuditPath()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Codex_Fase15_ArbolRuntimeAudit.txt"));
         }
 
         private static UnityEngine.Object LoadRuntimeInputActions()
@@ -1935,6 +2045,59 @@ namespace FLOBUK.StoreSimulator.Tests
         private static IEnumerator SaveFase12TreeCapture(CaptureStage stage, Component desktop, Component tree, string directory, string fileName, string selectedNodeId, bool achievements, bool qaOverlay)
         {
             ResetProgress();
+            Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, qaOverlay)));
+            InvokeInstance(tree, "SetQaOverlayVisibleForQA", new[] { typeof(bool) }, qaOverlay);
+            InvokeInstance(tree, "ShowAchievementsForQA", new[] { typeof(bool) }, achievements);
+            if (!string.IsNullOrEmpty(selectedNodeId))
+                Assert.IsTrue(Convert.ToBoolean(InvokeInstance(tree, "SelectNodeForQA", selectedNodeId)), selectedNodeId);
+
+            yield return SaveCapture(stage, Path.Combine(directory, fileName));
+        }
+
+        private static IEnumerator CaptureFase15DesktopRoute(string directory)
+        {
+            ResetProgress();
+            CaptureStage stage = CreateCaptureStage("Fase15 Final Entrepreneur Tree Capture");
+            GameObject desktopPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/StoreSimulator/Prefabs/UI/UIShopDesktop.prefab");
+            Assert.NotNull(desktopPrefab, "UIShopDesktop prefab could not be loaded.");
+            GameObject desktopObject = UnityEngine.Object.Instantiate(desktopPrefab, stage.Content, false);
+            Component desktop = GetFirstComponentByTypeName(desktopObject.transform, "UIShopDesktop");
+            Assert.NotNull(desktop, "UIShopDesktop component could not be resolved from prefab.");
+
+            try
+            {
+                RectTransform rect = desktopObject.GetComponent<RectTransform>();
+                if (rect != null)
+                    Stretch(rect, Vector2.zero, Vector2.zero);
+
+                Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, false)));
+                yield return null;
+
+                Component tree = GetFirstComponentByTypeName(desktopObject.transform, "EntrepreneurTreeUI");
+                Assert.NotNull(tree, "EntrepreneurTreeUI was not created in UIShopDesktop prefab route.");
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_01_VistaGeneral.png", null, false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_02_Productos.png", "electrodomesticos_1", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_03_Empleados.png", "empleado_18", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_04_Seguridad.png", "seguridad_3", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_05_Mejoras.png", "mejora_carismatico", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_06_QAOverlay.png", "productos_basicos_2", false, true, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_07_Logros.png", null, true, true, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_08_Completado.png", "empleado_18", true, false, true);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(desktopObject);
+                UnityEngine.Object.DestroyImmediate(stage.Root);
+                ResetProgress();
+            }
+        }
+
+        private static IEnumerator SaveFase15TreeCapture(CaptureStage stage, Component desktop, Component tree, string directory, string fileName, string selectedNodeId, bool achievements, bool qaOverlay, bool completeTree)
+        {
+            ResetProgress();
+            if (completeTree)
+                UnlockEntireTreeForTest();
+
             Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, qaOverlay)));
             InvokeInstance(tree, "SetQaOverlayVisibleForQA", new[] { typeof(bool) }, qaOverlay);
             InvokeInstance(tree, "ShowAchievementsForQA", new[] { typeof(bool) }, achievements);
@@ -2443,6 +2606,120 @@ namespace FLOBUK.StoreSimulator.Tests
             CollectionAssert.AreEqual(new[] { prerequisiteId }, GetNodePrerequisites(node), nodeId);
             Assert.AreEqual(1, GetNodeCost(node), nodeId);
             StringAssert.Contains(benefitText, GetNodeBenefit(node));
+        }
+
+        private static string BuildFase15RuntimeAudit()
+        {
+            object[] nodes = GetTreeNodes();
+            object[] products = GetDocumentedProductDefinitions();
+            HashSet<string> ids = new HashSet<string>(nodes.Select(GetNodeId));
+            HashSet<string> reachable = GetReachableTreeNodes();
+            List<string> errors = new List<string>();
+
+            foreach (object node in nodes)
+            {
+                string nodeId = GetNodeId(node);
+                foreach (string prerequisite in GetNodePrerequisites(node))
+                {
+                    if (!ids.Contains(prerequisite))
+                        errors.Add(nodeId + " missing prerequisite " + prerequisite);
+                    if (prerequisite == nodeId)
+                        errors.Add(nodeId + " self prerequisite");
+                }
+
+                if (!reachable.Contains(nodeId))
+                    errors.Add(nodeId + " unreachable from default node");
+            }
+
+            foreach (object product in products)
+            {
+                string nodeId = GetDefinitionString(product, "NodeId");
+                if (!ids.Contains(nodeId))
+                    errors.Add("Product " + GetDefinitionString(product, "Id") + " references missing node " + nodeId);
+            }
+
+            ResetProgress();
+            UnlockEntireTreeForTest();
+            bool complete = Convert.ToBoolean(Invoke(GetProgressType(), "IsTreeComplete"));
+
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("Fase 15 Entrepreneur Tree Runtime Audit");
+            builder.AppendLine("Generated by PlayMode regression.");
+            builder.AppendLine("Tree nodes: " + nodes.Length);
+            builder.AppendLine("Product nodes: " + nodes.Count(node => GetNodeTypeName(node) == "Product"));
+            builder.AppendLine("Employee nodes: " + nodes.Count(node => GetNodeTypeName(node) == "Employee"));
+            builder.AppendLine("Security nodes: " + nodes.Count(node => GetNodeTypeName(node) == "Security"));
+            builder.AppendLine("Upgrade nodes: " + nodes.Count(node => GetNodeTypeName(node) == "Upgrade"));
+            builder.AppendLine("Reachable nodes: " + reachable.Count);
+            builder.AppendLine("Documented products: " + products.Length);
+            builder.AppendLine("Unlocked after full route: " + InvokeInt(GetProgressType(), "GetUnlockedNodeCount"));
+            builder.AppendLine("Tree completion: " + (complete ? "PASS" : "FAIL"));
+            builder.AppendLine("Security level after full route: " + GetProgressInt("SecurityLevel"));
+            builder.AppendLine("Employee speed multiplier: " + GetProgressFloat("EmployeeWorkSpeedMultiplier").ToString("0.00"));
+            builder.AppendLine("Cashier revenue multiplier: " + GetProgressFloat("CashierRevenueMultiplier").ToString("0.00"));
+            builder.AppendLine("Errors: " + errors.Count);
+            foreach (string error in errors)
+                builder.AppendLine("ERROR: " + error);
+
+            builder.AppendLine();
+            builder.AppendLine("Nodes:");
+            foreach (object node in nodes.OrderBy(GetNodeId))
+            {
+                string prerequisites = GetNodePrerequisites(node).Length == 0 ? "none" : string.Join(",", GetNodePrerequisites(node));
+                builder.AppendLine("- " + GetNodeId(node) + " | " + GetNodeTypeName(node) + " | cost " + GetNodeCost(node) + " | prereq " + prerequisites);
+            }
+
+            return builder.ToString();
+        }
+
+        private static HashSet<string> GetReachableTreeNodes()
+        {
+            object[] nodes = GetTreeNodes();
+            HashSet<string> reachable = new HashSet<string> { "productos_basicos_1" };
+            bool changed = true;
+            while (changed)
+            {
+                changed = false;
+                foreach (object node in nodes)
+                {
+                    string nodeId = GetNodeId(node);
+                    if (reachable.Contains(nodeId))
+                        continue;
+
+                    string[] prerequisites = GetNodePrerequisites(node);
+                    if (prerequisites.Length > 0 && prerequisites.All(reachable.Contains))
+                        changed |= reachable.Add(nodeId);
+                }
+            }
+
+            return reachable;
+        }
+
+        private static void UnlockEntireTreeForTest()
+        {
+            object[] nodes = GetTreeNodes();
+            int guard = 0;
+            while (!Convert.ToBoolean(Invoke(GetProgressType(), "IsTreeComplete")) && guard++ < nodes.Length + 5)
+            {
+                bool progressed = false;
+                foreach (object node in nodes)
+                {
+                    string nodeId = GetNodeId(node);
+                    if (IsUnlocked(nodeId))
+                        continue;
+
+                    if (!GetNodePrerequisites(node).All(IsUnlocked))
+                        continue;
+
+                    AddTestProgressPoints(GetNodeCost(node));
+                    Assert.IsTrue(TryUnlock(nodeId, out string message), nodeId + ": " + message);
+                    progressed = true;
+                }
+
+                Assert.IsTrue(progressed, "No further tree nodes could be unlocked.");
+            }
+
+            Assert.IsTrue(Convert.ToBoolean(Invoke(GetProgressType(), "IsTreeComplete")));
         }
 
         private static void UnlockWithPoint(params string[] nodeIds)
