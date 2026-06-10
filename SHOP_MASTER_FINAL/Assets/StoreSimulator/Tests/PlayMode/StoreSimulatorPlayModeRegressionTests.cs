@@ -36,6 +36,54 @@ namespace FLOBUK.StoreSimulator.Tests
         }
 
         [Test]
+        public void VisualEvidence_CaptureDirectoryCanBeCreated()
+        {
+            string directory = GetFase11CaptureDirectory();
+            Directory.CreateDirectory(directory);
+            Assert.IsTrue(Directory.Exists(directory));
+        }
+
+        [UnityTest]
+        public IEnumerator VisualEvidence_GeneratesAutomatedUnityCaptures()
+        {
+            string directory = GetFase11CaptureDirectory();
+            Directory.CreateDirectory(directory);
+            foreach (string file in Directory.GetFiles(directory, "*.png"))
+                File.Delete(file);
+
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+                Assert.Ignore("Capturas visuales omitidas: Unity esta ejecutando con dispositivo grafico Null.");
+
+            yield return CaptureTree(directory, "Arbol_01_VistaGeneral.png", null, false);
+            yield return CaptureTree(directory, "Arbol_02_DetalleProducto.png", "productos_basicos_2", false);
+            yield return CaptureTree(directory, "Arbol_03_NodoBloqueado.png", "lacteos_3", false);
+            yield return CaptureTree(directory, "Arbol_04_Logros.png", null, true);
+            yield return CaptureEmployees(directory, "Empleados_01_Grid.png");
+            yield return CaptureEmployees(directory, "Empleados_02_DetalleEmpleado.png");
+            yield return CaptureProducts(directory, "Products_01_CatalogoCompleto.png", false);
+            yield return CaptureProducts(directory, "Products_02_ProductoPlaceholder.png", true);
+            yield return CapturePrices(directory, "Precios_01_ProductoPlaceholder.png");
+            yield return CaptureComputerTopBar(directory, "Computadora_01_BarraSuperior.png");
+
+            string[] expected =
+            {
+                "Arbol_01_VistaGeneral.png",
+                "Arbol_02_DetalleProducto.png",
+                "Arbol_03_NodoBloqueado.png",
+                "Arbol_04_Logros.png",
+                "Empleados_01_Grid.png",
+                "Empleados_02_DetalleEmpleado.png",
+                "Products_01_CatalogoCompleto.png",
+                "Products_02_ProductoPlaceholder.png",
+                "Precios_01_ProductoPlaceholder.png",
+                "Computadora_01_BarraSuperior.png",
+            };
+
+            foreach (string fileName in expected)
+                AssertVisualCapture(Path.Combine(directory, fileName));
+        }
+
+        [Test]
         public void SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath()
         {
             Type saveGameType = FindGameType("FLOBUK.StoreSimulator.SaveGameSystem");
@@ -1010,6 +1058,451 @@ namespace FLOBUK.StoreSimulator.Tests
             UnityEngine.Object.DestroyImmediate(root);
         }
 
+        private sealed class CaptureStage
+        {
+            public GameObject Root;
+            public Camera Camera;
+            public RectTransform Content;
+        }
+
+        private static string GetFase11CaptureDirectory()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase11"));
+        }
+
+        private static IEnumerator CaptureTree(string directory, string fileName, string selectedNodeId, bool achievements)
+        {
+            ResetProgress();
+            CaptureStage stage = CreateCaptureStage("Fase11 Tree Capture");
+            GameObject panel = CreateCaptureHost("Entrepreneur Tree Content", stage.Content);
+            Type treeType = FindGameType("FLOBUK.StoreSimulator.EntrepreneurTreeUI");
+            Component tree = panel.AddComponent(treeType);
+
+            try
+            {
+                InvokeInstance(tree, "Build");
+                if (!string.IsNullOrEmpty(selectedNodeId))
+                {
+                    object node = GetNode(selectedNodeId);
+                    InvokeInstance(tree, "SelectNode", new[] { node.GetType(), typeof(bool) }, node, true);
+                }
+
+                if (achievements)
+                    InvokeInstance(tree, "ToggleAchievements");
+
+                yield return SaveCapture(stage, Path.Combine(directory, fileName));
+            }
+            finally
+            {
+                ResetProgress();
+                UnityEngine.Object.DestroyImmediate(stage.Root);
+            }
+        }
+
+        private static IEnumerator CaptureEmployees(string directory, string fileName)
+        {
+            ResetProgress();
+            GameObject storeRoot = CreateStoreDatabaseFixture();
+            Type employeeManagerType = FindGameType("FLOBUK.StoreSimulator.EmployeeManager");
+            object manager = Invoke(employeeManagerType, "EnsureInstance");
+            Invoke(employeeManagerType, "ResetRuntimeState");
+            CaptureStage stage = CreateCaptureStage("Fase11 Employees Capture");
+            GameObject panel = CreateCaptureHost("Employees", stage.Content);
+            Type panelType = FindGameType("FLOBUK.StoreSimulator.UIEmployeesPanel");
+            Component component = panel.AddComponent(panelType);
+
+            try
+            {
+                InvokeInstance(component, "Build");
+                if (fileName.Contains("DetalleEmpleado"))
+                    SetPrivateInstanceField(component, "selectedEmployeeId", "empleado_18");
+                InvokeInstance(component, "Refresh");
+                yield return SaveCapture(stage, Path.Combine(directory, fileName));
+            }
+            finally
+            {
+                if (manager is Component managerComponent)
+                    UnityEngine.Object.DestroyImmediate(managerComponent.gameObject);
+                ClearStoreDatabaseInstance();
+                UnityEngine.Object.DestroyImmediate(storeRoot);
+                UnityEngine.Object.DestroyImmediate(stage.Root);
+                ResetProgress();
+            }
+        }
+
+        private static IEnumerator CaptureProducts(string directory, string fileName, bool placeholdersOnly)
+        {
+            ResetProgress();
+            GameObject storeRoot = CreateStoreDatabaseFixture();
+            GameObject itemRoot = CreateItemDatabaseFixture(out _, out List<UnityEngine.Object> cleanup);
+            CaptureStage stage = CreateCaptureStage("Fase11 Products Capture");
+            GameObject root = CreateCapturePanel("Products Catalog", stage.Content, new Color(0.035f, 0.04f, 0.07f, 1f));
+
+            try
+            {
+                BuildProductsCapture(root.transform, placeholdersOnly);
+                yield return SaveCapture(stage, Path.Combine(directory, fileName));
+            }
+            finally
+            {
+                DestroyObjects(cleanup);
+                ClearItemDatabaseInstance(FindGameType("FLOBUK.StoreSimulator.ItemDatabase"));
+                UnityEngine.Object.DestroyImmediate(itemRoot);
+                ClearStoreDatabaseInstance();
+                UnityEngine.Object.DestroyImmediate(storeRoot);
+                UnityEngine.Object.DestroyImmediate(stage.Root);
+                ResetProgress();
+            }
+        }
+
+        private static IEnumerator CapturePrices(string directory, string fileName)
+        {
+            ResetProgress();
+            GameObject storeRoot = CreateStoreDatabaseFixture();
+            GameObject itemRoot = CreateItemDatabaseFixture(out _, out List<UnityEngine.Object> cleanup);
+            CaptureStage stage = CreateCaptureStage("Fase11 Prices Capture");
+            GameObject panel = CreateCaptureHost("Management Prices", stage.Content);
+            Type panelType = FindGameType("FLOBUK.StoreSimulator.UIManagementPanel");
+            Component component = panel.AddComponent(panelType);
+
+            try
+            {
+                InvokeInstance(component, "Build");
+                SetPrivateEnumField(component, "currentSection", "Prices");
+                InvokeInstance(component, "Refresh");
+                yield return SaveCapture(stage, Path.Combine(directory, fileName));
+            }
+            finally
+            {
+                DestroyObjects(cleanup);
+                ClearItemDatabaseInstance(FindGameType("FLOBUK.StoreSimulator.ItemDatabase"));
+                UnityEngine.Object.DestroyImmediate(itemRoot);
+                ClearStoreDatabaseInstance();
+                UnityEngine.Object.DestroyImmediate(storeRoot);
+                UnityEngine.Object.DestroyImmediate(stage.Root);
+                ResetProgress();
+            }
+        }
+
+        private static IEnumerator CaptureComputerTopBar(string directory, string fileName)
+        {
+            GameObject storeRoot = CreateStoreDatabaseFixture();
+            CaptureStage stage = CreateCaptureStage("Fase11 Computer Top Bar Capture");
+            GameObject topBar = CreatePanel("Computer Top Bar", stage.Content, new Color(0.075f, 0.085f, 0.13f, 1f));
+            RectTransform topBarRect = topBar.GetComponent<RectTransform>();
+            topBarRect.anchorMin = new Vector2(0f, 1f);
+            topBarRect.anchorMax = new Vector2(1f, 1f);
+            topBarRect.pivot = new Vector2(0.5f, 1f);
+            topBarRect.offsetMin = new Vector2(12f, -86f);
+            topBarRect.offsetMax = new Vector2(-12f, -12f);
+            Component desktop = topBar.AddComponent(FindGameType("FLOBUK.StoreSimulator.UIShopDesktop"));
+
+            try
+            {
+                HorizontalLayoutGroup barLayout = topBar.AddComponent<HorizontalLayoutGroup>();
+                barLayout.padding = new RectOffset(8, 8, 8, 8);
+                barLayout.spacing = 8;
+                barLayout.childControlHeight = true;
+                barLayout.childControlWidth = true;
+
+                GameObject navigation = CreateLayoutBox("Navigation", topBar.transform);
+                LayoutElement navigationLayout = navigation.AddComponent<LayoutElement>();
+                navigationLayout.flexibleWidth = 1;
+                GameObject categories = CreateLayoutBox("Categories", navigation.transform);
+                Stretch(categories.GetComponent<RectTransform>());
+
+                string[] labels = { "PRODUCTS", "EQUIPMENT", "ARBOL", "UPGRADES", "BOOSTERS", "CUSTOMIZATION", "EMPLEADOS", "GESTION" };
+                foreach (string label in labels)
+                    CreateNavigationButton(categories.transform, label);
+
+                InvokeInstance(desktop, "OptimizeNavigationLayout");
+                UnityEngine.Object.DestroyImmediate(desktop);
+                GameObject info = CreatePanel("Status", topBar.transform, new Color(0.105f, 0.12f, 0.18f, 1f));
+                info.AddComponent<LayoutElement>().preferredWidth = 300f;
+                HorizontalLayoutGroup infoLayout = info.AddComponent<HorizontalLayoutGroup>();
+                infoLayout.padding = new RectOffset(10, 10, 6, 6);
+                infoLayout.spacing = 10;
+                CreateTMPText("Money", info.transform, FormatMoney(1000000L), 18, "Bold", "Left");
+                CreateTMPText("Level", info.transform, "Level 0", 14, "Bold", "Right");
+                yield return SaveCapture(stage, Path.Combine(directory, fileName));
+            }
+            finally
+            {
+                ClearStoreDatabaseInstance();
+                UnityEngine.Object.DestroyImmediate(storeRoot);
+                UnityEngine.Object.DestroyImmediate(stage.Root);
+            }
+        }
+
+        private static CaptureStage CreateCaptureStage(string name)
+        {
+            GameObject root = new GameObject(name);
+            GameObject cameraObject = new GameObject("Capture Camera", typeof(Camera));
+            cameraObject.transform.SetParent(root.transform, false);
+            cameraObject.transform.position = new Vector3(0f, 0f, -10f);
+            Camera camera = cameraObject.GetComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.015f, 0.018f, 0.025f, 1f);
+            camera.orthographic = true;
+            camera.orthographicSize = 3.6f;
+
+            GameObject canvasObject = new GameObject("Capture Canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            canvasObject.transform.SetParent(root.transform, false);
+            Canvas canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.worldCamera = camera;
+            canvas.sortingOrder = 100;
+            RectTransform canvasRect = canvasObject.GetComponent<RectTransform>();
+            canvasRect.sizeDelta = new Vector2(1280f, 720f);
+            canvasRect.localScale = Vector3.one * 0.01f;
+
+            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1280f, 720f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            GameObject contentObject = CreatePanel("Capture Content", canvasObject.transform, new Color(0.035f, 0.04f, 0.07f, 1f));
+            RectTransform contentRect = contentObject.GetComponent<RectTransform>();
+            Stretch(contentRect);
+            return new CaptureStage { Root = root, Camera = camera, Content = contentRect };
+        }
+
+        private static GameObject CreateCapturePanel(string name, Transform parent, Color color)
+        {
+            GameObject panel = CreatePanel(name, parent, color);
+            Stretch(panel.GetComponent<RectTransform>(), new Vector2(12f, 12f), new Vector2(-12f, -12f));
+            return panel;
+        }
+
+        private static GameObject CreateCaptureHost(string name, Transform parent)
+        {
+            GameObject panel = CreateLayoutBox(name, parent);
+            Stretch(panel.GetComponent<RectTransform>(), new Vector2(12f, 12f), new Vector2(-12f, -12f));
+            return panel;
+        }
+
+        private static IEnumerator SaveCapture(CaptureStage stage, string path)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(stage.Content);
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(stage.Content);
+            yield return null;
+
+            RenderTexture previous = RenderTexture.active;
+            RenderTexture target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D image = new Texture2D(1280, 720, TextureFormat.RGBA32, false);
+            try
+            {
+                stage.Camera.targetTexture = target;
+                stage.Camera.Render();
+                RenderTexture.active = target;
+                image.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+                image.Apply();
+                File.WriteAllBytes(path, image.EncodeToPNG());
+            }
+            finally
+            {
+                stage.Camera.targetTexture = null;
+                RenderTexture.active = previous;
+                target.Release();
+                UnityEngine.Object.DestroyImmediate(target);
+                UnityEngine.Object.DestroyImmediate(image);
+            }
+        }
+
+        private static void AssertVisualCapture(string path)
+        {
+            Assert.IsTrue(File.Exists(path), path);
+            FileInfo file = new FileInfo(path);
+            Assert.Greater(file.Length, 5000L, path);
+
+            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                Assert.IsTrue(texture.LoadImage(File.ReadAllBytes(path)), path);
+                Assert.GreaterOrEqual(texture.width, 800, path);
+                Assert.GreaterOrEqual(texture.height, 450, path);
+
+                HashSet<int> colorBuckets = new HashSet<int>();
+                int visibleSamples = 0;
+                for (int y = 0; y < texture.height; y += 72)
+                {
+                    for (int x = 0; x < texture.width; x += 72)
+                    {
+                        Color32 pixel = texture.GetPixel(x, y);
+                        if (pixel.a < 20)
+                            continue;
+
+                        visibleSamples++;
+                        int key = (pixel.r / 16) << 8 | (pixel.g / 16) << 4 | (pixel.b / 16);
+                        colorBuckets.Add(key);
+                    }
+                }
+
+                Assert.Greater(visibleSamples, 20, path);
+                Assert.Greater(colorBuckets.Count, 1, path);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        private static void BuildProductsCapture(Transform parent, bool placeholdersOnly)
+        {
+            VerticalLayoutGroup layout = parent.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(12, 12, 10, 10);
+            layout.spacing = 8;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+
+            string title = placeholdersOnly ? "PRODUCTS - PLACEHOLDERS DOCUMENTADOS" : "PRODUCTS - CATALOGO COMPLETO 47/47";
+            Component header = CreateTMPText("Header", parent, title, 22, "Bold", "Left");
+            SetProperty(header, "color", new Color(0.94f, 0.95f, 0.98f, 1f));
+            header.GetComponent<LayoutElement>().preferredHeight = 34f;
+
+            GameObject grid = CreatePanel("Product Grid", parent, new Color(0.075f, 0.085f, 0.13f, 0.98f));
+            GridLayoutGroup group = grid.AddComponent<GridLayoutGroup>();
+            group.padding = new RectOffset(8, 8, 8, 8);
+            group.spacing = new Vector2(6f, 6f);
+            group.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            group.constraintCount = placeholdersOnly ? 3 : 4;
+            group.cellSize = placeholdersOnly ? new Vector2(394f, 86f) : new Vector2(296f, 48f);
+            grid.AddComponent<LayoutElement>().flexibleHeight = 1f;
+
+            Type itemDatabaseType = FindGameType("FLOBUK.StoreSimulator.ItemDatabase");
+            Type productType = FindGameType("FLOBUK.StoreSimulator.ProductScriptableObject");
+            IEnumerable<object> products = ((System.Collections.IEnumerable)Invoke(itemDatabaseType, "GetByType", productType)).Cast<object>()
+                .OrderBy(product => GetFieldString(product, "title"));
+            if (placeholdersOnly)
+                products = products.Where(product => Convert.ToString(GetFieldValue(product, "id")).StartsWith("doc_", StringComparison.Ordinal)).Take(12);
+
+            foreach (object product in products)
+                CreateProductCard(grid.transform, product, placeholdersOnly);
+        }
+
+        private static void CreateProductCard(Transform parent, object product, bool expanded)
+        {
+            GameObject card = CreatePanel("Product Card - " + GetFieldString(product, "id"), parent, new Color(0.105f, 0.12f, 0.18f, 0.98f));
+            HorizontalLayoutGroup layout = card.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = expanded ? new RectOffset(8, 8, 7, 7) : new RectOffset(6, 6, 4, 4);
+            layout.spacing = expanded ? 8f : 5f;
+            layout.childControlHeight = true;
+            layout.childControlWidth = false;
+
+            GameObject iconObject = CreatePanel("Icon", card.transform, new Color(0.13f, 0.18f, 0.24f, 1f));
+            Image icon = iconObject.GetComponent<Image>();
+            iconObject.AddComponent<LayoutElement>().preferredWidth = expanded ? 46f : 34f;
+
+            GameObject textBox = CreateLayoutBox("Text", card.transform);
+            textBox.AddComponent<LayoutElement>().flexibleWidth = 1f;
+            VerticalLayoutGroup textLayout = textBox.AddComponent<VerticalLayoutGroup>();
+            textLayout.spacing = 1f;
+            Component title = CreateTMPText("Title", textBox.transform, string.Empty, expanded ? 14 : 10, "Bold", "Left");
+            Component buy = CreateTMPText("Buy Price", textBox.transform, string.Empty, expanded ? 11 : 9, "Normal", "Left");
+            Component total = CreateTMPText("Total Price", textBox.transform, string.Empty, expanded ? 11 : 8, "Normal", "Left");
+            Component store = CreateTMPText("Store Price", textBox.transform, string.Empty, 8, "Normal", "Left");
+            Component market = CreateTMPText("Market Price", textBox.transform, string.Empty, 8, "Normal", "Left");
+
+            GameObject overlay = CreatePanel("Locked Overlay", card.transform, new Color(0.01f, 0.012f, 0.018f, 0.72f));
+            overlay.AddComponent<LayoutElement>().preferredWidth = expanded ? 150f : 86f;
+            Component locked = CreateTMPText("Locked Message", overlay.transform, string.Empty, expanded ? 9 : 7, "Bold", "Center");
+            Stretch(locked.GetComponent<RectTransform>(), new Vector2(4f, 4f), new Vector2(-4f, -4f));
+
+            Component component = card.AddComponent(FindGameType("FLOBUK.StoreSimulator.UIShopItemProduct"));
+            SetField(component, "title", title);
+            SetField(component, "icon", icon);
+            SetField(component, "buyPrice", buy);
+            SetField(component, "totalPrice", total);
+            SetField(component, "storePrice", store);
+            SetField(component, "marketPrice", market);
+            SetField(component, "lockedOverlay", overlay);
+            SetField(component, "lockedMessage", locked);
+            InvokeInstance(component, "Initialize", product);
+        }
+
+        private static GameObject CreateStoreDatabaseFixture()
+        {
+            ClearStoreDatabaseInstance();
+            GameObject root = new GameObject("StoreDatabase Test Fixture");
+            Component database = root.AddComponent(FindGameType("FLOBUK.StoreSimulator.StoreDatabase"));
+            GameObject storeNameObject = new GameObject("Store Name", typeof(RectTransform));
+            storeNameObject.transform.SetParent(root.transform, false);
+            Component storeName = storeNameObject.AddComponent(FindGameType("TMPro.TextMeshProUGUI"));
+            SetProperty(storeName, "text", "POMPIC MARKET");
+            SetField(database, "storeName", storeName);
+            SetField(database, "startMoney", 1000000L);
+            SetField(database, "levelXP", new long[] { 1000L, 2000L, 3000L });
+            InvokeInstance(database, "Awake");
+            SetPrivateBackingField(database, "currentMoney", 1000000L);
+            SetPrivateBackingField(database, "currentXP", 0L);
+            SetPrivateBackingField(database, "currentLevel", 0);
+            return root;
+        }
+
+        private static void ClearStoreDatabaseInstance()
+        {
+            Type type = FindGameType("FLOBUK.StoreSimulator.StoreDatabase");
+            FieldInfo backingField = type.GetField("<Instance>k__BackingField", BindingFlags.NonPublic | BindingFlags.Static);
+            if (backingField != null)
+                backingField.SetValue(null, null);
+        }
+
+        private static string FormatMoney(long amount)
+        {
+            return Convert.ToString(Invoke(FindGameType("FLOBUK.StoreSimulator.StoreDatabase"), "FromLongToStringMoney", amount));
+        }
+
+        private static GameObject CreatePanel(string name, Transform parent, Color color)
+        {
+            GameObject obj = new GameObject(name, typeof(RectTransform), typeof(Image));
+            obj.transform.SetParent(parent, false);
+            obj.GetComponent<Image>().color = color;
+            return obj;
+        }
+
+        private static GameObject CreateLayoutBox(string name, Transform parent)
+        {
+            GameObject obj = new GameObject(name, typeof(RectTransform));
+            obj.transform.SetParent(parent, false);
+            return obj;
+        }
+
+        private static Component CreateTMPText(string name, Transform parent, string value, int size, string style, string alignment)
+        {
+            GameObject obj = new GameObject(name, typeof(RectTransform), typeof(LayoutElement));
+            obj.transform.SetParent(parent, false);
+            Component text = obj.AddComponent(FindGameType("TMPro.TextMeshProUGUI"));
+            SetProperty(text, "text", value);
+            SetProperty(text, "fontSize", (float)size);
+            SetEnumProperty(text, "fontStyle", style);
+            SetEnumProperty(text, "alignment", alignment);
+            SetProperty(text, "color", Color.white);
+            SetEnumProperty(text, "textWrappingMode", "Normal");
+            SetEnumProperty(text, "overflowMode", "Ellipsis");
+            SetProperty(text, "enableAutoSizing", true);
+            SetProperty(text, "fontSizeMin", (float)Mathf.Max(6, size - 4));
+            SetProperty(text, "fontSizeMax", (float)size);
+            obj.GetComponent<LayoutElement>().minHeight = Mathf.Max(14f, size * 1.35f);
+            return text;
+        }
+
+        private static void Stretch(RectTransform rect)
+        {
+            Stretch(rect, Vector2.zero, Vector2.zero);
+        }
+
+        private static void Stretch(RectTransform rect, Vector2 offsetMin, Vector2 offsetMax)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = offsetMin;
+            rect.offsetMax = offsetMax;
+        }
+
         private static Type FindGameType(string typeName)
         {
             Type type = AppDomainAssemblies()
@@ -1366,11 +1859,39 @@ namespace FLOBUK.StoreSimulator.Tests
             property.SetValue(target, value);
         }
 
+        private static void SetEnumProperty(object target, string propertyName, string value)
+        {
+            PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            Assert.NotNull(property, "Could not find property " + propertyName);
+            property.SetValue(target, Enum.Parse(property.PropertyType, value));
+        }
+
         private static void SetStaticField(Type type, string fieldName, int value)
         {
             FieldInfo field = type.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(field, "Could not find field " + fieldName);
             field.SetValue(null, value);
+        }
+
+        private static void SetPrivateInstanceField(object target, string fieldName, object value)
+        {
+            FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(field, "Could not find private field " + fieldName);
+            field.SetValue(target, value);
+        }
+
+        private static void SetPrivateEnumField(object target, string fieldName, string enumValue)
+        {
+            FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(field, "Could not find enum field " + fieldName);
+            field.SetValue(target, Enum.Parse(field.FieldType, enumValue));
+        }
+
+        private static void SetPrivateBackingField(object target, string propertyName, object value)
+        {
+            FieldInfo field = target.GetType().GetField("<" + propertyName + ">k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(field, "Could not find backing field " + propertyName);
+            field.SetValue(target, value);
         }
 
         private static int GetStaticIntProperty(Type type, string propertyName)
@@ -1405,6 +1926,13 @@ namespace FLOBUK.StoreSimulator.Tests
         private static object InvokeInstance(object target, string methodName, params object[] args)
         {
             MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(method, "Could not find method " + methodName);
+            return method.Invoke(target, args);
+        }
+
+        private static object InvokeInstance(object target, string methodName, Type[] parameterTypes, params object[] args)
+        {
+            MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, parameterTypes, null);
             Assert.NotNull(method, "Could not find method " + methodName);
             return method.Invoke(target, args);
         }

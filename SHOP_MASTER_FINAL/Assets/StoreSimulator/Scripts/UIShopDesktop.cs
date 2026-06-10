@@ -277,6 +277,7 @@ namespace FLOBUK.StoreSimulator
         void OnDestroy()
         {
             StoreDatabase.onMoneyUpdate -= OnMoneyUpdate;
+            StoreDatabase.onLevelUpdate -= OnLevelUpdate;
             DayCycleSystem.onTimeUpdate -= OnTimeUpdate;
         }
     }
