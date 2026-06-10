@@ -78,12 +78,19 @@ namespace FLOBUK.StoreSimulator
         //initialize variables
         IEnumerator Start()
         {
-            OnMoneyUpdate(StoreDatabase.GetMoneyString(), string.Empty);
-            OnTimeUpdate(DayCycleSystem.GetTimeString());
-            levelDisplay.text = StoreDatabase.GetLevelString();
-            dayDisplay.text = DayCycleSystem.GetDayString();
-            storeNameInput.text = StoreDatabase.GetStoreName();
-            storeNameInput.onEndEdit.AddListener((x) => StoreDatabase.SetStoreName(x));
+            if (StoreDatabase.Instance != null)
+                OnMoneyUpdate(StoreDatabase.GetMoneyString(), string.Empty);
+            if (DayCycleSystem.Instance != null)
+                OnTimeUpdate(DayCycleSystem.GetTimeString());
+            if (levelDisplay != null && StoreDatabase.Instance != null)
+                levelDisplay.text = StoreDatabase.GetLevelString();
+            if (dayDisplay != null && DayCycleSystem.Instance != null)
+                dayDisplay.text = DayCycleSystem.GetDayString();
+            if (storeNameInput != null && StoreDatabase.Instance != null)
+            {
+                storeNameInput.text = StoreDatabase.GetStoreName();
+                storeNameInput.onEndEdit.AddListener((x) => StoreDatabase.SetStoreName(x));
+            }
 
             EntrepreneurTreeUIBootstrap.Ensure(this);
             UIEmployeesUIBootstrap.Ensure(this);
@@ -117,9 +124,11 @@ namespace FLOBUK.StoreSimulator
             PlayerInput.GetPlayerByIndex(0).onActionTriggered += OnAction;
             UIGame.AddAction("Esc", "Exit");
             
-            UIGame.Instance.SetVisible(false);
+            if (UIGame.Instance != null)
+                UIGame.Instance.SetVisible(false);
             PlayerController.SetMovementState(MovementState.None, false);
-            col.enabled = false;
+            if (col != null)
+                col.enabled = false;
 
             Transform camTransform = PlayerController.GetCameraTransform();
             prevCamPosition = camTransform.localPosition;
@@ -158,16 +167,19 @@ namespace FLOBUK.StoreSimulator
         private void ReEnable()
         {
             PlayerController.SetMovementState(MovementState.All, true);
-            col.enabled = true;
+            if (col != null)
+                col.enabled = true;
 
-            UIGame.Instance.SetVisible(true);
+            if (UIGame.Instance != null)
+                UIGame.Instance.SetVisible(true);
         }
 
 
         //subscribed to money change
         private void OnMoneyUpdate(string money, string change)
         {
-            moneyDisplay.text = money;
+            if (moneyDisplay != null)
+                moneyDisplay.text = money;
         }
 
 
@@ -175,15 +187,97 @@ namespace FLOBUK.StoreSimulator
         //use the pre-formatted string instead of value only
         private void OnLevelUpdate(int level)
         {
-            levelDisplay.text = StoreDatabase.GetLevelString();
+            if (levelDisplay != null)
+                levelDisplay.text = StoreDatabase.GetLevelString();
         }
 
 
         //subscribed to time change
         private void OnTimeUpdate(string time)
         {
-            timeDisplay.text = time;
+            if (timeDisplay != null)
+                timeDisplay.text = time;
         }
+
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+        public bool OpenArbolForQA(bool showQaOverlay = true)
+        {
+            return OpenAppForQA("ARBOL", showQaOverlay);
+        }
+
+
+        public bool OpenAppForQA(string appLabel, bool showQaOverlay = false)
+        {
+            EnsureComputerAppsForQA();
+
+            Transform contentArea = FindRecursive(transform, "ContentArea");
+            if (contentArea == null)
+                return false;
+
+            Transform targetPanel = ResolveAppPanelForQA(contentArea, appLabel);
+            if (targetPanel == null)
+                return false;
+
+            UIShopCategoryHelper helper = contentArea.GetComponent<UIShopCategoryHelper>();
+            if (helper == null)
+                helper = contentArea.gameObject.AddComponent<UIShopCategoryHelper>();
+
+            helper.Show(targetPanel.gameObject);
+
+            EntrepreneurTreeUI tree = targetPanel.GetComponentInChildren<EntrepreneurTreeUI>(true);
+            if (tree != null)
+                tree.SetQaOverlayVisibleForQA(showQaOverlay);
+
+            return targetPanel.gameObject.activeSelf;
+        }
+
+
+        private void EnsureComputerAppsForQA()
+        {
+            EntrepreneurTreeUIBootstrap.Ensure(this);
+            UIEmployeesUIBootstrap.Ensure(this);
+            UIManagementUIBootstrap.Ensure(this);
+            OptimizeNavigationLayout();
+        }
+
+
+        private static Transform ResolveAppPanelForQA(Transform contentArea, string appLabel)
+        {
+            string normalized = string.IsNullOrWhiteSpace(appLabel) ? string.Empty : appLabel.Trim().ToUpperInvariant();
+            switch (normalized)
+            {
+                case "ARBOL":
+                case "TREE":
+                case "ENTREPRENEUR_TREE":
+                    return FindDirectChildForQA(contentArea, "Licenses");
+                case "EMPLEADOS":
+                case "EMPLOYEES":
+                    return FindDirectChildForQA(contentArea, "Employees");
+                case "GESTION":
+                case "MANAGEMENT":
+                    return FindDirectChildForQA(contentArea, "Management");
+                default:
+                    return FindDirectChildForQA(contentArea, appLabel);
+            }
+        }
+
+
+        private static Transform FindDirectChildForQA(Transform parent, string objectName)
+        {
+            if (parent == null || string.IsNullOrWhiteSpace(objectName))
+                return null;
+
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform child = parent.GetChild(i);
+                if (child.name == objectName)
+                    return child;
+            }
+
+            return null;
+        }
+#endif
 
 
         private void OptimizeNavigationLayout()

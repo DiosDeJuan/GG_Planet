@@ -11,7 +11,7 @@ namespace FLOBUK.StoreSimulator
 
         private const float LeftMargin = 130f;
         private const float TopMargin = 115f;
-        private const float MaxRawY = 420f;
+        private const float MaxRawY = 0f;
 
         private static readonly Dictionary<string, Vector2> positions = new Dictionary<string, Vector2>
         {

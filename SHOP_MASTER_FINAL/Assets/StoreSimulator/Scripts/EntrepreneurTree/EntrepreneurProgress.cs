@@ -1,7 +1,6 @@
 //Adaptado por POMPIC 20100333
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using SimpleJSON;
 using UnityEngine;
@@ -244,12 +243,13 @@ namespace FLOBUK.StoreSimulator
             onProgressChanged?.Invoke();
         }
 
-        [Conditional("UNITY_EDITOR")]
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
         public static void AddPointsForInternalTesting(int amount)
         {
             progressPoints = Mathf.Max(0, progressPoints + amount);
             onProgressChanged?.Invoke();
         }
+#endif
 
         private static void Normalize()
         {

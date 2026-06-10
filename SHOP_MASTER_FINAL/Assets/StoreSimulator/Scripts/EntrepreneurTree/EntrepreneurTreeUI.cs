@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+using UnityEngine.InputSystem;
+#endif
 using UnityEngine.UI;
 
 namespace FLOBUK.StoreSimulator
@@ -40,6 +43,11 @@ namespace FLOBUK.StoreSimulator
         private EntrepreneurTreeNodeDefinition selectedNode;
         private bool built;
         private bool showAchievements;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+        private GameObject qaOverlayObject;
+        private TMP_Text qaStatusLabel;
+        private bool qaOverlayVisible;
+#endif
 
         void OnEnable()
         {
@@ -80,10 +88,21 @@ namespace FLOBUK.StoreSimulator
 
             BuildHeader(transform);
             BuildBody(transform);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+            BuildQaOverlay(transform);
+#endif
             SelectNode(EntrepreneurTreeDefinitions.Get(EntrepreneurTreeDefinitions.DefaultUnlockedNodeId), false);
             CenterOnDefaultNode();
             Refresh();
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+        void Update()
+        {
+            if (Keyboard.current != null && Keyboard.current.f8Key.wasPressedThisFrame)
+                SetQaOverlayVisibleForQA(!qaOverlayVisible);
+        }
+#endif
 
         private void BuildHeader(Transform parent)
         {
@@ -150,6 +169,203 @@ namespace FLOBUK.StoreSimulator
             BuildDetailsPanel(body.transform);
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+        private void BuildQaOverlay(Transform parent)
+        {
+            qaOverlayObject = CreatePanel("QA Overlay", parent, new Color(0.075f, 0.055f, 0.11f, 0.98f));
+            LayoutElement overlayLayout = qaOverlayObject.AddComponent<LayoutElement>();
+            overlayLayout.preferredHeight = 48;
+
+            HorizontalLayoutGroup group = qaOverlayObject.AddComponent<HorizontalLayoutGroup>();
+            group.padding = new RectOffset(8, 8, 5, 5);
+            group.spacing = 6;
+            group.childControlWidth = false;
+            group.childControlHeight = true;
+            group.childForceExpandWidth = false;
+            group.childForceExpandHeight = true;
+
+            qaStatusLabel = CreateText("QA Status", qaOverlayObject.transform, "QA F8: puntos, prerequisitos, perfil fase12.", 11, FontStyles.Bold, TextAlignmentOptions.Left);
+            qaStatusLabel.color = TextMuted;
+            qaStatusLabel.GetComponent<LayoutElement>().preferredWidth = 300;
+
+            CreateQaButton("+1", AddOneQaPoint);
+            CreateQaButton("+5", AddFiveQaPoints);
+            CreateQaButton("Prereqs", UnlockSelectedPrerequisitesForQA);
+            CreateQaButton("Reset", ResetTreeForQA);
+            CreateQaButton("Guardar QA", SaveQaProfileForQA);
+            CreateQaButton("Cargar QA", LoadQaProfileForQA);
+
+            qaOverlayObject.SetActive(false);
+        }
+
+        private Button CreateQaButton(string label, UnityEngine.Events.UnityAction action)
+        {
+            Button button = CreateActionButton("QA " + label, qaOverlayObject.transform, label);
+            LayoutElement layout = button.GetComponent<LayoutElement>();
+            layout.preferredWidth = label.Length > 5 ? 104 : 66;
+            layout.minWidth = 58;
+            layout.preferredHeight = 32;
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+            text.fontSize = 12;
+            text.fontSizeMax = 12;
+            text.fontSizeMin = 8;
+            button.onClick.AddListener(action);
+            return button;
+        }
+
+        public void SetQaOverlayVisibleForQA(bool visible)
+        {
+            qaOverlayVisible = visible;
+            if (qaOverlayObject != null)
+                qaOverlayObject.SetActive(visible);
+
+            UpdateQaStatus(visible ? "QA activo: usa los botones o F8 para ocultar." : "QA oculto.");
+            RefreshDetails();
+        }
+
+        public bool SelectNodeForQA(string nodeId)
+        {
+            EntrepreneurTreeNodeDefinition node = EntrepreneurTreeDefinitions.Get(nodeId);
+            if (node == null)
+                return false;
+
+            SelectNode(node, true);
+            return true;
+        }
+
+        public void ShowAchievementsForQA(bool visible)
+        {
+            showAchievements = visible;
+            Refresh();
+        }
+
+        public bool TryUnlockSelectedForQA(out string message)
+        {
+            if (selectedNode == null)
+            {
+                message = "Nodo QA no seleccionado.";
+                return false;
+            }
+
+            bool unlocked = EntrepreneurProgress.TryUnlock(selectedNode.Id, out message);
+            UpdateQaStatus(message);
+            Refresh();
+            return unlocked;
+        }
+
+        private void AddOneQaPoint()
+        {
+            AddQaPoints(1);
+        }
+
+        private void AddFiveQaPoints()
+        {
+            AddQaPoints(5);
+        }
+
+        private void AddQaPoints(int amount)
+        {
+            EntrepreneurProgress.AddPointsForInternalTesting(amount);
+            UpdateQaStatus("QA +" + amount + " punto(s). Disponibles: " + EntrepreneurProgress.AvailablePoints + ".");
+            Refresh();
+        }
+
+        private void UnlockSelectedPrerequisitesForQA()
+        {
+            if (selectedNode == null)
+            {
+                UpdateQaStatus("QA sin nodo seleccionado.");
+                return;
+            }
+
+            int unlocked = 0;
+            HashSet<string> visited = new HashSet<string>();
+            for (int i = 0; i < selectedNode.Prerequisites.Length; i++)
+                unlocked += UnlockPrerequisiteChainForQA(selectedNode.Prerequisites[i], visited);
+
+            UpdateQaStatus("QA prerequisitos desbloqueados: " + unlocked + ".");
+            Refresh();
+        }
+
+        private static int UnlockPrerequisiteChainForQA(string nodeId, HashSet<string> visited)
+        {
+            if (!visited.Add(nodeId))
+                return 0;
+
+            EntrepreneurTreeNodeDefinition node = EntrepreneurTreeDefinitions.Get(nodeId);
+            if (node == null)
+                return 0;
+
+            int unlocked = 0;
+            for (int i = 0; i < node.Prerequisites.Length; i++)
+                unlocked += UnlockPrerequisiteChainForQA(node.Prerequisites[i], visited);
+
+            if (EntrepreneurProgress.IsUnlocked(node.Id))
+                return unlocked;
+
+            int missingPoints = Mathf.Max(0, node.Cost - EntrepreneurProgress.AvailablePoints);
+            if (missingPoints > 0)
+                EntrepreneurProgress.AddPointsForInternalTesting(missingPoints);
+
+            if (EntrepreneurProgress.TryUnlock(node.Id, out _))
+                unlocked++;
+
+            return unlocked;
+        }
+
+        private void ResetTreeForQA()
+        {
+            EntrepreneurProgress.ResetToDefaults();
+            UpdateQaStatus("QA estado del arbol reiniciado.");
+            SelectNode(EntrepreneurTreeDefinitions.Get(EntrepreneurTreeDefinitions.DefaultUnlockedNodeId), true);
+        }
+
+        private void SaveQaProfileForQA()
+        {
+            if (SaveGameSystem.Instance == null)
+            {
+                UpdateQaStatus("SaveGameSystem no esta disponible en esta escena.");
+                return;
+            }
+
+            try
+            {
+                SaveGameSystem.Save("fase12_tree_qa");
+                UpdateQaStatus("Perfil QA guardado: fase12_tree_qa.");
+            }
+            catch (System.Exception exception)
+            {
+                UpdateQaStatus("No se pudo guardar perfil QA: " + exception.GetType().Name + ".");
+            }
+        }
+
+        private void LoadQaProfileForQA()
+        {
+            if (SaveGameSystem.Instance == null)
+            {
+                UpdateQaStatus("SaveGameSystem no esta disponible en esta escena.");
+                return;
+            }
+
+            try
+            {
+                SaveGameSystem.Load("fase12_tree_qa");
+                UpdateQaStatus("Carga QA solicitada: fase12_tree_qa.");
+                Refresh();
+            }
+            catch (System.Exception exception)
+            {
+                UpdateQaStatus("No se pudo cargar perfil QA: " + exception.GetType().Name + ".");
+            }
+        }
+
+        private void UpdateQaStatus(string message)
+        {
+            if (qaStatusLabel != null)
+                qaStatusLabel.text = message;
+        }
+#endif
+
         private void BuildGraphPanel(Transform parent)
         {
             GameObject graphPanel = CreatePanel("Graph Panel", parent, CardBackground);
@@ -195,8 +411,7 @@ namespace FLOBUK.StoreSimulator
             Stretch(viewportRect, new Vector2(8, 8), new Vector2(-8, -8));
             Image viewportImage = viewport.AddComponent<Image>();
             viewportImage.color = Color.clear;
-            Mask mask = viewport.AddComponent<Mask>();
-            mask.showMaskGraphic = false;
+            viewport.AddComponent<RectMask2D>();
 
             GameObject content = CreateLayoutBox("Graph Content", viewport.transform);
             RectTransform contentRect = content.GetComponent<RectTransform>();
@@ -301,8 +516,7 @@ namespace FLOBUK.StoreSimulator
             Stretch(viewportRect, new Vector2(6, 6), new Vector2(-6, -6));
             Image viewportImage = viewport.AddComponent<Image>();
             viewportImage.color = Color.clear;
-            Mask mask = viewport.AddComponent<Mask>();
-            mask.showMaskGraphic = false;
+            viewport.AddComponent<RectMask2D>();
 
             GameObject content = CreateLayoutBox("Content", viewport.transform);
             RectTransform contentRect = content.GetComponent<RectTransform>();
@@ -432,12 +646,17 @@ namespace FLOBUK.StoreSimulator
 
             string requirements = selectedNode.Prerequisites.Length == 0 ? "Ninguno" : string.Join(", ", System.Array.ConvertAll(selectedNode.Prerequisites, EntrepreneurTreeDefinitions.GetTitle));
             string productSummary = selectedNode.Type == EntrepreneurTreeNodeType.Product ? "\n\nProductos:\n" + DocumentedProductCatalog.GetUnlockSummaryForNode(selectedNode.Id) : string.Empty;
+            string qaId = string.Empty;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
+            qaId = qaOverlayVisible ? "\nID QA: " + selectedNode.Id + "\n" : string.Empty;
+#endif
             detailsLabel.text =
                 selectedNode.Title + "\n\n" +
                 "Tipo: " + GetTypeLabel(selectedNode.Type) + "\n" +
                 "Estado: " + EntrepreneurProgress.GetStateDescription(selectedNode).Replace("\n", " - ") + "\n" +
                 "Costo: " + selectedNode.Cost + " punto(s)\n" +
                 "Requiere: " + requirements + "\n" +
+                qaId +
                 "Arbol: " + EntrepreneurProgress.GetUnlockedNodeCount() + "/" + EntrepreneurProgress.GetTotalNodeCount() + " nodos\n\n" +
                 "Beneficio:\n" + selectedNode.Benefit + productSummary;
 
@@ -527,7 +746,10 @@ namespace FLOBUK.StoreSimulator
             if (graphScroll == null)
                 return;
 
-            graphScroll.normalizedPosition = new Vector2(0f, 0.52f);
+            if (graphScroll.content != null)
+                graphScroll.content.anchoredPosition = Vector2.zero;
+
+            graphScroll.normalizedPosition = new Vector2(0f, 1f);
         }
 
         private static string GetTypeLabel(EntrepreneurTreeNodeType type)

@@ -7,8 +7,12 @@ using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace FLOBUK.StoreSimulator.Tests
 {
@@ -1058,6 +1062,184 @@ namespace FLOBUK.StoreSimulator.Tests
             UnityEngine.Object.DestroyImmediate(root);
         }
 
+        [UnityTest]
+        public IEnumerator TreeRuntime_MainSceneCanResolveComputerDesktop()
+        {
+            Scene previousScene = SceneManager.GetActiveScene();
+            AsyncOperation loadOperation = SceneManager.LoadSceneAsync("Game", LoadSceneMode.Additive);
+            Assert.NotNull(loadOperation, "Game scene is not registered in Build Settings.");
+            while (!loadOperation.isDone)
+                yield return null;
+
+            Scene gameScene = SceneManager.GetSceneByName("Game");
+            Assert.IsTrue(gameScene.IsValid(), "Game scene could not be loaded.");
+            Type desktopType = FindGameType("FLOBUK.StoreSimulator.UIShopDesktop");
+            Component desktop = UnityEngine.Object.FindObjectsByType(desktopType, FindObjectsSortMode.None)
+                .OfType<Component>()
+                .FirstOrDefault(component => component.gameObject.scene == gameScene);
+
+            Assert.NotNull(desktop, "UIShopDesktop was not found in Game scene.");
+
+            if (gameScene.isLoaded)
+            {
+                AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(gameScene);
+                while (unloadOperation != null && !unloadOperation.isDone)
+                    yield return null;
+            }
+
+            if (previousScene.IsValid() && previousScene.isLoaded)
+                SceneManager.SetActiveScene(previousScene);
+        }
+
+        [UnityTest]
+        public IEnumerator TreeRuntime_CanOpenArbolThroughDesktopRealFlow()
+        {
+            GameObject root = CreateTreeDesktopFixture(out Component desktop, out Transform licensesPanel, out _);
+            try
+            {
+                bool opened = Convert.ToBoolean(InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, true));
+                yield return null;
+
+                Assert.IsTrue(opened);
+                Assert.IsTrue(licensesPanel.gameObject.activeSelf);
+                Assert.AreEqual(1, CountChildrenNamed(licensesPanel, "Entrepreneur Tree Content"));
+                StringAssert.Contains("ARBOL DEL EMPRENDEDOR", GetAllText(licensesPanel));
+                StringAssert.Contains("QA activo", GetAllText(licensesPanel));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TreeRuntime_ReopenDoesNotDuplicateNodesOrConnections()
+        {
+            GameObject root = CreateTreeDesktopFixture(out Component desktop, out Transform licensesPanel, out _);
+            try
+            {
+                InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, false);
+                yield return null;
+                int firstNodes = licensesPanel.GetComponentsInChildren<MonoBehaviour>(true).Count(component => component.GetType().Name == "EntrepreneurTreeNodeView");
+                int firstConnections = licensesPanel.GetComponentsInChildren<MonoBehaviour>(true).Count(component => component.GetType().Name == "EntrepreneurTreeConnectionGraphic");
+
+                licensesPanel.gameObject.SetActive(false);
+                InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, false);
+                yield return null;
+
+                int secondNodes = licensesPanel.GetComponentsInChildren<MonoBehaviour>(true).Count(component => component.GetType().Name == "EntrepreneurTreeNodeView");
+                int secondConnections = licensesPanel.GetComponentsInChildren<MonoBehaviour>(true).Count(component => component.GetType().Name == "EntrepreneurTreeConnectionGraphic");
+                Assert.AreEqual(firstNodes, secondNodes);
+                Assert.AreEqual(firstConnections, secondConnections);
+                Assert.AreEqual(GetTreeNodes().Length, secondNodes);
+                Assert.AreEqual(1, secondConnections);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void TreeRuntime_ProductBranchReferencesAll47Products()
+        {
+            object[] products = GetDocumentedProductDefinitions();
+            Assert.AreEqual(47, products.Length);
+
+            string[] requiredNodeIds =
+            {
+                "productos_basicos_1",
+                "productos_basicos_2",
+                "productos_basicos_3",
+                "lacteos_1",
+                "lacteos_2",
+                "lacteos_3",
+                "especias_1",
+                "productos_frescos_1",
+                "productos_frescos_2",
+                "productos_higiene",
+                "proteina_1",
+                "sodas",
+                "productos_lujo_1",
+                "electrodomesticos_1",
+            };
+
+            foreach (string nodeId in requiredNodeIds)
+            {
+                Assert.NotNull(GetNode(nodeId), nodeId);
+                Assert.Greater(GetDocumentedProductsByNode(nodeId).Length, 0, nodeId);
+            }
+
+            CollectionAssert.IsEmpty(products.Select(product => GetDefinitionString(product, "NodeId")).Where(nodeId => GetNode(nodeId) == null).Distinct().ToArray());
+        }
+
+        [UnityTest]
+        public IEnumerator TreeRuntime_QAOverlayAddsPointsUnlocksAndStaysHiddenByDefault()
+        {
+            ResetProgress();
+            GameObject root = CreateTreeDesktopFixture(out Component desktop, out Transform licensesPanel, out _);
+            try
+            {
+                InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, false);
+                yield return null;
+                Component tree = GetFirstComponentByTypeName(licensesPanel, "EntrepreneurTreeUI");
+                Assert.NotNull(tree);
+                Assert.IsFalse(GetAllText(licensesPanel).Contains("QA activo"));
+
+                InvokeInstance(tree, "SetQaOverlayVisibleForQA", new[] { typeof(bool) }, true);
+                Assert.IsTrue(Convert.ToBoolean(InvokeInstance(tree, "SelectNodeForQA", "productos_basicos_2")));
+                AddTestProgressPoints(1);
+                bool unlocked = Convert.ToBoolean(InvokeInstance(tree, "TryUnlockSelectedForQA", new[] { typeof(string).MakeByRefType() }, new object[] { null }));
+                yield return null;
+
+                Assert.IsTrue(unlocked);
+                Assert.IsTrue(IsUnlocked("productos_basicos_2"));
+                Assert.AreEqual(0, GetProgressInt("AvailablePoints"));
+                StringAssert.Contains("ID QA: productos_basicos_2", GetAllText(licensesPanel));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                ResetProgress();
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator TreeRuntime_CapturesRealDesktopArbolRoute()
+        {
+            string directory = GetFase12CaptureDirectory();
+            Directory.CreateDirectory(directory);
+            foreach (string file in Directory.GetFiles(directory, "*.png"))
+                File.Delete(file);
+
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+                Assert.Ignore("Capturas Fase 12 omitidas: Unity esta ejecutando con dispositivo grafico Null.");
+
+#if UNITY_EDITOR
+            yield return CaptureFase12DesktopRoute(directory);
+
+            string[] expected =
+            {
+                "Arbol_01_GameplayRutaReal_VistaGeneral.png",
+                "Arbol_02_GameplayRutaReal_DetalleProducto.png",
+                "Arbol_03_GameplayRutaReal_NodoEmpleado.png",
+                "Arbol_04_GameplayRutaReal_NodoSeguridad.png",
+                "Arbol_05_GameplayRutaReal_Mejora.png",
+                "Arbol_06_GameplayRutaReal_BloqueoPrerequisito.png",
+                "Arbol_07_GameplayRutaReal_PuntosInsuficientes.png",
+                "Arbol_08_GameplayRutaReal_QAOverlay.png",
+                "Arbol_09_GameplayRutaReal_Logros.png",
+                "Computadora_01_GameplayRutaReal_Navegacion.png",
+            };
+
+            foreach (string fileName in expected)
+                AssertVisualCapture(Path.Combine(directory, fileName));
+#else
+            yield return null;
+            Assert.Ignore("Capturas Fase 12 requieren UnityEditor para instanciar el prefab real UIShopDesktop.");
+#endif
+        }
+
         private sealed class CaptureStage
         {
             public GameObject Root;
@@ -1069,6 +1251,66 @@ namespace FLOBUK.StoreSimulator.Tests
         {
             return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase11"));
         }
+
+        private static string GetFase12CaptureDirectory()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase12"));
+        }
+
+#if UNITY_EDITOR
+        private static IEnumerator CaptureFase12DesktopRoute(string directory)
+        {
+            ResetProgress();
+            CaptureStage stage = CreateCaptureStage("Fase12 Real Desktop Route Capture");
+            GameObject desktopPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/StoreSimulator/Prefabs/UI/UIShopDesktop.prefab");
+            Assert.NotNull(desktopPrefab, "UIShopDesktop prefab could not be loaded.");
+            GameObject desktopObject = UnityEngine.Object.Instantiate(desktopPrefab, stage.Content, false);
+            Component desktop = GetFirstComponentByTypeName(desktopObject.transform, "UIShopDesktop");
+            Assert.NotNull(desktop, "UIShopDesktop component could not be resolved from prefab.");
+
+            try
+            {
+                RectTransform rect = desktopObject.GetComponent<RectTransform>();
+                if (rect != null)
+                    Stretch(rect, Vector2.zero, Vector2.zero);
+
+                Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, false)));
+                yield return null;
+
+                Component tree = GetFirstComponentByTypeName(desktopObject.transform, "EntrepreneurTreeUI");
+                Assert.NotNull(tree, "EntrepreneurTreeUI was not created in UIShopDesktop prefab route.");
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_01_GameplayRutaReal_VistaGeneral.png", null, false, false);
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_02_GameplayRutaReal_DetalleProducto.png", "productos_basicos_2", false, false);
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_03_GameplayRutaReal_NodoEmpleado.png", "empleado_1", false, false);
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_04_GameplayRutaReal_NodoSeguridad.png", "seguridad_1", false, false);
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_05_GameplayRutaReal_Mejora.png", "mejora_cafeina", false, false);
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_06_GameplayRutaReal_BloqueoPrerequisito.png", "lacteos_2", false, false);
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_07_GameplayRutaReal_PuntosInsuficientes.png", "productos_basicos_2", false, false);
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_08_GameplayRutaReal_QAOverlay.png", "productos_basicos_2", false, true);
+                yield return SaveFase12TreeCapture(stage, desktop, tree, directory, "Arbol_09_GameplayRutaReal_Logros.png", null, true, true);
+                Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, false)));
+                yield return SaveCapture(stage, Path.Combine(directory, "Computadora_01_GameplayRutaReal_Navegacion.png"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(desktopObject);
+                UnityEngine.Object.DestroyImmediate(stage.Root);
+                ResetProgress();
+            }
+        }
+
+        private static IEnumerator SaveFase12TreeCapture(CaptureStage stage, Component desktop, Component tree, string directory, string fileName, string selectedNodeId, bool achievements, bool qaOverlay)
+        {
+            ResetProgress();
+            Assert.IsTrue(Convert.ToBoolean(InvokeInstance(desktop, "OpenArbolForQA", new[] { typeof(bool) }, qaOverlay)));
+            InvokeInstance(tree, "SetQaOverlayVisibleForQA", new[] { typeof(bool) }, qaOverlay);
+            InvokeInstance(tree, "ShowAchievementsForQA", new[] { typeof(bool) }, achievements);
+            if (!string.IsNullOrEmpty(selectedNodeId))
+                Assert.IsTrue(Convert.ToBoolean(InvokeInstance(tree, "SelectNodeForQA", selectedNodeId)), selectedNodeId);
+
+            yield return SaveCapture(stage, Path.Combine(directory, fileName));
+        }
+#endif
 
         private static IEnumerator CaptureTree(string directory, string fileName, string selectedNodeId, bool achievements)
         {
@@ -1617,6 +1859,14 @@ namespace FLOBUK.StoreSimulator.Tests
         private static object GetNode(string nodeId)
         {
             return Invoke(GetDefinitionsType(), "Get", nodeId);
+        }
+
+        private static Component GetFirstComponentByTypeName(Transform root, string typeName)
+        {
+            if (root == null)
+                return null;
+
+            return root.GetComponentsInChildren<MonoBehaviour>(true).FirstOrDefault(component => component.GetType().Name == typeName);
         }
 
         private static object[] GetDocumentedProductDefinitions()
