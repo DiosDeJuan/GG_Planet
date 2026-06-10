@@ -66,9 +66,9 @@ namespace FLOBUK.StoreSimulator
                 return false;
 
             if (TryGetProductUnlockNode(product, out EntrepreneurTreeNodeDefinition node))
-                message = "Producto bloqueado. Desbloquea " + node.Title + " en el Arbol del Emprendedor.";
+                message = "Falta desbloquear: " + node.Title;
             else
-                message = "Producto bloqueado. Desbloquea el nodo requerido en el Arbol del Emprendedor.";
+                message = "Falta desbloquear: nodo requerido del Arbol del Emprendedor.";
 
             return true;
         }

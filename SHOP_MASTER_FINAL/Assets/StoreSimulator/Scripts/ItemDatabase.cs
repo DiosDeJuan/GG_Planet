@@ -312,6 +312,12 @@ namespace FLOBUK.StoreSimulator
             for (int i = 0; i < productArray.Count; i++)
             {
                 string productId = productArray[i]["id"].Value;
+                if (!TryGetById(typeof(ProductScriptableObject), productId, out PurchasableScriptableObject savedPurchasable) &&
+                    DocumentedProductCatalog.TryGetCanonicalProductId(productId, out string canonicalId))
+                {
+                    productId = canonicalId;
+                }
+
                 if (!TryGetById(typeof(ProductScriptableObject), productId, out PurchasableScriptableObject purchasable) || purchasable is not ProductScriptableObject product)
                     continue;
 

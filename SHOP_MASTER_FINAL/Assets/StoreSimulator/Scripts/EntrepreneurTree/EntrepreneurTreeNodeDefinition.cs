@@ -121,14 +121,69 @@ namespace FLOBUK.StoreSimulator
 
         public static string GetKnownProductNodeId(string productId)
         {
-            switch (productId)
+            switch (DocumentedProductCatalog.GetCanonicalProductId(productId))
             {
-                case "0":
-                case "1":
-                case "2":
-                case "3":
-                case "4":
+                case "leche":
+                case "sal":
+                case "agua":
+                case "pasta":
+                case "azucar":
                     return DefaultUnlockedNodeId;
+                case "harina":
+                case "arroz":
+                case "frijoles":
+                case "pan":
+                case "aceite":
+                    return "productos_basicos_2";
+                case "cafe":
+                case "huevo":
+                    return "productos_basicos_3";
+                case "cheddar":
+                case "yogurt_natural":
+                case "mantequilla":
+                    return "lacteos_1";
+                case "queso_americano":
+                case "queso_crema":
+                    return "lacteos_2";
+                case "mozzarella":
+                case "parmesano":
+                    return "lacteos_3";
+                case "pimienta_negra":
+                case "canela":
+                    return "especias_1";
+                case "manzana":
+                case "platano":
+                case "jitomate":
+                case "cebolla":
+                    return "productos_frescos_1";
+                case "uvas":
+                case "zanahorias":
+                case "ajo":
+                    return "productos_frescos_2";
+                case "jabon":
+                case "papel_higienico":
+                case "detergente":
+                case "pasta_dientes":
+                    return "productos_higiene";
+                case "res":
+                case "pollo":
+                case "cerdo":
+                case "pescado":
+                    return "proteina_1";
+                case "cola":
+                case "cola_sin_azucar":
+                case "refresco_limon":
+                    return "sodas";
+                case "trufa":
+                case "chocolate_importado":
+                case "caviar":
+                    return "productos_lujo_1";
+                case "refrigerador":
+                case "microondas":
+                case "horno":
+                case "mesa":
+                case "licuadora":
+                    return "electrodomesticos_1";
                 default:
                     return string.Empty;
             }

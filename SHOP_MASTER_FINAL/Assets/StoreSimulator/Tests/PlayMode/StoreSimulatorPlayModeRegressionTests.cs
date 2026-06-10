@@ -87,6 +87,54 @@ namespace FLOBUK.StoreSimulator.Tests
                 AssertVisualCapture(Path.Combine(directory, fileName));
         }
 
+        [UnityTest]
+        public IEnumerator ProductVisualEvidence_GeneratesFase13ProductCaptures()
+        {
+            string directory = GetFase13CaptureDirectory();
+            Directory.CreateDirectory(directory);
+            foreach (string file in Directory.GetFiles(directory, "*.png"))
+                File.Delete(file);
+
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+                Assert.Ignore("Capturas Fase 13 omitidas: Unity esta ejecutando con dispositivo grafico Null.");
+
+            yield return CaptureProducts(directory, "Products_01_Todos.png", false);
+            yield return CaptureProducts(directory, "Products_02_Basicos1_Disponibles.png", false);
+            yield return CaptureProducts(directory, "Products_03_CategoriaBloqueada.png", true);
+            yield return CaptureProducts(directory, "Products_04_PlaceholderSeco.png", true);
+            yield return CaptureProducts(directory, "Products_05_PlaceholderRefrigerado.png", true);
+            yield return CaptureProducts(directory, "Products_06_PlaceholderLujo.png", true);
+            yield return CaptureProducts(directory, "Products_07_ElectrodomesticoPlaceholder.png", true);
+            yield return CaptureProducts(directory, "Products_08_FondosInsuficientes.png", false);
+            yield return CaptureProducts(directory, "Products_09_CompraCorrecta.png", false);
+            yield return CapturePrices(directory, "Precios_01_Todos.png");
+            yield return CapturePrices(directory, "Precios_02_ProductoPlaceholder.png");
+            yield return CapturePrices(directory, "Precios_03_PrecioCero.png");
+            yield return CapturePrices(directory, "Precios_04_Maximo300.png");
+            yield return CaptureTree(directory, "Arbol_Productos_01_RamaProductoDesbloqueada.png", "productos_basicos_2", false);
+
+            string[] expected =
+            {
+                "Products_01_Todos.png",
+                "Products_02_Basicos1_Disponibles.png",
+                "Products_03_CategoriaBloqueada.png",
+                "Products_04_PlaceholderSeco.png",
+                "Products_05_PlaceholderRefrigerado.png",
+                "Products_06_PlaceholderLujo.png",
+                "Products_07_ElectrodomesticoPlaceholder.png",
+                "Products_08_FondosInsuficientes.png",
+                "Products_09_CompraCorrecta.png",
+                "Precios_01_Todos.png",
+                "Precios_02_ProductoPlaceholder.png",
+                "Precios_03_PrecioCero.png",
+                "Precios_04_Maximo300.png",
+                "Arbol_Productos_01_RamaProductoDesbloqueada.png",
+            };
+
+            foreach (string fileName in expected)
+                AssertVisualCapture(Path.Combine(directory, fileName));
+        }
+
         [Test]
         public void SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath()
         {
@@ -335,9 +383,9 @@ namespace FLOBUK.StoreSimulator.Tests
         public void Products_Basic1UnlockedByDefaultAndOthersLockedByTree()
         {
             ResetProgress();
-            ScriptableObject leche = CreateProductProbe("0", "Leche");
-            ScriptableObject harina = CreateProductProbe("doc_harina", "Harina");
-            ScriptableObject mozzarella = CreateProductProbe("doc_mozzarella", "Mozzarella");
+            ScriptableObject leche = CreateProductProbe("leche", "Leche");
+            ScriptableObject harina = CreateProductProbe("harina", "Harina");
+            ScriptableObject mozzarella = CreateProductProbe("mozzarella", "Mozzarella");
 
             try
             {
@@ -398,6 +446,42 @@ namespace FLOBUK.StoreSimulator.Tests
             Assert.AreEqual(47, definitions.Length);
             CollectionAssert.AllItemsAreUnique(definitions.Select(definition => GetDefinitionString(definition, "Id")).ToArray());
             CollectionAssert.AllItemsAreUnique(definitions.Select(definition => GetDefinitionString(definition, "Title")).ToArray());
+        }
+
+        [Test]
+        public void ProductTable_AllIdsAreDefinitiveStableAndUnique()
+        {
+            string[] expectedIds =
+            {
+                "leche", "sal", "agua", "pasta", "azucar", "harina", "arroz", "frijoles", "pan", "aceite", "cafe", "huevo",
+                "cheddar", "yogurt_natural", "mantequilla", "queso_americano", "queso_crema", "mozzarella", "parmesano",
+                "pimienta_negra", "canela", "manzana", "platano", "jitomate", "cebolla", "uvas", "zanahorias", "ajo",
+                "jabon", "papel_higienico", "detergente", "pasta_dientes", "res", "pollo", "cerdo", "pescado",
+                "cola", "cola_sin_azucar", "refresco_limon", "trufa", "chocolate_importado", "caviar",
+                "refrigerador", "microondas", "horno", "mesa", "licuadora"
+            };
+
+            string[] ids = GetDocumentedProductDefinitions().Select(definition => GetDefinitionString(definition, "Id")).ToArray();
+            CollectionAssert.AreEquivalent(expectedIds, ids);
+            Assert.IsFalse(ids.Any(id => id.StartsWith("doc_", StringComparison.Ordinal)), "No definitive product id should keep doc_ prefix.");
+            Assert.IsFalse(ids.Any(id => id.Contains(" ") || id.Any(char.IsUpper)), "Product ids must be lowercase without spaces.");
+        }
+
+        [Test]
+        public void ProductTable_AllProductsExposePlayableMetadata()
+        {
+            foreach (object definition in GetDocumentedProductDefinitions())
+            {
+                Assert.Greater(GetDefinitionLong(definition, "CurrentPriceDefault"), 0L, GetDefinitionString(definition, "Title"));
+                Assert.IsNotEmpty(GetDefinitionString(definition, "IndividualDescription"), GetDefinitionString(definition, "Title"));
+                Assert.IsNotEmpty(GetDefinitionString(definition, "PackageDescription"), GetDefinitionString(definition, "Title"));
+                Assert.IsNotEmpty(GetDefinitionString(definition, "ProductKind"), GetDefinitionString(definition, "Title"));
+                Assert.IsNotEmpty(GetDefinitionString(definition, "PlaceholderKey"), GetDefinitionString(definition, "Title"));
+                Assert.IsNotEmpty(GetDefinitionString(definition, "FallbackText"), GetDefinitionString(definition, "Title"));
+                Assert.IsTrue(GetDefinitionBool(definition, "CanBePurchased"), GetDefinitionString(definition, "Title"));
+                Assert.IsTrue(GetDefinitionBool(definition, "CanBePriced"), GetDefinitionString(definition, "Title"));
+                Assert.IsTrue(GetDefinitionBool(definition, "CanBePlaced"), GetDefinitionString(definition, "Title"));
+            }
         }
 
         [Test]
@@ -530,7 +614,7 @@ namespace FLOBUK.StoreSimulator.Tests
             {
                 Type itemDatabaseType = FindGameType("FLOBUK.StoreSimulator.ItemDatabase");
                 Type productType = FindGameType("FLOBUK.StoreSimulator.ProductScriptableObject");
-                const string productId = "doc_mozzarella";
+                const string productId = "mozzarella";
                 const long savedPrice = 777L;
 
                 Invoke(itemDatabaseType, "UpdateStorePrice", productId, savedPrice);
@@ -551,10 +635,121 @@ namespace FLOBUK.StoreSimulator.Tests
         }
 
         [Test]
+        public void ProductCatalog_LoadMigratesLegacyProductIds()
+        {
+            GameObject root = CreateItemDatabaseFixture(out Component database, out List<UnityEngine.Object> cleanup);
+            try
+            {
+                object saved = Invoke(FindGameType("SimpleJSON.JSON"), "Parse", "{\"ProductScriptableObjects\":[{\"id\":\"doc_mozzarella\",\"buyPrice\":1000,\"storePrice\":888,\"marketPrice\":300}]}");
+
+                InvokeInstance(database, "LoadFromJSON", saved);
+                object product = Invoke(FindGameType("FLOBUK.StoreSimulator.ItemDatabase"), "GetById", FindGameType("FLOBUK.StoreSimulator.ProductScriptableObject"), "mozzarella");
+                Assert.AreEqual(888L, Convert.ToInt64(GetFieldValue(product, "storePrice")));
+                Assert.AreEqual(1000L, Convert.ToInt64(GetFieldValue(product, "buyPrice")));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                DestroyObjects(cleanup);
+            }
+        }
+
+        [Test]
+        public void ProductsShop_BlockedProductCannotBePurchased()
+        {
+            ResetProgress();
+            GameObject storeRoot = CreateStoreDatabaseFixture();
+            GameObject itemRoot = CreateItemDatabaseFixture(out _, out List<UnityEngine.Object> cleanup);
+            GameObject deliveryRoot = CreateDeliverySystemFixture(out GameObject packagePrefab);
+            try
+            {
+                object product = GetRuntimeProduct("harina");
+                Assert.IsFalse(TryPurchaseRuntimeProduct(product, out string message));
+                StringAssert.Contains("Falta desbloquear", message);
+            }
+            finally
+            {
+                DestroyObjects(cleanup);
+                UnityEngine.Object.DestroyImmediate(packagePrefab);
+                UnityEngine.Object.DestroyImmediate(deliveryRoot);
+                UnityEngine.Object.DestroyImmediate(itemRoot);
+                ClearStoreDatabaseInstance();
+                UnityEngine.Object.DestroyImmediate(storeRoot);
+                ResetProgress();
+            }
+        }
+
+        [Test]
+        public void ProductsShop_NoFundsShowsMissingAmount()
+        {
+            ResetProgress();
+            GameObject storeRoot = CreateStoreDatabaseFixture();
+            Component database = storeRoot.GetComponent(FindGameType("FLOBUK.StoreSimulator.StoreDatabase"));
+            SetPrivateBackingField(database, "currentMoney", 0L);
+            GameObject itemRoot = CreateItemDatabaseFixture(out _, out List<UnityEngine.Object> cleanup);
+            GameObject deliveryRoot = CreateDeliverySystemFixture(out GameObject packagePrefab);
+            try
+            {
+                object product = GetRuntimeProduct("leche");
+                Assert.IsFalse(TryPurchaseRuntimeProduct(product, out string message));
+                StringAssert.Contains("Fondos insuficientes", message);
+                StringAssert.Contains("Faltan", message);
+            }
+            finally
+            {
+                DestroyObjects(cleanup);
+                UnityEngine.Object.DestroyImmediate(packagePrefab);
+                UnityEngine.Object.DestroyImmediate(deliveryRoot);
+                UnityEngine.Object.DestroyImmediate(itemRoot);
+                ClearStoreDatabaseInstance();
+                UnityEngine.Object.DestroyImmediate(storeRoot);
+                ResetProgress();
+            }
+        }
+
+        [Test]
+        public void ProductsShop_PurchaseBaseAndPlaceholderProductsUsesRealDeliveryFlow()
+        {
+            ResetProgress();
+            GameObject storeRoot = CreateStoreDatabaseFixture();
+            Component database = storeRoot.GetComponent(FindGameType("FLOBUK.StoreSimulator.StoreDatabase"));
+            GameObject itemRoot = CreateItemDatabaseFixture(out _, out List<UnityEngine.Object> cleanup);
+            GameObject deliveryRoot = CreateDeliverySystemFixture(out GameObject packagePrefab);
+            try
+            {
+                long before = Convert.ToInt64(GetPropertyValue(database, "currentMoney"));
+                object leche = GetRuntimeProduct("leche");
+                Assert.IsTrue(TryPurchaseRuntimeProduct(leche, out string message), message);
+                long afterLeche = Convert.ToInt64(GetPropertyValue(database, "currentMoney"));
+                Assert.Less(afterLeche, before);
+                StringAssert.Contains("Pedido realizado", message);
+
+                UnlockWithPoint("productos_basicos_2");
+                object harina = GetRuntimeProduct("harina");
+                Assert.IsTrue(TryPurchaseRuntimeProduct(harina, out message), message);
+                long afterHarina = Convert.ToInt64(GetPropertyValue(database, "currentMoney"));
+                Assert.Less(afterHarina, afterLeche);
+                Assert.GreaterOrEqual(UnityEngine.Object.FindObjectsByType(FindGameType("FLOBUK.StoreSimulator.PackageObject"), FindObjectsSortMode.None).Length, 2);
+            }
+            finally
+            {
+                DestroyObjects(cleanup);
+                foreach (Component package in UnityEngine.Object.FindObjectsByType(FindGameType("FLOBUK.StoreSimulator.PackageObject"), FindObjectsSortMode.None))
+                    UnityEngine.Object.DestroyImmediate(package.gameObject);
+                UnityEngine.Object.DestroyImmediate(packagePrefab);
+                UnityEngine.Object.DestroyImmediate(deliveryRoot);
+                UnityEngine.Object.DestroyImmediate(itemRoot);
+                ClearStoreDatabaseInstance();
+                UnityEngine.Object.DestroyImmediate(storeRoot);
+                ResetProgress();
+            }
+        }
+
+        [Test]
         public void Tree_ProductUnlockUpdatesCatalogAvailability()
         {
             ResetProgress();
-            ScriptableObject queso = CreateProductProbe("doc_queso_crema", "Queso crema");
+            ScriptableObject queso = CreateProductProbe("queso_crema", "Queso crema");
             try
             {
                 Assert.IsFalse(IsProductUnlocked(queso));
@@ -1257,6 +1452,11 @@ namespace FLOBUK.StoreSimulator.Tests
             return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase12"));
         }
 
+        private static string GetFase13CaptureDirectory()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase13"));
+        }
+
 #if UNITY_EDITOR
         private static IEnumerator CaptureFase12DesktopRoute(string directory)
         {
@@ -1620,7 +1820,11 @@ namespace FLOBUK.StoreSimulator.Tests
             IEnumerable<object> products = ((System.Collections.IEnumerable)Invoke(itemDatabaseType, "GetByType", productType)).Cast<object>()
                 .OrderBy(product => GetFieldString(product, "title"));
             if (placeholdersOnly)
-                products = products.Where(product => Convert.ToString(GetFieldValue(product, "id")).StartsWith("doc_", StringComparison.Ordinal)).Take(12);
+                products = products.Where(product =>
+                {
+                    object definition = Invoke(GetDocumentedProductCatalogType(), "GetById", GetFieldString(product, "id"));
+                    return definition != null && GetDefinitionBool(definition, "UsesProvisionalAsset");
+                }).Take(12);
 
             foreach (object product in products)
                 CreateProductCard(grid.transform, product, placeholdersOnly);
@@ -1893,6 +2097,12 @@ namespace FLOBUK.StoreSimulator.Tests
             return Convert.ToInt64(value);
         }
 
+        private static bool GetDefinitionBool(object definition, string propertyName)
+        {
+            object value = definition.GetType().GetProperty(propertyName).GetValue(definition);
+            return Convert.ToBoolean(value);
+        }
+
         private static object CreatePurchasableListWithFallback(out List<UnityEngine.Object> cleanup)
         {
             cleanup = new List<UnityEngine.Object>();
@@ -1932,6 +2142,53 @@ namespace FLOBUK.StoreSimulator.Tests
             SetField(database, "purchasables", products);
             InvokeInstance(database, "Awake");
             return root;
+        }
+
+        private static GameObject CreateDeliverySystemFixture(out GameObject packagePrefab)
+        {
+            Type deliveryType = FindGameType("FLOBUK.StoreSimulator.DeliverySystem");
+            GameObject root = new GameObject("DeliverySystem Test Fixture");
+            Component delivery = root.AddComponent(deliveryType);
+
+            GameObject start = new GameObject("Delivery Start");
+            start.transform.SetParent(root.transform, false);
+            SetField(delivery, "deliveryStart", start.transform);
+            SetField(delivery, "totalDeliveries", 0);
+
+            packagePrefab = CreatePackagePrefab();
+            SetField(delivery, "packagePrefab", packagePrefab);
+            InvokeInstance(delivery, "Awake");
+            return root;
+        }
+
+        private static GameObject CreatePackagePrefab()
+        {
+            Type packageType = FindGameType("FLOBUK.StoreSimulator.PackageObject");
+            GameObject prefab = new GameObject("PackageObject Test Prefab");
+            Component package = prefab.AddComponent(packageType);
+
+            GameObject container = new GameObject("Container");
+            container.transform.SetParent(prefab.transform, false);
+            GameObject label = new GameObject("Label", typeof(MeshRenderer));
+            label.transform.SetParent(prefab.transform, false);
+
+            SetField(package, "container", container.transform);
+            SetField(package, "label", label.GetComponent<MeshRenderer>());
+            SetField(package, "space", new Vector2Int(6, 6));
+            return prefab;
+        }
+
+        private static object GetRuntimeProduct(string productId)
+        {
+            return Invoke(FindGameType("FLOBUK.StoreSimulator.ItemDatabase"), "GetById", FindGameType("FLOBUK.StoreSimulator.ProductScriptableObject"), productId);
+        }
+
+        private static bool TryPurchaseRuntimeProduct(object product, out string message)
+        {
+            object[] args = { product, null };
+            bool result = Convert.ToBoolean(FindGameType("FLOBUK.StoreSimulator.DeliverySystem").GetMethod("TryPurchaseProduct", BindingFlags.Public | BindingFlags.Static).Invoke(null, args));
+            message = Convert.ToString(args[1]);
+            return result;
         }
 
         private static void ClearItemDatabaseInstance(Type itemDatabaseType)
@@ -2088,6 +2345,13 @@ namespace FLOBUK.StoreSimulator.Tests
             FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
             Assert.NotNull(field, "Could not find field " + fieldName);
             return field.GetValue(target);
+        }
+
+        private static object GetPropertyValue(object target, string propertyName)
+        {
+            PropertyInfo property = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            Assert.NotNull(property, "Could not find property " + propertyName);
+            return property.GetValue(target);
         }
 
         private static string GetFieldString(object target, string fieldName)

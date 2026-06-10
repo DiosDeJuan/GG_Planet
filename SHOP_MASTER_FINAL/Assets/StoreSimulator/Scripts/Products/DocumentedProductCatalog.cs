@@ -14,6 +14,15 @@ namespace FLOBUK.StoreSimulator
         public string FurnitureCategory { get; }
         public long IdealPrice { get; }
         public long PackageCost { get; }
+        public long CurrentPriceDefault { get; }
+        public string IndividualDescription { get; }
+        public string PackageDescription { get; }
+        public string ProductKind { get; }
+        public string PlaceholderKey { get; }
+        public string FallbackText { get; }
+        public bool CanBePurchased { get; }
+        public bool CanBePriced { get; }
+        public bool CanBePlaced { get; }
         public bool UsesProvisionalAsset { get; }
         public string PlaceholderSource { get; }
 
@@ -26,8 +35,31 @@ namespace FLOBUK.StoreSimulator
             FurnitureCategory = furnitureCategory;
             IdealPrice = idealPrice;
             PackageCost = packageCost;
+            CurrentPriceDefault = idealPrice;
+            IndividualDescription = title + " para venta individual.";
+            PackageDescription = "Caja funcional de " + title + ".";
+            ProductKind = ResolveKind(furnitureCategory, category);
+            PlaceholderKey = usesProvisionalAsset ? "placeholder_" + ProductKind.ToLowerInvariant() : "asset_base";
+            FallbackText = string.IsNullOrEmpty(title) ? id : title.Substring(0, 1).ToUpperInvariant();
+            CanBePurchased = true;
+            CanBePriced = true;
+            CanBePlaced = true;
             UsesProvisionalAsset = usesProvisionalAsset;
             PlaceholderSource = placeholderSource;
+        }
+
+        private static string ResolveKind(string furnitureCategory, string category)
+        {
+            if (furnitureCategory == "Refrigeradores")
+                return category == "Sodas" ? "Soda" : "Refrigerated";
+            if (furnitureCategory == "Congeladores")
+                return category == "Productos de Lujo 1" ? "Luxury" : "Frozen";
+            if (furnitureCategory == "Electrodomesticos")
+                return "Appliance";
+            if (category == "Productos de Higiene")
+                return "Hygiene";
+
+            return "DryGood";
         }
     }
 
@@ -38,63 +70,80 @@ namespace FLOBUK.StoreSimulator
 
         private static readonly List<DocumentedProductDefinition> definitions = new List<DocumentedProductDefinition>
         {
-            Product("0", "Leche", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 100, 1200, false, ExistingAssetSource),
-            Product("1", "Sal", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 50, 200, false, ExistingAssetSource),
-            Product("2", "Agua", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 50, 600, false, ExistingAssetSource),
-            Product("3", "Pasta", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 100, 500, false, ExistingAssetSource),
-            Product("4", "Azucar", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 100, 400, false, ExistingAssetSource),
+            Product("leche", "Leche", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 100, 1200, false, ExistingAssetSource),
+            Product("sal", "Sal", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 50, 200, false, ExistingAssetSource),
+            Product("agua", "Agua", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 50, 600, false, ExistingAssetSource),
+            Product("pasta", "Pasta", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 100, 500, false, ExistingAssetSource),
+            Product("azucar", "Azucar", "Productos Basicos 1", "productos_basicos_1", "Gondolas", 100, 400, false, ExistingAssetSource),
 
-            Product("doc_harina", "Harina", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 100, 800, true, ProvisionalAssetSource),
-            Product("doc_arroz", "Arroz", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 150, 1500, true, ProvisionalAssetSource),
-            Product("doc_frijoles", "Frijoles", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 200, 1500, true, ProvisionalAssetSource),
-            Product("doc_pan", "Pan", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 200, 700, true, ProvisionalAssetSource),
-            Product("doc_aceite", "Aceite", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 250, 2500, true, ProvisionalAssetSource),
-            Product("doc_cafe", "Cafe", "Productos Basicos 3", "productos_basicos_3", "Gondolas", 300, 2500, true, ProvisionalAssetSource),
-            Product("doc_huevo", "Huevo", "Productos Basicos 3", "productos_basicos_3", "Gondolas", 200, 800, true, ProvisionalAssetSource),
+            Product("harina", "Harina", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 100, 800, true, ProvisionalAssetSource),
+            Product("arroz", "Arroz", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 150, 1500, true, ProvisionalAssetSource),
+            Product("frijoles", "Frijoles", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 200, 1500, true, ProvisionalAssetSource),
+            Product("pan", "Pan", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 200, 700, true, ProvisionalAssetSource),
+            Product("aceite", "Aceite", "Productos Basicos 2", "productos_basicos_2", "Gondolas", 250, 2500, true, ProvisionalAssetSource),
+            Product("cafe", "Cafe", "Productos Basicos 3", "productos_basicos_3", "Gondolas", 300, 2500, true, ProvisionalAssetSource),
+            Product("huevo", "Huevo", "Productos Basicos 3", "productos_basicos_3", "Gondolas", 200, 800, true, ProvisionalAssetSource),
 
-            Product("doc_cheddar", "Cheddar", "Lacteos 1", "lacteos_1", "Refrigeradores", 300, 1200, true, ProvisionalAssetSource),
-            Product("doc_yogurt_natural", "Yogurt natural", "Lacteos 1", "lacteos_1", "Refrigeradores", 100, 600, true, ProvisionalAssetSource),
-            Product("doc_mantequilla", "Mantequilla", "Lacteos 1", "lacteos_1", "Refrigeradores", 200, 800, true, ProvisionalAssetSource),
-            Product("doc_queso_americano", "Queso americano", "Lacteos 2", "lacteos_2", "Refrigeradores", 250, 1000, true, ProvisionalAssetSource),
-            Product("doc_queso_crema", "Queso crema", "Lacteos 2", "lacteos_2", "Refrigeradores", 200, 800, true, ProvisionalAssetSource),
-            Product("doc_mozzarella", "Mozzarella", "Lacteos 3", "lacteos_3", "Refrigeradores", 300, 1000, true, ProvisionalAssetSource),
-            Product("doc_parmesano", "Parmesano", "Lacteos 3", "lacteos_3", "Refrigeradores", 500, 2000, true, ProvisionalAssetSource),
+            Product("cheddar", "Cheddar", "Lacteos 1", "lacteos_1", "Refrigeradores", 300, 1200, true, ProvisionalAssetSource),
+            Product("yogurt_natural", "Yogurt natural", "Lacteos 1", "lacteos_1", "Refrigeradores", 100, 600, true, ProvisionalAssetSource),
+            Product("mantequilla", "Mantequilla", "Lacteos 1", "lacteos_1", "Refrigeradores", 200, 800, true, ProvisionalAssetSource),
+            Product("queso_americano", "Queso americano", "Lacteos 2", "lacteos_2", "Refrigeradores", 250, 1000, true, ProvisionalAssetSource),
+            Product("queso_crema", "Queso crema", "Lacteos 2", "lacteos_2", "Refrigeradores", 200, 800, true, ProvisionalAssetSource),
+            Product("mozzarella", "Mozzarella", "Lacteos 3", "lacteos_3", "Refrigeradores", 300, 1000, true, ProvisionalAssetSource),
+            Product("parmesano", "Parmesano", "Lacteos 3", "lacteos_3", "Refrigeradores", 500, 2000, true, ProvisionalAssetSource),
 
-            Product("doc_pimienta_negra", "Pimienta negra", "Especias 1", "especias_1", "Gondolas", 200, 700, true, ProvisionalAssetSource),
-            Product("doc_canela", "Canela", "Especias 1", "especias_1", "Gondolas", 100, 500, true, ProvisionalAssetSource),
-            Product("doc_manzana", "Manzana", "Productos Frescos 1", "productos_frescos_1", "Refrigeradores", 200, 2000, true, ProvisionalAssetSource),
-            Product("doc_platano", "Platano", "Productos Frescos 1", "productos_frescos_1", "Refrigeradores", 100, 1000, true, ProvisionalAssetSource),
-            Product("doc_jitomate", "Jitomate", "Productos Frescos 1", "productos_frescos_1", "Refrigeradores", 200, 2000, true, ProvisionalAssetSource),
-            Product("doc_cebolla", "Cebolla", "Productos Frescos 1", "productos_frescos_1", "Refrigeradores", 150, 1500, true, ProvisionalAssetSource),
-            Product("doc_uvas", "Uvas", "Productos Frescos 2", "productos_frescos_2", "Refrigeradores", 400, 1000, true, ProvisionalAssetSource),
-            Product("doc_zanahorias", "Zanahorias", "Productos Frescos 2", "productos_frescos_2", "Refrigeradores", 100, 500, true, ProvisionalAssetSource),
-            Product("doc_ajo", "Ajo", "Productos Frescos 2", "productos_frescos_2", "Refrigeradores", 150, 600, true, ProvisionalAssetSource),
+            Product("pimienta_negra", "Pimienta negra", "Especias 1", "especias_1", "Gondolas", 200, 700, true, ProvisionalAssetSource),
+            Product("canela", "Canela", "Especias 1", "especias_1", "Gondolas", 100, 500, true, ProvisionalAssetSource),
+            Product("manzana", "Manzana", "Productos Frescos 1", "productos_frescos_1", "Refrigeradores", 200, 2000, true, ProvisionalAssetSource),
+            Product("platano", "Platano", "Productos Frescos 1", "productos_frescos_1", "Refrigeradores", 100, 1000, true, ProvisionalAssetSource),
+            Product("jitomate", "Jitomate", "Productos Frescos 1", "productos_frescos_1", "Refrigeradores", 200, 2000, true, ProvisionalAssetSource),
+            Product("cebolla", "Cebolla", "Productos Frescos 1", "productos_frescos_1", "Refrigeradores", 150, 1500, true, ProvisionalAssetSource),
+            Product("uvas", "Uvas", "Productos Frescos 2", "productos_frescos_2", "Refrigeradores", 400, 1000, true, ProvisionalAssetSource),
+            Product("zanahorias", "Zanahorias", "Productos Frescos 2", "productos_frescos_2", "Refrigeradores", 100, 500, true, ProvisionalAssetSource),
+            Product("ajo", "Ajo", "Productos Frescos 2", "productos_frescos_2", "Refrigeradores", 150, 600, true, ProvisionalAssetSource),
 
-            Product("doc_jabon", "Jabon", "Productos de Higiene", "productos_higiene", "Gondolas", 100, 1500, true, ProvisionalAssetSource),
-            Product("doc_papel_higienico", "Papel higienico", "Productos de Higiene", "productos_higiene", "Gondolas", 500, 2500, true, ProvisionalAssetSource),
-            Product("doc_detergente", "Detergente", "Productos de Higiene", "productos_higiene", "Gondolas", 200, 2000, true, ProvisionalAssetSource),
-            Product("doc_pasta_dientes", "Pasta de dientes", "Productos de Higiene", "productos_higiene", "Gondolas", 100, 800, true, ProvisionalAssetSource),
-            Product("doc_res", "Res", "Proteina 1", "proteina_1", "Congeladores", 1000, 4000, true, ProvisionalAssetSource),
-            Product("doc_pollo", "Pollo", "Proteina 1", "proteina_1", "Congeladores", 500, 2000, true, ProvisionalAssetSource),
-            Product("doc_cerdo", "Cerdo", "Proteina 1", "proteina_1", "Congeladores", 700, 3000, true, ProvisionalAssetSource),
-            Product("doc_pescado", "Pescado", "Proteina 1", "proteina_1", "Congeladores", 800, 3000, true, ProvisionalAssetSource),
+            Product("jabon", "Jabon", "Productos de Higiene", "productos_higiene", "Gondolas", 100, 1500, true, ProvisionalAssetSource),
+            Product("papel_higienico", "Papel higienico", "Productos de Higiene", "productos_higiene", "Gondolas", 500, 2500, true, ProvisionalAssetSource),
+            Product("detergente", "Detergente", "Productos de Higiene", "productos_higiene", "Gondolas", 200, 2000, true, ProvisionalAssetSource),
+            Product("pasta_dientes", "Pasta de dientes", "Productos de Higiene", "productos_higiene", "Gondolas", 100, 800, true, ProvisionalAssetSource),
+            Product("res", "Res", "Proteina 1", "proteina_1", "Congeladores", 1000, 4000, true, ProvisionalAssetSource),
+            Product("pollo", "Pollo", "Proteina 1", "proteina_1", "Congeladores", 500, 2000, true, ProvisionalAssetSource),
+            Product("cerdo", "Cerdo", "Proteina 1", "proteina_1", "Congeladores", 700, 3000, true, ProvisionalAssetSource),
+            Product("pescado", "Pescado", "Proteina 1", "proteina_1", "Congeladores", 800, 3000, true, ProvisionalAssetSource),
 
-            Product("doc_cola", "Cola", "Sodas", "sodas", "Refrigeradores", 150, 1200, true, ProvisionalAssetSource),
-            Product("doc_cola_sin_azucar", "Cola sin azucar", "Sodas", "sodas", "Refrigeradores", 150, 1200, true, ProvisionalAssetSource),
-            Product("doc_refresco_limon", "Refresco de limon", "Sodas", "sodas", "Refrigeradores", 150, 1200, true, ProvisionalAssetSource),
-            Product("doc_trufa", "Trufa", "Productos de Lujo 1", "productos_lujo_1", "Congeladores", 10000, 15000, true, ProvisionalAssetSource),
-            Product("doc_chocolate_importado", "Chocolate importado", "Productos de Lujo 1", "productos_lujo_1", "Congeladores", 300, 1500, true, ProvisionalAssetSource),
-            Product("doc_caviar", "Caviar", "Productos de Lujo 1", "productos_lujo_1", "Congeladores", 5000, 40000, true, ProvisionalAssetSource),
+            Product("cola", "Cola", "Sodas", "sodas", "Refrigeradores", 150, 1200, true, ProvisionalAssetSource),
+            Product("cola_sin_azucar", "Cola sin azucar", "Sodas", "sodas", "Refrigeradores", 150, 1200, true, ProvisionalAssetSource),
+            Product("refresco_limon", "Refresco de limon", "Sodas", "sodas", "Refrigeradores", 150, 1200, true, ProvisionalAssetSource),
+            Product("trufa", "Trufa", "Productos de Lujo 1", "productos_lujo_1", "Congeladores", 10000, 15000, true, ProvisionalAssetSource),
+            Product("chocolate_importado", "Chocolate importado", "Productos de Lujo 1", "productos_lujo_1", "Congeladores", 300, 1500, true, ProvisionalAssetSource),
+            Product("caviar", "Caviar", "Productos de Lujo 1", "productos_lujo_1", "Congeladores", 5000, 40000, true, ProvisionalAssetSource),
 
-            Product("doc_refrigerador", "Refrigerador", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 40000, 40000, true, ProvisionalAssetSource),
-            Product("doc_microondas", "Microondas", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 6000, 6000, true, ProvisionalAssetSource),
-            Product("doc_horno", "Horno", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 20000, 20000, true, ProvisionalAssetSource),
-            Product("doc_mesa", "Mesa", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 10000, 10000, true, ProvisionalAssetSource),
-            Product("doc_licuadora", "Licuadora", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 8000, 8000, true, ProvisionalAssetSource),
+            Product("refrigerador", "Refrigerador", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 40000, 40000, true, ProvisionalAssetSource),
+            Product("microondas", "Microondas", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 6000, 6000, true, ProvisionalAssetSource),
+            Product("horno", "Horno", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 20000, 20000, true, ProvisionalAssetSource),
+            Product("mesa", "Mesa", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 10000, 10000, true, ProvisionalAssetSource),
+            Product("licuadora", "Licuadora", "Electrodomesticos 1", "electrodomesticos_1", "Electrodomesticos", 8000, 8000, true, ProvisionalAssetSource),
         };
 
         public static IReadOnlyList<DocumentedProductDefinition> Definitions => definitions;
         public static int TotalDocumentedProducts => definitions.Count;
+
+        private static readonly Dictionary<string, string> legacyIds = new Dictionary<string, string>
+        {
+            { "0", "leche" }, { "1", "sal" }, { "2", "agua" }, { "3", "pasta" }, { "4", "azucar" },
+            { "doc_harina", "harina" }, { "doc_arroz", "arroz" }, { "doc_frijoles", "frijoles" }, { "doc_pan", "pan" }, { "doc_aceite", "aceite" },
+            { "doc_cafe", "cafe" }, { "doc_huevo", "huevo" }, { "doc_cheddar", "cheddar" }, { "doc_yogurt_natural", "yogurt_natural" },
+            { "doc_mantequilla", "mantequilla" }, { "doc_queso_americano", "queso_americano" }, { "doc_queso_crema", "queso_crema" },
+            { "doc_mozzarella", "mozzarella" }, { "doc_parmesano", "parmesano" }, { "doc_pimienta_negra", "pimienta_negra" },
+            { "doc_canela", "canela" }, { "doc_manzana", "manzana" }, { "doc_platano", "platano" }, { "doc_jitomate", "jitomate" },
+            { "doc_cebolla", "cebolla" }, { "doc_uvas", "uvas" }, { "doc_zanahorias", "zanahorias" }, { "doc_ajo", "ajo" },
+            { "doc_jabon", "jabon" }, { "doc_papel_higienico", "papel_higienico" }, { "doc_detergente", "detergente" },
+            { "doc_pasta_dientes", "pasta_dientes" }, { "doc_res", "res" }, { "doc_pollo", "pollo" }, { "doc_cerdo", "cerdo" },
+            { "doc_pescado", "pescado" }, { "doc_cola", "cola" }, { "doc_cola_sin_azucar", "cola_sin_azucar" },
+            { "doc_refresco_limon", "refresco_limon" }, { "doc_trufa", "trufa" }, { "doc_chocolate_importado", "chocolate_importado" },
+            { "doc_caviar", "caviar" }, { "doc_refrigerador", "refrigerador" }, { "doc_microondas", "microondas" },
+            { "doc_horno", "horno" }, { "doc_mesa", "mesa" }, { "doc_licuadora", "licuadora" },
+        };
 
         public static IReadOnlyList<DocumentedProductDefinition> GetByNode(string nodeId)
         {
@@ -103,7 +152,27 @@ namespace FLOBUK.StoreSimulator
 
         public static DocumentedProductDefinition GetById(string id)
         {
-            return definitions.FirstOrDefault(definition => definition.Id == id);
+            string canonicalId = GetCanonicalProductId(id);
+            return definitions.FirstOrDefault(definition => definition.Id == canonicalId);
+        }
+
+        public static bool TryGetCanonicalProductId(string id, out string canonicalId)
+        {
+            canonicalId = GetCanonicalProductId(id);
+            if (string.IsNullOrEmpty(canonicalId))
+                return false;
+
+            string resolvedId = canonicalId;
+            return definitions.Any(definition => definition.Id == resolvedId);
+        }
+
+        public static string GetCanonicalProductId(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return string.Empty;
+
+            string key = id.Trim();
+            return legacyIds.TryGetValue(key, out string canonicalId) ? canonicalId : key;
         }
 
         public static bool IsDocumentedProduct(ProductScriptableObject product)
@@ -157,7 +226,7 @@ namespace FLOBUK.StoreSimulator
 
         private static ProductScriptableObject FindProduct(List<ProductScriptableObject> products, DocumentedProductDefinition definition)
         {
-            return products.FirstOrDefault(product => product != null && product.id == definition.Id)
+            return products.FirstOrDefault(product => product != null && GetCanonicalProductId(product.id) == definition.Id)
                 ?? products.FirstOrDefault(product => product != null && Normalize(product.title) == Normalize(definition.Title));
         }
 
