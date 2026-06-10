@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="88" result="Passed" total="88" passed="88" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:40Z" duration="16.1900531">
+  <test-suite type="TestSuite" id="1097" name="SHOP_MASTER_FINAL" fullname="SHOP_MASTER_FINAL" runstate="Runnable" testcasecount="88" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:40Z" duration="16.190053" total="88" passed="88" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1090" name="FLOBUK.StoreSimulator.PlayModeTests.dll" fullname="C:/Users/ijuan/SHOP_MASTER_FINAL/Library/ScriptAssemblies/FLOBUK.StoreSimulator.PlayModeTests.dll" runstate="Runnable" testcasecount="88" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:40Z" duration="16.179916" total="88" passed="88" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="20428" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestSuite" id="1091" name="FLOBUK" fullname="FLOBUK" runstate="Runnable" testcasecount="88" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:40Z" duration="16.177703" total="88" passed="88" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1092" name="StoreSimulator" fullname="FLOBUK.StoreSimulator" runstate="Runnable" testcasecount="88" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:40Z" duration="16.176055" total="88" passed="88" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1093" name="Tests" fullname="FLOBUK.StoreSimulator.Tests" runstate="Runnable" testcasecount="88" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:40Z" duration="16.174353" total="88" passed="88" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="StoreSimulatorPlayModeRegressionTests" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" testcasecount="88" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:40Z" duration="16.169466" total="88" passed="88" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1079" name="AdminIntro_Fase16ButtonExistsInRealIntroMenu" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.AdminIntro_Fase16ButtonExistsInRealIntroMenu" methodname="AdminIntro_Fase16ButtonExistsInRealIntroMenu" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1110115715" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:24Z" duration="0.714354" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1082" name="AdminMode_Fase16BasicPackageAddsRealMoneyLevelsAndTreePoints" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.AdminMode_Fase16BasicPackageAddsRealMoneyLevelsAndTreePoints" methodname="AdminMode_Fase16BasicPackageAddsRealMoneyLevelsAndTreePoints" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1748109733" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:24Z" duration="0.019306" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1088" name="AdminMode_Fase16CapturesTreeCosts" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.AdminMode_Fase16CapturesTreeCosts" methodname="AdminMode_Fase16CapturesTreeCosts" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="892626392" result="Passed" start-time="2026-06-10 19:01:24Z" end-time="2026-06-10 19:01:25Z" duration="0.562933" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[CommandBuffer: temporary render texture  not found while executing  (Copy source)
+CommandBuffer: temporary render texture  not found while executing  (Copy destination)
+]]></output>
+              </test-case>
+              <test-case id="1083" name="AdminMode_Fase16PackageDoesNotDuplicateAfterSaveLoad" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.AdminMode_Fase16PackageDoesNotDuplicateAfterSaveLoad" methodname="AdminMode_Fase16PackageDoesNotDuplicateAfterSaveLoad" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1083862216" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.007640" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1085" name="AdminMode_Fase16RuntimeAuditCanBeGenerated" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.AdminMode_Fase16RuntimeAuditCanBeGenerated" methodname="AdminMode_Fase16RuntimeAuditCanBeGenerated" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="768960859" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.009161" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1084" name="AdminMode_Fase16TotalUnlocksAllTreeNodesThroughRealFlow" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.AdminMode_Fase16TotalUnlocksAllTreeNodesThroughRealFlow" methodname="AdminMode_Fase16TotalUnlocksAllTreeNodesThroughRealFlow" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="317745155" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.006819" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1069" name="Desktop_NavigationKeepsMoneyAndGestionSeparated" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Desktop_NavigationKeepsMoneyAndGestionSeparated" methodname="Desktop_NavigationKeepsMoneyAndGestionSeparated" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="113334384" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.010210" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1026" name="DocumentedProductCatalog_RegistersAllDocumentedProducts" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.DocumentedProductCatalog_RegistersAllDocumentedProducts" methodname="DocumentedProductCatalog_RegistersAllDocumentedProducts" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1959594012" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.017953" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1063" name="Employees_All18CardsCanBeRepresented" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Employees_All18CardsCanBeRepresented" methodname="Employees_All18CardsCanBeRepresented" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="16493413" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.049492" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1066" name="Employees_All18EmployeesHaveVisiblePrerequisiteData" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Employees_All18EmployeesHaveVisiblePrerequisiteData" methodname="Employees_All18EmployeesHaveVisiblePrerequisiteData" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="23437289" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.035303" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1067" name="Employees_LockedEmployeeShowsMissingRequirement" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Employees_LockedEmployeeShowsMissingRequirement" methodname="Employees_LockedEmployeeShowsMissingRequirement" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="414508350" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.001920" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1068" name="Employees_RebuildDoesNotDuplicateCards" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Employees_RebuildDoesNotDuplicateCards" methodname="Employees_RebuildDoesNotDuplicateCards" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="717064314" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.060761" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1064" name="Employees_RebuildDoesNotDuplicateCardsOrListeners" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Employees_RebuildDoesNotDuplicateCardsOrListeners" methodname="Employees_RebuildDoesNotDuplicateCardsOrListeners" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="985638451" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.017263" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1057" name="EntrepreneurAchievements_HasAllDocumentedDefinitions" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurAchievements_HasAllDocumentedDefinitions" methodname="EntrepreneurAchievements_HasAllDocumentedDefinitions" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2119731626" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.005482" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1056" name="EntrepreneurAchievements_RewardOnlyOnce" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurAchievements_RewardOnlyOnce" methodname="EntrepreneurAchievements_RewardOnlyOnce" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1934748820" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.002615" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1023" name="EntrepreneurTree_AllDocumentedProductCategoriesExist" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_AllDocumentedProductCategoriesExist" methodname="EntrepreneurTree_AllDocumentedProductCategoriesExist" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1747294494" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.003999" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1049" name="EntrepreneurTree_BasicProducts1UnlockedByDefault" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_BasicProducts1UnlockedByDefault" methodname="EntrepreneurTree_BasicProducts1UnlockedByDefault" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="47978517" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.001417" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1050" name="EntrepreneurTree_EmployeesHaveDocumentedPrerequisites" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_EmployeesHaveDocumentedPrerequisites" methodname="EntrepreneurTree_EmployeesHaveDocumentedPrerequisites" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1920132452" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.009032" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1077" name="EntrepreneurTree_Fase15CanUnlockEveryNodeAndCompleteTree" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_Fase15CanUnlockEveryNodeAndCompleteTree" methodname="EntrepreneurTree_Fase15CanUnlockEveryNodeAndCompleteTree" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="994293777" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:25Z" duration="0.030083" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1087" name="EntrepreneurTree_Fase15CapturesFinalArbolStates" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_Fase15CapturesFinalArbolStates" methodname="EntrepreneurTree_Fase15CapturesFinalArbolStates" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="311469685" result="Passed" start-time="2026-06-10 19:01:25Z" end-time="2026-06-10 19:01:29Z" duration="3.467499" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1076" name="EntrepreneurTree_Fase15GraphIntegrityIsCompleteReachableAndAcyclic" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_Fase15GraphIntegrityIsCompleteReachableAndAcyclic" methodname="EntrepreneurTree_Fase15GraphIntegrityIsCompleteReachableAndAcyclic" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="694199894" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.004264" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1078" name="EntrepreneurTree_Fase15RuntimeAuditCanBeGenerated" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_Fase15RuntimeAuditCanBeGenerated" methodname="EntrepreneurTree_Fase15RuntimeAuditCanBeGenerated" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1753774252" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.036995" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1022" name="EntrepreneurTree_HasAllDocumentedCoreNodes" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_HasAllDocumentedCoreNodes" methodname="EntrepreneurTree_HasAllDocumentedCoreNodes" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="540433969" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.001472" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1052" name="EntrepreneurTree_ImprovementsHaveDocumentedPrerequisites" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_ImprovementsHaveDocumentedPrerequisites" methodname="EntrepreneurTree_ImprovementsHaveDocumentedPrerequisites" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="902028071" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.014994" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1024" name="EntrepreneurTree_ProductNodesListUnlockedProducts" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_ProductNodesListUnlockedProducts" methodname="EntrepreneurTree_ProductNodesListUnlockedProducts" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="881920984" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.003745" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1071" name="EntrepreneurTree_RebuildDoesNotDuplicateConnectionViews" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_RebuildDoesNotDuplicateConnectionViews" methodname="EntrepreneurTree_RebuildDoesNotDuplicateConnectionViews" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1820997909" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.021356" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1062" name="EntrepreneurTree_RebuildDoesNotDuplicateNodesOrListeners" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_RebuildDoesNotDuplicateNodesOrListeners" methodname="EntrepreneurTree_RebuildDoesNotDuplicateNodesOrListeners" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="505943691" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.022146" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1059" name="EntrepreneurTree_SaveLoadDoesNotDuplicateRewards" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_SaveLoadDoesNotDuplicateRewards" methodname="EntrepreneurTree_SaveLoadDoesNotDuplicateRewards" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1797358179" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.003555" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1058" name="EntrepreneurTree_SaveLoadPersistsUnlocksAndPoints" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_SaveLoadPersistsUnlocksAndPoints" methodname="EntrepreneurTree_SaveLoadPersistsUnlocksAndPoints" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2120268943" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.001656" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1051" name="EntrepreneurTree_SecurityLevelsHaveDocumentedPrerequisitesAndValues" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_SecurityLevelsHaveDocumentedPrerequisitesAndValues" methodname="EntrepreneurTree_SecurityLevelsHaveDocumentedPrerequisitesAndValues" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1553476863" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.010006" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1061" name="EntrepreneurTree_UIBootstrap_DoesNotCreateMainCanvas" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_UIBootstrap_DoesNotCreateMainCanvas" methodname="EntrepreneurTree_UIBootstrap_DoesNotCreateMainCanvas" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="901687356" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.023993" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1055" name="EntrepreneurTree_UnlockConsumesOnePoint" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_UnlockConsumesOnePoint" methodname="EntrepreneurTree_UnlockConsumesOnePoint" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="10445440" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.001354" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1060" name="EntrepreneurTree_UnlockEffectsGateProductsEmployeesSecurity" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_UnlockEffectsGateProductsEmployeesSecurity" methodname="EntrepreneurTree_UnlockEffectsGateProductsEmployeesSecurity" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="322284237" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.010175" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1053" name="EntrepreneurTree_UnlockRequiresPrerequisites" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_UnlockRequiresPrerequisites" methodname="EntrepreneurTree_UnlockRequiresPrerequisites" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="930496696" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.001283" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1054" name="EntrepreneurTree_UnlockRequiresProgressPoint" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_UnlockRequiresProgressPoint" methodname="EntrepreneurTree_UnlockRequiresProgressPoint" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1716139335" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.000890" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1025" name="EntrepreneurTree_VisualLayoutHasNoDuplicateNodePositions" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_VisualLayoutHasNoDuplicateNodePositions" methodname="EntrepreneurTree_VisualLayoutHasNoDuplicateNodePositions" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1492087689" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.001545" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1070" name="EntrepreneurTree_VisualThemeUsesDarkPanel" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.EntrepreneurTree_VisualThemeUsesDarkPanel" methodname="EntrepreneurTree_VisualThemeUsesDarkPanel" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1802101617" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.001019" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1017" name="MovementReproLog_GeneratesPositionBeforeAfter" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.MovementReproLog_GeneratesPositionBeforeAfter" methodname="MovementReproLog_GeneratesPositionBeforeAfter" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="508366156" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:29Z" duration="0.111656" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[PlayerController did not find optional Input Action Map 'UI'. Continuing with gameplay input.
+PlayerController skipped initial store-entry look because StoreDatabase or storeEntry is missing.
+]]></output>
+              </test-case>
+              <test-case id="1011" name="PlayerMovement_ComputerOpenCloseRestoresMovement" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_ComputerOpenCloseRestoresMovement" methodname="PlayerMovement_ComputerOpenCloseRestoresMovement" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="254404762" result="Passed" start-time="2026-06-10 19:01:29Z" end-time="2026-06-10 19:01:30Z" duration="0.657782" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1015" name="PlayerMovement_CrouchDoesNotPermanentlyDisableMovement" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_CrouchDoesNotPermanentlyDisableMovement" methodname="PlayerMovement_CrouchDoesNotPermanentlyDisableMovement" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="42767305" result="Passed" start-time="2026-06-10 19:01:30Z" end-time="2026-06-10 19:01:30Z" duration="0.005682" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1007" name="PlayerMovement_DefaultActionMapIsAvailableOrFallbackSafe" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_DefaultActionMapIsAvailableOrFallbackSafe" methodname="PlayerMovement_DefaultActionMapIsAvailableOrFallbackSafe" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="873985198" result="Passed" start-time="2026-06-10 19:01:30Z" end-time="2026-06-10 19:01:30Z" duration="0.002136" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="PlayerMovement_MissingUIActionMapDoesNotBlockGameplay" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_MissingUIActionMapDoesNotBlockGameplay" methodname="PlayerMovement_MissingUIActionMapDoesNotBlockGameplay" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="868911954" result="Passed" start-time="2026-06-10 19:01:30Z" end-time="2026-06-10 19:01:30Z" duration="0.004367" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1006" name="PlayerMovement_PlayerControllerExistsInGameScene" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_PlayerControllerExistsInGameScene" methodname="PlayerMovement_PlayerControllerExistsInGameScene" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="534769505" result="Passed" start-time="2026-06-10 19:01:30Z" end-time="2026-06-10 19:01:30Z" duration="0.606524" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1016" name="PlayerMovement_PositionChangesWhenApplyingForwardInput" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_PositionChangesWhenApplyingForwardInput" methodname="PlayerMovement_PositionChangesWhenApplyingForwardInput" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1762006005" result="Passed" start-time="2026-06-10 19:01:30Z" end-time="2026-06-10 19:01:30Z" duration="0.008458" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1013" name="PlayerMovement_QARestoreClosesComputerAndRestoresInput" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_QARestoreClosesComputerAndRestoresInput" methodname="PlayerMovement_QARestoreClosesComputerAndRestoresInput" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1154217558" result="Passed" start-time="2026-06-10 19:01:30Z" end-time="2026-06-10 19:01:30Z" duration="0.006303" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1012" name="PlayerMovement_RepeatedComputerOpenCloseDoesNotLeaveInputBlocked" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_RepeatedComputerOpenCloseDoesNotLeaveInputBlocked" methodname="PlayerMovement_RepeatedComputerOpenCloseDoesNotLeaveInputBlocked" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="485683529" result="Passed" start-time="2026-06-10 19:01:30Z" end-time="2026-06-10 19:01:33Z" duration="3.252655" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1010" name="PlayerMovement_RestoreGameplayInputSetsExpectedState" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_RestoreGameplayInputSetsExpectedState" methodname="PlayerMovement_RestoreGameplayInputSetsExpectedState" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2028848228" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.005738" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1014" name="PlayerMovement_RunJumpAndCrouchConfigurationIsValid" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_RunJumpAndCrouchConfigurationIsValid" methodname="PlayerMovement_RunJumpAndCrouchConfigurationIsValid" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="239572686" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.002799" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1009" name="PlayerMovement_StartsWithGameplayInputEnabled" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.PlayerMovement_StartsWithGameplayInputEnabled" methodname="PlayerMovement_StartsWithGameplayInputEnabled" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1321001949" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.003783" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1033" name="ProductCatalog_All47DocumentedProductsExist" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_All47DocumentedProductsExist" methodname="ProductCatalog_All47DocumentedProductsExist" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="958122157" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.001888" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1042" name="ProductCatalog_AllProductsAppearInProductsAndPricesSource" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_AllProductsAppearInProductsAndPricesSource" methodname="ProductCatalog_AllProductsAppearInProductsAndPricesSource" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1057662938" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.007101" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1037" name="ProductCatalog_AllProductsHavePricingData" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_AllProductsHavePricingData" methodname="ProductCatalog_AllProductsHavePricingData" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="239338807" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.001469" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1038" name="ProductCatalog_AllProductsHaveSafeCategory" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_AllProductsHaveSafeCategory" methodname="ProductCatalog_AllProductsHaveSafeCategory" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="946896364" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.001772" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1039" name="ProductCatalog_AllProductsHaveSafeVisualFallback" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_AllProductsHaveSafeVisualFallback" methodname="ProductCatalog_AllProductsHaveSafeVisualFallback" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="120996223" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.007652" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1036" name="ProductCatalog_AllProductsHaveTreeNode" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_AllProductsHaveTreeNode" methodname="ProductCatalog_AllProductsHaveTreeNode" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1298208125" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.007969" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1040" name="ProductCatalog_AllProductsReachPricingCalculator" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_AllProductsReachPricingCalculator" methodname="ProductCatalog_AllProductsReachPricingCalculator" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2017819832" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.005899" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1044" name="ProductCatalog_LoadMigratesLegacyProductIds" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_LoadMigratesLegacyProductIds" methodname="ProductCatalog_LoadMigratesLegacyProductIds" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1246377709" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:33Z" duration="0.007647" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1041" name="ProductCatalog_PackageCostMatchesShopTotal" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_PackageCostMatchesShopTotal" methodname="ProductCatalog_PackageCostMatchesShopTotal" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2125254622" result="Passed" start-time="2026-06-10 19:01:33Z" end-time="2026-06-10 19:01:34Z" duration="0.014962" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1043" name="ProductCatalog_SaveLoadKeepsProductPrices" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductCatalog_SaveLoadKeepsProductPrices" methodname="ProductCatalog_SaveLoadKeepsProductPrices" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2003119917" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.007776" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1032" name="ProductPricing_AllDocumentedProductsCanBeEvaluated" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductPricing_AllDocumentedProductsCanBeEvaluated" methodname="ProductPricing_AllDocumentedProductsCanBeEvaluated" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1208995408" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.006090" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1002" name="ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" methodname="ProductPricingCalculator_ClampsPricesAndKeepsDocumentedProbabilities" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="611275238" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.001445" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="ProductPricingCalculator_NullAndZeroIdealInputsStaySafe" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductPricingCalculator_NullAndZeroIdealInputsStaySafe" methodname="ProductPricingCalculator_NullAndZeroIdealInputsStaySafe" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1534510111" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.001073" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1031" name="Products_Basic1UnlockedByDefaultAndOthersLockedByTree" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Products_Basic1UnlockedByDefaultAndOthersLockedByTree" methodname="Products_Basic1UnlockedByDefaultAndOthersLockedByTree" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="567047464" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.005289" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1045" name="ProductsShop_BlockedProductCannotBePurchased" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductsShop_BlockedProductCannotBePurchased" methodname="ProductsShop_BlockedProductCannotBePurchased" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1734098573" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.011667" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1046" name="ProductsShop_NoFundsShowsMissingAmount" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductsShop_NoFundsShowsMissingAmount" methodname="ProductsShop_NoFundsShowsMissingAmount" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1295450218" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.009917" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1047" name="ProductsShop_PurchaseBaseAndPlaceholderProductsUsesRealDeliveryFlow" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductsShop_PurchaseBaseAndPlaceholderProductsUsesRealDeliveryFlow" methodname="ProductsShop_PurchaseBaseAndPlaceholderProductsUsesRealDeliveryFlow" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="718244437" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.014987" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1034" name="ProductTable_AllIdsAreDefinitiveStableAndUnique" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductTable_AllIdsAreDefinitiveStableAndUnique" methodname="ProductTable_AllIdsAreDefinitiveStableAndUnique" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2026411216" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.001408" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1035" name="ProductTable_AllProductsExposePlayableMetadata" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductTable_AllProductsExposePlayableMetadata" methodname="ProductTable_AllProductsExposePlayableMetadata" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1453926041" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:34Z" duration="0.002874" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1005" name="ProductVisualEvidence_GeneratesFase13ProductCaptures" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ProductVisualEvidence_GeneratesFase13ProductCaptures" methodname="ProductVisualEvidence_GeneratesFase13ProductCaptures" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="303973249" result="Passed" start-time="2026-06-10 19:01:34Z" end-time="2026-06-10 19:01:37Z" duration="3.020649" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1018" name="SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" methodname="SaveGameSystem_AlternateProfileKeyUsesDistinctSavePath" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="830555657" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.001842" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1020" name="ShopExpansionManager_ClampsAreasAndScalesRiskWithoutRunawayValues" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.ShopExpansionManager_ClampsAreasAndScalesRiskWithoutRunawayValues" methodname="ShopExpansionManager_ClampsAreasAndScalesRiskWithoutRunawayValues" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2053314902" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.002891" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1029" name="StoreDatabase_AllDocumentedProductsHaveCategory" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.StoreDatabase_AllDocumentedProductsHaveCategory" methodname="StoreDatabase_AllDocumentedProductsHaveCategory" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="461530058" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.008893" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1028" name="StoreDatabase_AllDocumentedProductsHavePackageCost" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.StoreDatabase_AllDocumentedProductsHavePackageCost" methodname="StoreDatabase_AllDocumentedProductsHavePackageCost" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="480901734" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.000832" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1027" name="StoreDatabase_AllDocumentedProductsHavePositiveIdealPriceExceptAllowedZeroCases" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.StoreDatabase_AllDocumentedProductsHavePositiveIdealPriceExceptAllowedZeroCases" methodname="StoreDatabase_AllDocumentedProductsHavePositiveIdealPriceExceptAllowedZeroCases" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1465672785" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.000684" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1030" name="StoreDatabase_ProvisionalProductsHaveSafeFallbackAsset" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.StoreDatabase_ProvisionalProductsHaveSafeFallbackAsset" methodname="StoreDatabase_ProvisionalProductsHaveSafeFallbackAsset" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="815092421" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.003967" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1065" name="Tree_DetailPanelListsProductsForProductNodes" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Tree_DetailPanelListsProductsForProductNodes" methodname="Tree_DetailPanelListsProductsForProductNodes" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="869868976" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.050266" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1048" name="Tree_ProductUnlockUpdatesCatalogAvailability" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.Tree_ProductUnlockUpdatesCatalogAvailability" methodname="Tree_ProductUnlockUpdatesCatalogAvailability" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="767170116" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.011042" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1081" name="TreeCosts_Fase16TryUnlockSpendsActualTierCost" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.TreeCosts_Fase16TryUnlockSpendsActualTierCost" methodname="TreeCosts_Fase16TryUnlockSpendsActualTierCost" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2018518028" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.014395" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1080" name="TreeCosts_Fase16UsesTieredCostsFromRealDefinitions" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.TreeCosts_Fase16UsesTieredCostsFromRealDefinitions" methodname="TreeCosts_Fase16UsesTieredCostsFromRealDefinitions" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1250336929" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.001650" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1073" name="TreeRuntime_CanOpenArbolThroughDesktopRealFlow" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.TreeRuntime_CanOpenArbolThroughDesktopRealFlow" methodname="TreeRuntime_CanOpenArbolThroughDesktopRealFlow" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2105130443" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:37Z" duration="0.032029" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1089" name="TreeRuntime_CapturesRealDesktopArbolRoute" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.TreeRuntime_CapturesRealDesktopArbolRoute" methodname="TreeRuntime_CapturesRealDesktopArbolRoute" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2055601841" result="Passed" start-time="2026-06-10 19:01:37Z" end-time="2026-06-10 19:01:38Z" duration="1.086550" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1072" name="TreeRuntime_MainSceneCanResolveComputerDesktop" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.TreeRuntime_MainSceneCanResolveComputerDesktop" methodname="TreeRuntime_MainSceneCanResolveComputerDesktop" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="972445267" result="Passed" start-time="2026-06-10 19:01:38Z" end-time="2026-06-10 19:01:38Z" duration="0.303985" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1075" name="TreeRuntime_ProductBranchReferencesAll47Products" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.TreeRuntime_ProductBranchReferencesAll47Products" methodname="TreeRuntime_ProductBranchReferencesAll47Products" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="970936076" result="Passed" start-time="2026-06-10 19:01:38Z" end-time="2026-06-10 19:01:38Z" duration="0.014978" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1086" name="TreeRuntime_QAOverlayAddsPointsUnlocksAndStaysHiddenByDefault" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.TreeRuntime_QAOverlayAddsPointsUnlocksAndStaysHiddenByDefault" methodname="TreeRuntime_QAOverlayAddsPointsUnlocksAndStaysHiddenByDefault" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="704998437" result="Passed" start-time="2026-06-10 19:01:38Z" end-time="2026-06-10 19:01:38Z" duration="0.031643" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1074" name="TreeRuntime_ReopenDoesNotDuplicateNodesOrConnections" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.TreeRuntime_ReopenDoesNotDuplicateNodesOrConnections" methodname="TreeRuntime_ReopenDoesNotDuplicateNodesOrConnections" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="1425532301" result="Passed" start-time="2026-06-10 19:01:38Z" end-time="2026-06-10 19:01:38Z" duration="0.029690" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1021" name="UIManagementUIBootstrap_EnsureKeepsSingleManagementEntry" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.UIManagementUIBootstrap_EnsureKeepsSingleManagementEntry" methodname="UIManagementUIBootstrap_EnsureKeepsSingleManagementEntry" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="453721373" result="Passed" start-time="2026-06-10 19:01:38Z" end-time="2026-06-10 19:01:38Z" duration="0.006470" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1003" name="VisualEvidence_CaptureDirectoryCanBeCreated" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.VisualEvidence_CaptureDirectoryCanBeCreated" methodname="VisualEvidence_CaptureDirectoryCanBeCreated" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="878648733" result="Passed" start-time="2026-06-10 19:01:38Z" end-time="2026-06-10 19:01:38Z" duration="0.000523" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1004" name="VisualEvidence_GeneratesAutomatedUnityCaptures" fullname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests.VisualEvidence_GeneratesAutomatedUnityCaptures" methodname="VisualEvidence_GeneratesAutomatedUnityCaptures" classname="FLOBUK.StoreSimulator.Tests.StoreSimulatorPlayModeRegressionTests" runstate="Runnable" seed="2117435019" result="Passed" start-time="2026-06-10 19:01:38Z" end-time="2026-06-10 19:01:40Z" duration="1.526188" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/ijuan/AppData/LocalLow/DefaultCompany/SHOP_MASTER_FINAL\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -1,3 +1,4 @@
+//Adaptado por POMPIC 20100333
 /*  This file is part of the "Store Simulator" project by FLOBUK.
  *  You are only allowed to use these resources if you've bought them from an official reseller (Unity Asset Store, Epic FAB).
  *  You shall not license, sublicense, sell, resell, transfer, assign, distribute or otherwise make available to any third party the Service or the Content. */
@@ -122,6 +123,47 @@ namespace FLOBUK.StoreSimulator
         public static string GetLevelString()
         {
             return "Level " + Instance.currentLevel;
+        }
+
+
+        public static int GetPlayerLevel()
+        {
+            return Instance == null ? 1 : Mathf.Max(1, Instance.currentLevel);
+        }
+
+
+        public static int SetPlayerLevelForAdmin(int targetLevel)
+        {
+            if (Instance == null)
+                return 0;
+
+            int current = GetPlayerLevel();
+            int clampedTarget = Mathf.Max(1, targetLevel);
+
+            if (clampedTarget <= current)
+                return 0;
+
+            Instance.currentLevel = clampedTarget;
+            if (Instance.levelXP != null && Instance.levelXP.Length > 0)
+            {
+                Vector2 range = GetExperienceRange(Mathf.Min(clampedTarget, Instance.levelXP.Length - 1));
+                Instance.currentXP = Math.Max(0L, (long)range.x);
+            }
+
+            onLevelUpdate?.Invoke(Instance.currentLevel);
+            if (UIGame.Instance != null)
+                UIGame.AddNotification("Nivel de jugador aumentado a " + Instance.currentLevel + ".", otherColor: Color.green, otherDuration: 4f);
+
+            return clampedTarget - current;
+        }
+
+
+        public static int AddPlayerLevelsForAdmin(int levels)
+        {
+            if (levels <= 0)
+                return 0;
+
+            return SetPlayerLevelForAdmin(GetPlayerLevel() + levels);
         }
 
 

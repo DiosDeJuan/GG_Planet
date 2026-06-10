@@ -1130,7 +1130,7 @@ namespace FLOBUK.StoreSimulator.Tests
                 object node = GetNode(pair.Key);
                 Assert.NotNull(node, pair.Key);
                 CollectionAssert.AreEqual(new[] { pair.Value }, GetNodePrerequisites(node), pair.Key);
-                Assert.AreEqual(1, GetNodeCost(node), pair.Key);
+                Assert.AreEqual(GetExpectedFase16TierCost(pair.Key), GetNodeCost(node), pair.Key);
             }
         }
 
@@ -1187,7 +1187,9 @@ namespace FLOBUK.StoreSimulator.Tests
             ResetProgress();
 
             Assert.IsFalse(TryUnlock("productos_basicos_2", out string message));
-            Assert.AreEqual("No tienes puntos de progreso suficientes.", message);
+            StringAssert.Contains("No tienes puntos de progreso suficientes.", message);
+            StringAssert.Contains("Requiere: 1", message);
+            StringAssert.Contains("Disponibles: 0", message);
             Assert.AreEqual("Locked", GetStateName(GetNode("productos_basicos_2")));
         }
 
@@ -1758,6 +1760,147 @@ namespace FLOBUK.StoreSimulator.Tests
         }
 
         [UnityTest]
+        public IEnumerator AdminIntro_Fase16ButtonExistsInRealIntroMenu()
+        {
+            AsyncOperation loadOperation = SceneManager.LoadSceneAsync("Intro", LoadSceneMode.Additive);
+            Assert.NotNull(loadOperation, "Intro scene is not registered in Build Settings.");
+            while (!loadOperation.isDone)
+                yield return null;
+
+            Scene introScene = SceneManager.GetSceneByName("Intro");
+            yield return null;
+            Component intro = UnityEngine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None)
+                .FirstOrDefault(component => component.GetType().FullName == "FLOBUK.StoreSimulator.UIIntro");
+            Assert.NotNull(intro, "UIIntro was not found in Intro scene.");
+            string text = GetAllText(intro.transform);
+            StringAssert.Contains("MODO ADMIN", text);
+            StringAssert.Contains("ADMIN BASICO", text);
+            Assert.LessOrEqual(UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None).Length, 1, "Intro Admin must reuse the existing Canvas.");
+
+            if (introScene.isLoaded)
+                yield return SceneManager.UnloadSceneAsync(introScene);
+        }
+
+        [Test]
+        public void TreeCosts_Fase16UsesTieredCostsFromRealDefinitions()
+        {
+            object[] nodes = GetTreeNodes();
+            Assert.AreEqual(37, nodes.Length);
+            Assert.AreEqual(1, nodes.Count(node => GetNodeCost(node) == 0));
+            Assert.AreEqual(22, nodes.Count(node => GetNodeCost(node) == 1));
+            Assert.AreEqual(10, nodes.Count(node => GetNodeCost(node) == 2));
+            Assert.AreEqual(4, nodes.Count(node => GetNodeCost(node) == 3));
+            Assert.AreEqual(0, GetNodeCost(GetNode("productos_basicos_1")));
+            Assert.AreEqual(2, GetNodeCost(GetNode("empleado_10")));
+            Assert.AreEqual(3, GetNodeCost(GetNode("seguridad_2")));
+        }
+
+        [Test]
+        public void TreeCosts_Fase16TryUnlockSpendsActualTierCost()
+        {
+            ResetProgress();
+            UnlockWithPoint("productos_basicos_2", "productos_basicos_3", "especias_1", "empleado_1");
+            int before = GetProgressInt("AvailablePoints");
+            AddTestProgressPoints(GetNodeCost(GetNode("empleado_10")));
+            Assert.IsTrue(TryUnlock("empleado_10", out string message), message);
+            Assert.AreEqual(before, GetProgressInt("AvailablePoints"));
+
+            ResetProgress();
+            UnlockWithPoint("productos_basicos_2", "productos_basicos_3", "especias_1", "productos_higiene", "sodas", "empleado_8");
+            before = GetProgressInt("AvailablePoints");
+            AddTestProgressPoints(GetNodeCost(GetNode("seguridad_2")));
+            Assert.IsTrue(TryUnlock("seguridad_2", out message), message);
+            Assert.AreEqual(before, GetProgressInt("AvailablePoints"));
+        }
+
+        [Test]
+        public void AdminMode_Fase16BasicPackageAddsRealMoneyLevelsAndTreePoints()
+        {
+            GameObject store = CreateStoreDatabaseFixtureForAdmin();
+            try
+            {
+                ResetProgress();
+                ResetAdminModeForTest();
+                SetAdminIntroEnabled(true);
+
+                Assert.IsTrue(ApplyAdminPackageForTest("Basic"));
+                Assert.AreEqual(10000L * 100L, GetStoreMoneyForTest());
+                Assert.AreEqual(6, GetStorePlayerLevelForTest());
+                Assert.AreEqual(5, GetProgressInt("AvailablePoints"));
+                Assert.AreEqual(5, GetAdminIntProperty("PointsGrantedByLevel"));
+                Assert.AreEqual(0, GetAchievementManagerIntProperty("CompletedCount"));
+                Assert.IsTrue(GetAdminBoolProperty("IsAdminSave"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(store);
+            }
+        }
+
+        [Test]
+        public void AdminMode_Fase16PackageDoesNotDuplicateAfterSaveLoad()
+        {
+            GameObject store = CreateStoreDatabaseFixtureForAdmin();
+            try
+            {
+                ResetProgress();
+                ResetAdminModeForTest();
+                SetAdminIntroEnabled(true);
+                Assert.IsTrue(ApplyAdminPackageForTest("Basic"));
+
+                object save = Invoke(FindGameType("FLOBUK.StoreSimulator.AdminModeService"), "SaveToJSON");
+                Invoke(FindGameType("FLOBUK.StoreSimulator.AdminModeService"), "LoadFromJSON", save);
+
+                Assert.IsFalse(ApplyAdminPackageForTest("Basic"));
+                Assert.AreEqual(10000L * 100L, GetStoreMoneyForTest());
+                Assert.AreEqual(5, GetProgressInt("AvailablePoints"));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(store);
+            }
+        }
+
+        [Test]
+        public void AdminMode_Fase16TotalUnlocksAllTreeNodesThroughRealFlow()
+        {
+            GameObject store = CreateStoreDatabaseFixtureForAdmin();
+            try
+            {
+                ResetProgress();
+                ResetAdminModeForTest();
+                SetAdminIntroEnabled(true);
+
+                Assert.IsTrue(ApplyAdminPackageForTest("Total"));
+                Assert.AreEqual(GetTreeNodes().Length, InvokeInt(GetProgressType(), "GetUnlockedNodeCount"));
+                Assert.IsTrue(Convert.ToBoolean(Invoke(GetProgressType(), "IsTreeComplete")));
+                Assert.AreEqual(3, GetProgressInt("SecurityLevel"));
+                Assert.AreEqual(1.1f, GetProgressFloat("EmployeeWorkSpeedMultiplier"), 0.0001f);
+                Assert.AreEqual(1.05f, GetProgressFloat("CashierRevenueMultiplier"), 0.0001f);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(store);
+            }
+        }
+
+        [Test]
+        public void AdminMode_Fase16RuntimeAuditCanBeGenerated()
+        {
+            string audit = Convert.ToString(Invoke(FindGameType("FLOBUK.StoreSimulator.AdminModeService"), "BuildRuntimeAudit"));
+            string path = GetFase16AuditPath();
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            File.WriteAllText(path, audit);
+
+            Assert.IsTrue(File.Exists(path), path);
+            StringAssert.Contains("Fase 16 Admin Mode Runtime Audit", audit);
+            StringAssert.Contains("Costo 1: 22", audit);
+            StringAssert.Contains("Costo 2: 10", audit);
+            StringAssert.Contains("Costo 3: 4", audit);
+            StringAssert.Contains("Resultado: PASS", audit);
+        }
+
+        [UnityTest]
         public IEnumerator TreeRuntime_QAOverlayAddsPointsUnlocksAndStaysHiddenByDefault()
         {
             ResetProgress();
@@ -1819,6 +1962,37 @@ namespace FLOBUK.StoreSimulator.Tests
 #else
             yield return null;
             Assert.Ignore("Capturas Fase 15 requieren UnityEditor para instanciar el prefab real UIShopDesktop.");
+#endif
+        }
+
+        [UnityTest]
+        public IEnumerator AdminMode_Fase16CapturesTreeCosts()
+        {
+            string directory = GetFase16CaptureDirectory();
+            Directory.CreateDirectory(directory);
+            foreach (string file in Directory.GetFiles(directory, "*.png"))
+                File.Delete(file);
+
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+                Assert.Ignore("Capturas Fase 16 omitidas: Unity esta ejecutando con dispositivo grafico Null.");
+
+#if UNITY_EDITOR
+            yield return CaptureTree(directory, "Admin_07_Arbol_Costos_1_2_3.png", null, false);
+            yield return CaptureTree(directory, "Admin_08_Nodo_Costo_2.png", "empleado_10", false);
+            yield return CaptureTree(directory, "Admin_09_Nodo_Costo_3.png", "seguridad_2", false);
+
+            string[] expected =
+            {
+                "Admin_07_Arbol_Costos_1_2_3.png",
+                "Admin_08_Nodo_Costo_2.png",
+                "Admin_09_Nodo_Costo_3.png",
+            };
+
+            foreach (string fileName in expected)
+                AssertVisualCapture(Path.Combine(directory, fileName));
+#else
+            yield return null;
+            Assert.Ignore("Capturas Fase 16 requieren UnityEditor para instanciar UI real.");
 #endif
         }
 
@@ -1895,9 +2069,19 @@ namespace FLOBUK.StoreSimulator.Tests
             return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase15"));
         }
 
+        private static string GetFase16CaptureDirectory()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Capturas_Fase16"));
+        }
+
         private static string GetFase15AuditPath()
         {
             return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Codex_Fase15_ArbolRuntimeAudit.txt"));
+        }
+
+        private static string GetFase16AuditPath()
+        {
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Reportes", "Codex_Fase16_AdminModeAudit.txt"));
         }
 
         private static UnityEngine.Object LoadRuntimeInputActions()
@@ -2604,8 +2788,30 @@ namespace FLOBUK.StoreSimulator.Tests
             object node = GetNode(nodeId);
             Assert.NotNull(node, nodeId);
             CollectionAssert.AreEqual(new[] { prerequisiteId }, GetNodePrerequisites(node), nodeId);
-            Assert.AreEqual(1, GetNodeCost(node), nodeId);
+            Assert.AreEqual(GetExpectedFase16TierCost(nodeId), GetNodeCost(node), nodeId);
             StringAssert.Contains(benefitText, GetNodeBenefit(node));
+        }
+
+        private static int GetExpectedFase16TierCost(string nodeId)
+        {
+            if (nodeId == "productos_basicos_1")
+                return 0;
+
+            string[] unlockableIds = GetTreeNodes()
+                .Select(GetNodeId)
+                .Where(id => id != "productos_basicos_1")
+                .ToArray();
+            int index = Array.IndexOf(unlockableIds, nodeId);
+            Assert.GreaterOrEqual(index, 0, nodeId);
+            int lastTierCount = Mathf.CeilToInt(unlockableIds.Length * 0.10f);
+            int firstTierCount = Mathf.RoundToInt(unlockableIds.Length * 0.60f);
+            int secondTierCount = unlockableIds.Length - firstTierCount - lastTierCount;
+
+            if (index < firstTierCount)
+                return 1;
+            if (index < firstTierCount + secondTierCount)
+                return 2;
+            return 3;
         }
 
         private static string BuildFase15RuntimeAudit()
@@ -2729,7 +2935,7 @@ namespace FLOBUK.StoreSimulator.Tests
                 if (IsUnlocked(nodeId))
                     continue;
 
-                AddTestProgressPoints(1);
+                AddTestProgressPoints(GetNodeCost(GetNode(nodeId)));
                 Assert.IsTrue(TryUnlock(nodeId, out string message), nodeId + ": " + message);
             }
         }
@@ -2777,6 +2983,64 @@ namespace FLOBUK.StoreSimulator.Tests
             licenses.transform.SetParent(contentArea.transform, false);
             licensesPanel = licenses.transform;
             return root;
+        }
+
+        private static GameObject CreateStoreDatabaseFixtureForAdmin()
+        {
+            GameObject root = new GameObject("Fase16 StoreDatabase Admin Fixture");
+            Component database = root.AddComponent(FindGameType("FLOBUK.StoreSimulator.StoreDatabase"));
+            SetField(database, "startMoney", 0L);
+            SetField(database, "levelXP", Enumerable.Repeat(100L, 300).ToArray());
+            InvokeInstance(database, "LoadFromJSON", EmptyJsonObject());
+            return root;
+        }
+
+        private static void ResetAdminModeForTest()
+        {
+            Invoke(FindGameType("FLOBUK.StoreSimulator.AdminModeService"), "LoadFromJSON", EmptyJsonObject());
+        }
+
+        private static object EmptyJsonObject()
+        {
+            return Invoke(FindGameType("SimpleJSON.JSON"), "Parse", "{}");
+        }
+
+        private static void SetAdminIntroEnabled(bool enabled)
+        {
+            Invoke(FindGameType("FLOBUK.StoreSimulator.AdminModeService"), "SetIntroAdminEnabled", enabled);
+        }
+
+        private static bool ApplyAdminPackageForTest(string packageName)
+        {
+            Type packageType = FindGameType("FLOBUK.StoreSimulator.AdminModePackage");
+            object package = Enum.Parse(packageType, packageName);
+            return Convert.ToBoolean(Invoke(FindGameType("FLOBUK.StoreSimulator.AdminModeService"), "ApplyPackage", package));
+        }
+
+        private static int GetAdminIntProperty(string propertyName)
+        {
+            return Convert.ToInt32(FindGameType("FLOBUK.StoreSimulator.AdminModeService").GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static).GetValue(null));
+        }
+
+        private static bool GetAdminBoolProperty(string propertyName)
+        {
+            return Convert.ToBoolean(FindGameType("FLOBUK.StoreSimulator.AdminModeService").GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static).GetValue(null));
+        }
+
+        private static long GetStoreMoneyForTest()
+        {
+            object instance = FindGameType("FLOBUK.StoreSimulator.StoreDatabase").GetProperty("Instance", BindingFlags.Public | BindingFlags.Static).GetValue(null);
+            return Convert.ToInt64(GetPropertyValue(instance, "currentMoney"));
+        }
+
+        private static int GetStorePlayerLevelForTest()
+        {
+            return Convert.ToInt32(Invoke(FindGameType("FLOBUK.StoreSimulator.StoreDatabase"), "GetPlayerLevel"));
+        }
+
+        private static int GetAchievementManagerIntProperty(string propertyName)
+        {
+            return Convert.ToInt32(FindGameType("FLOBUK.StoreSimulator.EntrepreneurAchievementManager").GetProperty(propertyName, BindingFlags.Public | BindingFlags.Static).GetValue(null));
         }
 
         private static Type GetProgressType()

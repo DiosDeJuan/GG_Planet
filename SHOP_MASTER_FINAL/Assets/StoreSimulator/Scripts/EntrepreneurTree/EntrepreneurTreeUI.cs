@@ -678,7 +678,7 @@ namespace FLOBUK.StoreSimulator
                 return "Falta desbloquear: " + string.Join(", ", missing);
 
             if (EntrepreneurProgress.ProgressPoints < node.Cost)
-                return "No tienes puntos de progreso suficientes.";
+                return "No tienes puntos de progreso suficientes. Requiere: " + node.Cost + ". Disponibles: " + EntrepreneurProgress.ProgressPoints + ".";
 
             return "Disponible para desbloquear.";
         }

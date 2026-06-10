@@ -1,0 +1,69 @@
+Fase 16 Admin Mode Runtime Audit
+Fecha: 2026-06-10 13:01:25
+Escena de intro detectada: Assets/StoreSimulator/Scenes/Intro.unity
+Script de intro detectado: UIIntro
+Canvas reutilizado: PASS
+Boton Modo Admin agregado: PASS
+AdminModeEnabled guardado: PASS
+isAdminSave guardado: PASS
+Sistema real de dinero usado: StoreDatabase.AddRemoveMoney
+Sistema real de nivel usado: StoreDatabase.currentLevel
+Sistema real de puntos usado: EntrepreneurProgress
+Sistema real de Arbol usado: EntrepreneurProgress.TryUnlock
+Total de nodos del Arbol: 37
+Total de nodos desbloqueables: 36
+Costo 0: 1
+Costo 1: 22
+Costo 2: 10
+Costo 3: 4
+Total de puntos requeridos para completar Arbol: 54
+Lista de nodos costo 1:
+- productos_basicos_2 | Productos Basicos 2 | costo 1
+- productos_basicos_3 | Productos Basicos 3 | costo 1
+- lacteos_1 | Lacteos 1 | costo 1
+- lacteos_2 | Lacteos 2 | costo 1
+- lacteos_3 | Lacteos 3 | costo 1
+- especias_1 | Especias 1 | costo 1
+- productos_frescos_1 | Productos Frescos 1 | costo 1
+- productos_frescos_2 | Productos Frescos 2 | costo 1
+- productos_higiene | Productos de Higiene | costo 1
+- sodas | Sodas | costo 1
+- proteina_1 | Proteina 1 | costo 1
+- productos_lujo_1 | Productos de Lujo 1 | costo 1
+- electrodomesticos_1 | Electrodomesticos 1 | costo 1
+- empleado_1 | Empleado 1 | costo 1
+- empleado_2 | Empleado 2 | costo 1
+- empleado_3 | Empleado 3 | costo 1
+- empleado_4 | Empleado 4 | costo 1
+- empleado_5 | Empleado 5 | costo 1
+- empleado_6 | Empleado 6 | costo 1
+- empleado_7 | Empleado 7 | costo 1
+- empleado_8 | Empleado 8 | costo 1
+- empleado_9 | Empleado 9 | costo 1
+Lista de nodos costo 2:
+- empleado_10 | Empleado 10 | costo 2
+- empleado_11 | Empleado 11 | costo 2
+- empleado_12 | Empleado 12 | costo 2
+- empleado_13 | Empleado 13 | costo 2
+- empleado_14 | Empleado 14 | costo 2
+- empleado_15 | Empleado 15 | costo 2
+- empleado_16 | Empleado 16 | costo 2
+- empleado_17 | Empleado 17 | costo 2
+- empleado_18 | Empleado 18 | costo 2
+- seguridad_1 | Seguridad Nivel 1 | costo 2
+Lista de nodos costo 3:
+- seguridad_2 | Seguridad Nivel 2 | costo 3
+- seguridad_3 | Seguridad Nivel 3 | costo 3
+- mejora_cafeina | Cafeina | costo 3
+- mejora_carismatico | Carismatico | costo 3
+Resultado Admin Basico: PASS - cubierto por AdminMode_Fase16BasicPackageAddsRealMoneyLevelsAndTreePoints
+Resultado Admin Medio: PASS - cubierto por ApplyPackage, UnlockFirstUnlockablePercent y puntos admin faltantes
+Resultado Admin Total: PASS - cubierto por AdminMode_Fase16TotalUnlocksAllTreeNodesThroughRealFlow
+Validacion de no logros falsos: PASS - puntos admin/nivel no llaman TryAwardKnownAchievement
+Validacion de save/load sin duplicacion: PASS - adminAppliedPackages persiste
+Validacion de no Canvas paralelo: PASS
+Validacion de no economia paralela: PASS
+Validacion de no progreso paralelo: PASS
+Warnings: capturas dependen de dispositivo grafico Unity
+Errores criticos: 0
+Resultado: PASS

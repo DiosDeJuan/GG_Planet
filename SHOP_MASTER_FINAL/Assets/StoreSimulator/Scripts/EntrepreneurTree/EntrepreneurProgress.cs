@@ -26,6 +26,7 @@ namespace FLOBUK.StoreSimulator
         public static int ProgressPoints => progressPoints;
         public static int AvailablePoints => progressPoints;
         public static int SpentPoints => unlockedNodeIds.Select(EntrepreneurTreeDefinitions.Get).Where(node => node != null).Sum(node => node.Cost);
+        public static IReadOnlyCollection<string> UnlockedNodeIds => unlockedNodeIds;
         public static float EmployeeWorkSpeedMultiplier => IsUnlocked("mejora_cafeina") ? 1.1f : 1f;
         public static float CashierRevenueMultiplier => IsUnlocked("mejora_carismatico") ? 1.05f : 1f;
         public static int SecurityLevel => IsUnlocked("seguridad_3") ? 3 : IsUnlocked("seguridad_2") ? 2 : IsUnlocked("seguridad_1") ? 1 : 0;
@@ -126,14 +127,14 @@ namespace FLOBUK.StoreSimulator
 
             if (progressPoints < node.Cost)
             {
-                message = "No tienes puntos de progreso suficientes.";
+                message = "No tienes puntos de progreso suficientes. Requiere: " + node.Cost + ". Disponibles: " + progressPoints + ".";
                 return false;
             }
 
             progressPoints -= node.Cost;
             unlockedNodeIds.Add(node.Id);
             Normalize();
-            message = node.Title + " desbloqueado.";
+            message = "Desbloqueo aplicado correctamente. Puntos gastados: " + node.Cost + ".";
             onNodeUnlocked?.Invoke(node.Id);
             EntrepreneurAchievementManager.RegisterNodeUnlocked(node.Id);
             NotifyTreeCompletionIfNeeded(true);
@@ -222,6 +223,11 @@ namespace FLOBUK.StoreSimulator
             return EntrepreneurTreeDefinitions.Nodes.Count(node => node.Cost > 0);
         }
 
+        public static int GetTotalRequiredPoints()
+        {
+            return EntrepreneurTreeDefinitions.Nodes.Sum(node => node.Cost);
+        }
+
         public static float GetTreeCompletionPercent()
         {
             int total = GetTotalNodeCount();
@@ -241,6 +247,29 @@ namespace FLOBUK.StoreSimulator
             progressPoints = Mathf.Max(0, progressPoints + amount);
             onProgressPointAwarded?.Invoke(displayReason);
             onProgressChanged?.Invoke();
+        }
+
+        public static void AddProgressPointsFromLevel(int amount, string reason)
+        {
+            AddProgressPointsWithoutAchievement(amount, string.IsNullOrWhiteSpace(reason) ? "Puntos del Arbol otorgados por nivel: +" + amount + "." : reason);
+        }
+
+        public static void AddProgressPointsFromAdmin(int amount, string reason)
+        {
+            AddProgressPointsWithoutAchievement(amount, string.IsNullOrWhiteSpace(reason) ? "Modo Admin: puntos agregados +" + amount + "." : reason);
+        }
+
+        private static void AddProgressPointsWithoutAchievement(int amount, string displayReason)
+        {
+            if (amount <= 0)
+                return;
+
+            progressPoints = Mathf.Max(0, progressPoints + amount);
+            onProgressPointAwarded?.Invoke(displayReason);
+            onProgressChanged?.Invoke();
+
+            if (UIGame.Instance != null)
+                UIGame.AddNotification(displayReason, otherColor: new Color(0.1f, 0.88f, 1f), otherDuration: 4f);
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD || UNITY_INCLUDE_TESTS
