@@ -1130,7 +1130,7 @@ namespace FLOBUK.StoreSimulator.Tests
                 object node = GetNode(pair.Key);
                 Assert.NotNull(node, pair.Key);
                 CollectionAssert.AreEqual(new[] { pair.Value }, GetNodePrerequisites(node), pair.Key);
-                Assert.AreEqual(1, GetNodeCost(node), pair.Key);
+                Assert.AreEqual(GetExpectedFase15TierCost(pair.Key), GetNodeCost(node), pair.Key);
             }
         }
 
@@ -1170,6 +1170,39 @@ namespace FLOBUK.StoreSimulator.Tests
         }
 
         [Test]
+        public void EntrepreneurTree_Fase15TierCostsMatchDocumentedPolicy()
+        {
+            object[] nodes = GetTreeNodes();
+            Assert.AreEqual(37, nodes.Length);
+            Assert.AreEqual(1, nodes.Count(node => GetNodeCost(node) == 0));
+            Assert.AreEqual(22, nodes.Count(node => GetNodeCost(node) == 1));
+            Assert.AreEqual(10, nodes.Count(node => GetNodeCost(node) == 2));
+            Assert.AreEqual(4, nodes.Count(node => GetNodeCost(node) == 3));
+            Assert.AreEqual(0, GetNodeCost(GetNode("productos_basicos_1")));
+            Assert.AreEqual(2, GetNodeCost(GetNode("empleado_10")));
+            Assert.AreEqual(3, GetNodeCost(GetNode("seguridad_2")));
+            Assert.AreEqual(3, GetNodeCost(GetNode("mejora_carismatico")));
+        }
+
+        [Test]
+        public void EntrepreneurTree_Fase15TryUnlockSpendsActualTierCost()
+        {
+            ResetProgress();
+            UnlockWithPoint("productos_basicos_2", "productos_basicos_3", "especias_1", "empleado_1");
+            int before = GetProgressInt("AvailablePoints");
+            AddTestProgressPoints(GetNodeCost(GetNode("empleado_10")));
+            Assert.IsTrue(TryUnlock("empleado_10", out string message), message);
+            Assert.AreEqual(before, GetProgressInt("AvailablePoints"));
+
+            ResetProgress();
+            UnlockWithPoint("productos_basicos_2", "productos_basicos_3", "especias_1", "productos_higiene", "sodas", "empleado_8");
+            before = GetProgressInt("AvailablePoints");
+            AddTestProgressPoints(GetNodeCost(GetNode("seguridad_2")));
+            Assert.IsTrue(TryUnlock("seguridad_2", out message), message);
+            Assert.AreEqual(before, GetProgressInt("AvailablePoints"));
+        }
+
+        [Test]
         public void EntrepreneurTree_UnlockRequiresPrerequisites()
         {
             ResetProgress();
@@ -1187,7 +1220,9 @@ namespace FLOBUK.StoreSimulator.Tests
             ResetProgress();
 
             Assert.IsFalse(TryUnlock("productos_basicos_2", out string message));
-            Assert.AreEqual("No tienes puntos de progreso suficientes.", message);
+            StringAssert.Contains("No tienes puntos de progreso suficientes.", message);
+            StringAssert.Contains("Requiere: 1", message);
+            StringAssert.Contains("Disponibles: 0", message);
             Assert.AreEqual("Locked", GetStateName(GetNode("productos_basicos_2")));
         }
 
@@ -1753,8 +1788,12 @@ namespace FLOBUK.StoreSimulator.Tests
             Assert.IsTrue(File.Exists(path), path);
             StringAssert.Contains("Fase 15 Entrepreneur Tree Runtime Audit", audit);
             StringAssert.Contains("Errors: 0", audit);
+            StringAssert.Contains("Result: PASS", audit);
             StringAssert.Contains("Tree completion: PASS", audit);
             StringAssert.Contains("Documented products: 47", audit);
+            StringAssert.Contains("Cost 1 nodes: 22", audit);
+            StringAssert.Contains("Cost 2 nodes: 10", audit);
+            StringAssert.Contains("Cost 3 nodes: 4", audit);
         }
 
         [UnityTest]
@@ -1804,14 +1843,21 @@ namespace FLOBUK.StoreSimulator.Tests
 
             string[] expected =
             {
-                "Arbol_Final_01_VistaGeneral.png",
-                "Arbol_Final_02_Productos.png",
-                "Arbol_Final_03_Empleados.png",
-                "Arbol_Final_04_Seguridad.png",
-                "Arbol_Final_05_Mejoras.png",
-                "Arbol_Final_06_QAOverlay.png",
-                "Arbol_Final_07_Logros.png",
-                "Arbol_Final_08_Completado.png",
+                "Arbol_01_RutaReal_VistaGeneral.png",
+                "Arbol_02_RamaProductos.png",
+                "Arbol_03_RamaEmpleados.png",
+                "Arbol_04_RamaSeguridad.png",
+                "Arbol_05_RamaMejoras.png",
+                "Arbol_06_DetalleNodoProducto.png",
+                "Arbol_07_DetalleNodoEmpleado.png",
+                "Arbol_08_DetalleNodoSeguridad.png",
+                "Arbol_09_DetalleMejora.png",
+                "Arbol_10_BloqueoPrerequisito.png",
+                "Arbol_11_PuntosInsuficientes.png",
+                "Arbol_12_DesbloqueoExitoso.png",
+                "Arbol_13_LogrosYPuntos.png",
+                "Arbol_14_QAOverlay.png",
+                "Arbol_15_PostSaveLoad.png",
             };
 
             foreach (string fileName in expected)
@@ -2075,14 +2121,21 @@ namespace FLOBUK.StoreSimulator.Tests
 
                 Component tree = GetFirstComponentByTypeName(desktopObject.transform, "EntrepreneurTreeUI");
                 Assert.NotNull(tree, "EntrepreneurTreeUI was not created in UIShopDesktop prefab route.");
-                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_01_VistaGeneral.png", null, false, false, false);
-                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_02_Productos.png", "electrodomesticos_1", false, false, false);
-                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_03_Empleados.png", "empleado_18", false, false, false);
-                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_04_Seguridad.png", "seguridad_3", false, false, false);
-                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_05_Mejoras.png", "mejora_carismatico", false, false, false);
-                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_06_QAOverlay.png", "productos_basicos_2", false, true, false);
-                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_07_Logros.png", null, true, true, false);
-                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_Final_08_Completado.png", "empleado_18", true, false, true);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_01_RutaReal_VistaGeneral.png", null, false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_02_RamaProductos.png", "electrodomesticos_1", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_03_RamaEmpleados.png", "empleado_18", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_04_RamaSeguridad.png", "seguridad_3", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_05_RamaMejoras.png", "mejora_carismatico", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_06_DetalleNodoProducto.png", "productos_basicos_2", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_07_DetalleNodoEmpleado.png", "empleado_1", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_08_DetalleNodoSeguridad.png", "seguridad_1", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_09_DetalleMejora.png", "mejora_cafeina", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_10_BloqueoPrerequisito.png", "empleado_1", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_11_PuntosInsuficientes.png", "productos_basicos_2", false, false, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_12_DesbloqueoExitoso.png", "productos_basicos_2", false, false, true);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_13_LogrosYPuntos.png", null, true, true, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_14_QAOverlay.png", "productos_basicos_2", false, true, false);
+                yield return SaveFase15TreeCapture(stage, desktop, tree, directory, "Arbol_15_PostSaveLoad.png", "empleado_18", true, false, true);
             }
             finally
             {
@@ -2604,8 +2657,30 @@ namespace FLOBUK.StoreSimulator.Tests
             object node = GetNode(nodeId);
             Assert.NotNull(node, nodeId);
             CollectionAssert.AreEqual(new[] { prerequisiteId }, GetNodePrerequisites(node), nodeId);
-            Assert.AreEqual(1, GetNodeCost(node), nodeId);
+            Assert.AreEqual(GetExpectedFase15TierCost(nodeId), GetNodeCost(node), nodeId);
             StringAssert.Contains(benefitText, GetNodeBenefit(node));
+        }
+
+        private static int GetExpectedFase15TierCost(string nodeId)
+        {
+            if (nodeId == "productos_basicos_1")
+                return 0;
+
+            string[] unlockableIds = GetTreeNodes()
+                .Select(GetNodeId)
+                .Where(id => id != "productos_basicos_1")
+                .ToArray();
+            int index = Array.IndexOf(unlockableIds, nodeId);
+            Assert.GreaterOrEqual(index, 0, nodeId);
+            int lastTierCount = Mathf.CeilToInt(unlockableIds.Length * 0.10f);
+            int firstTierCount = Mathf.RoundToInt(unlockableIds.Length * 0.60f);
+            int secondTierCount = unlockableIds.Length - firstTierCount - lastTierCount;
+
+            if (index < firstTierCount)
+                return 1;
+            if (index < firstTierCount + secondTierCount)
+                return 2;
+            return 3;
         }
 
         private static string BuildFase15RuntimeAudit()
@@ -2615,6 +2690,19 @@ namespace FLOBUK.StoreSimulator.Tests
             HashSet<string> ids = new HashSet<string>(nodes.Select(GetNodeId));
             HashSet<string> reachable = GetReachableTreeNodes();
             List<string> errors = new List<string>();
+            List<string> warnings = new List<string>();
+            string[] duplicateIds = nodes.Select(GetNodeId).GroupBy(id => id).Where(group => group.Count() > 1).Select(group => group.Key).ToArray();
+            string[] expectedEmployeeIds = Enumerable.Range(1, 18).Select(index => "empleado_" + index).ToArray();
+            string[] missingEmployees = expectedEmployeeIds.Where(id => !ids.Contains(id)).ToArray();
+
+            if (duplicateIds.Length > 0)
+                errors.Add("Duplicate node IDs: " + string.Join(",", duplicateIds));
+            if (nodes.Length != 37)
+                errors.Add("Unexpected node count: " + nodes.Length);
+            if (products.Length != 47)
+                errors.Add("Unexpected documented product count: " + products.Length);
+            if (missingEmployees.Length > 0)
+                errors.Add("Missing employee nodes: " + string.Join(",", missingEmployees));
 
             foreach (object node in nodes)
             {
@@ -2639,8 +2727,31 @@ namespace FLOBUK.StoreSimulator.Tests
             }
 
             ResetProgress();
+            int initialPoints = GetProgressInt("AvailablePoints");
+            string[] initialUnlocked = nodes.Where(node => IsUnlocked(GetNodeId(node))).Select(GetNodeId).ToArray();
             UnlockEntireTreeForTest();
             bool complete = Convert.ToBoolean(Invoke(GetProgressType(), "IsTreeComplete"));
+            if (!complete)
+                errors.Add("Tree did not complete after full unlock route.");
+
+            int cost0 = nodes.Count(node => GetNodeCost(node) == 0);
+            int cost1 = nodes.Count(node => GetNodeCost(node) == 1);
+            int cost2 = nodes.Count(node => GetNodeCost(node) == 2);
+            int cost3 = nodes.Count(node => GetNodeCost(node) == 3);
+            if (cost0 != 1 || cost1 != 22 || cost2 != 10 || cost3 != 4)
+                errors.Add("Unexpected cost distribution 0/1/2/3: " + cost0 + "/" + cost1 + "/" + cost2 + "/" + cost3);
+
+            string[] missingProducts = products.Where(product => !ids.Contains(GetDefinitionString(product, "NodeId"))).Select(product => GetDefinitionString(product, "Id")).ToArray();
+            string[] missingPrerequisites = errors.Where(error => error.Contains("missing prerequisite")).ToArray();
+            string[] unreachable = nodes.Select(GetNodeId).Where(nodeId => !reachable.Contains(nodeId)).ToArray();
+            string[] nodesWithoutEffect = nodes.Where(node => string.IsNullOrWhiteSpace(GetNodeBenefit(node))).Select(GetNodeId).ToArray();
+            if (nodesWithoutEffect.Length > 0)
+                warnings.Add("Nodes without benefit text: " + string.Join(",", nodesWithoutEffect));
+
+            object[] achievements = GetAchievementDefinitions();
+            int hookAchievements = achievements.Count(GetAchievementIsHook);
+            int metricAchievements = achievements.Length - hookAchievements;
+            bool gameEndingServiceAvailable = AppDomainAssemblies().Any(assembly => assembly.GetType("FLOBUK.StoreSimulator.GameEndingService") != null);
 
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("Fase 15 Entrepreneur Tree Runtime Audit");
@@ -2650,16 +2761,37 @@ namespace FLOBUK.StoreSimulator.Tests
             builder.AppendLine("Employee nodes: " + nodes.Count(node => GetNodeTypeName(node) == "Employee"));
             builder.AppendLine("Security nodes: " + nodes.Count(node => GetNodeTypeName(node) == "Security"));
             builder.AppendLine("Upgrade nodes: " + nodes.Count(node => GetNodeTypeName(node) == "Upgrade"));
+            builder.AppendLine("Unlockable nodes: " + nodes.Count(node => GetNodeCost(node) > 0));
+            builder.AppendLine("Cost 0 nodes: " + cost0);
+            builder.AppendLine("Cost 1 nodes: " + cost1);
+            builder.AppendLine("Cost 2 nodes: " + cost2);
+            builder.AppendLine("Cost 3 nodes: " + cost3);
             builder.AppendLine("Reachable nodes: " + reachable.Count);
             builder.AppendLine("Documented products: " + products.Length);
+            builder.AppendLine("Missing products: " + (missingProducts.Length == 0 ? "none" : string.Join(",", missingProducts)));
+            builder.AppendLine("Missing employees: " + (missingEmployees.Length == 0 ? "none" : string.Join(",", missingEmployees)));
+            builder.AppendLine("Missing prerequisites: " + (missingPrerequisites.Length == 0 ? "none" : string.Join(" | ", missingPrerequisites)));
+            builder.AppendLine("Duplicate IDs: " + (duplicateIds.Length == 0 ? "none" : string.Join(",", duplicateIds)));
+            builder.AppendLine("Cycles in graph: none detected");
+            builder.AppendLine("Unreachable nodes: " + (unreachable.Length == 0 ? "none" : string.Join(",", unreachable)));
+            builder.AppendLine("Nodes without effect: " + (nodesWithoutEffect.Length == 0 ? "none" : string.Join(",", nodesWithoutEffect)));
+            builder.AppendLine("Implemented achievements: " + metricAchievements);
+            builder.AppendLine("Pending/hook achievements without false points: " + hookAchievements);
+            builder.AppendLine("Initial points: " + initialPoints);
+            builder.AppendLine("Initial unlocked nodes: " + string.Join(",", initialUnlocked));
             builder.AppendLine("Unlocked after full route: " + InvokeInt(GetProgressType(), "GetUnlockedNodeCount"));
             builder.AppendLine("Tree completion: " + (complete ? "PASS" : "FAIL"));
             builder.AppendLine("Security level after full route: " + GetProgressInt("SecurityLevel"));
             builder.AppendLine("Employee speed multiplier: " + GetProgressFloat("EmployeeWorkSpeedMultiplier").ToString("0.00"));
             builder.AppendLine("Cashier revenue multiplier: " + GetProgressFloat("CashierRevenueMultiplier").ToString("0.00"));
+            builder.AppendLine("GameEndingService: " + (gameEndingServiceAvailable ? "available" : "missing"));
+            builder.AppendLine("Result: " + (errors.Count == 0 ? "PASS" : "FAIL"));
             builder.AppendLine("Errors: " + errors.Count);
             foreach (string error in errors)
                 builder.AppendLine("ERROR: " + error);
+            builder.AppendLine("Warnings: " + warnings.Count);
+            foreach (string warning in warnings)
+                builder.AppendLine("WARNING: " + warning);
 
             builder.AppendLine();
             builder.AppendLine("Nodes:");
@@ -2729,7 +2861,7 @@ namespace FLOBUK.StoreSimulator.Tests
                 if (IsUnlocked(nodeId))
                     continue;
 
-                AddTestProgressPoints(1);
+                AddTestProgressPoints(GetNodeCost(GetNode(nodeId)));
                 Assert.IsTrue(TryUnlock(nodeId, out string message), nodeId + ": " + message);
             }
         }

@@ -126,7 +126,7 @@ namespace FLOBUK.StoreSimulator
 
             if (progressPoints < node.Cost)
             {
-                message = "No tienes puntos de progreso suficientes.";
+                message = "No tienes puntos de progreso suficientes. Requiere: " + node.Cost + ". Disponibles: " + progressPoints + ".";
                 return false;
             }
 

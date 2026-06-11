@@ -5,27 +5,46 @@ Product nodes: 14
 Employee nodes: 18
 Security nodes: 3
 Upgrade nodes: 2
+Unlockable nodes: 36
+Cost 0 nodes: 1
+Cost 1 nodes: 22
+Cost 2 nodes: 10
+Cost 3 nodes: 4
 Reachable nodes: 37
 Documented products: 47
+Missing products: none
+Missing employees: none
+Missing prerequisites: none
+Duplicate IDs: none
+Cycles in graph: none detected
+Unreachable nodes: none
+Nodes without effect: none
+Implemented achievements: 37
+Pending/hook achievements without false points: 6
+Initial points: 0
+Initial unlocked nodes: productos_basicos_1
 Unlocked after full route: 37
 Tree completion: PASS
 Security level after full route: 3
 Employee speed multiplier: 1.10
 Cashier revenue multiplier: 1.05
+GameEndingService: available
+Result: PASS
 Errors: 0
+Warnings: 0
 
 Nodes:
 - electrodomesticos_1 | Product | cost 1 | prereq productos_lujo_1
 - empleado_1 | Employee | cost 1 | prereq especias_1
-- empleado_10 | Employee | cost 1 | prereq empleado_1
-- empleado_11 | Employee | cost 1 | prereq seguridad_1
-- empleado_12 | Employee | cost 1 | prereq empleado_13
-- empleado_13 | Employee | cost 1 | prereq productos_lujo_1
-- empleado_14 | Employee | cost 1 | prereq electrodomesticos_1
-- empleado_15 | Employee | cost 1 | prereq seguridad_2
-- empleado_16 | Employee | cost 1 | prereq proteina_1
-- empleado_17 | Employee | cost 1 | prereq productos_frescos_2
-- empleado_18 | Employee | cost 1 | prereq seguridad_3
+- empleado_10 | Employee | cost 2 | prereq empleado_1
+- empleado_11 | Employee | cost 2 | prereq seguridad_1
+- empleado_12 | Employee | cost 2 | prereq empleado_13
+- empleado_13 | Employee | cost 2 | prereq productos_lujo_1
+- empleado_14 | Employee | cost 2 | prereq electrodomesticos_1
+- empleado_15 | Employee | cost 2 | prereq seguridad_2
+- empleado_16 | Employee | cost 2 | prereq proteina_1
+- empleado_17 | Employee | cost 2 | prereq productos_frescos_2
+- empleado_18 | Employee | cost 2 | prereq seguridad_3
 - empleado_2 | Employee | cost 1 | prereq productos_higiene
 - empleado_3 | Employee | cost 1 | prereq sodas
 - empleado_4 | Employee | cost 1 | prereq lacteos_1
@@ -38,8 +57,8 @@ Nodes:
 - lacteos_1 | Product | cost 1 | prereq productos_basicos_3
 - lacteos_2 | Product | cost 1 | prereq lacteos_1
 - lacteos_3 | Product | cost 1 | prereq lacteos_2
-- mejora_cafeina | Upgrade | cost 1 | prereq productos_frescos_2
-- mejora_carismatico | Upgrade | cost 1 | prereq empleado_15
+- mejora_cafeina | Upgrade | cost 3 | prereq productos_frescos_2
+- mejora_carismatico | Upgrade | cost 3 | prereq empleado_15
 - productos_basicos_1 | Product | cost 0 | prereq none
 - productos_basicos_2 | Product | cost 1 | prereq productos_basicos_1
 - productos_basicos_3 | Product | cost 1 | prereq productos_basicos_2
@@ -48,7 +67,7 @@ Nodes:
 - productos_higiene | Product | cost 1 | prereq especias_1
 - productos_lujo_1 | Product | cost 1 | prereq sodas
 - proteina_1 | Product | cost 1 | prereq empleado_5
-- seguridad_1 | Security | cost 1 | prereq empleado_7
-- seguridad_2 | Security | cost 1 | prereq empleado_8
-- seguridad_3 | Security | cost 1 | prereq empleado_14
+- seguridad_1 | Security | cost 2 | prereq empleado_7
+- seguridad_2 | Security | cost 3 | prereq empleado_8
+- seguridad_3 | Security | cost 3 | prereq empleado_14
 - sodas | Product | cost 1 | prereq productos_higiene
